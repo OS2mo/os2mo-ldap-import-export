@@ -378,7 +378,7 @@ class SyncTool:
             return converted_object, Verb.CREATE
 
         # Convert our objects to dicts
-        mo_object_dict_to_upload = mo_object.dict()
+        mo_object_dict_to_upload = mo_object.dict(by_alias=True)
         # Need to by_alias=True to extract the terminate_ field as its alias,
         # _terminate_. Only the *intersection* of attribute names from
         # mo_object_dict_to_upload and converted_mo_object_dict are used.
@@ -388,7 +388,7 @@ class SyncTool:
         # NOTE: UUID cannot be updated as it is used to decide what we update
         # NOTE: objectClass is removed as it is an LDAP implemenation detail
         # TODO: Why do we not update validity???
-        mo_attributes = mo_attributes - {"validity", "uuid", "objectClass"}
+        mo_attributes = mo_attributes - {"uuid", "objectClass"}
         # Only copy over keys that exist in both sets
         mo_attributes = mo_attributes & converted_mo_object_dict.keys()
 
