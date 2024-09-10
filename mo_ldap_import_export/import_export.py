@@ -917,8 +917,7 @@ class SyncTool:
             # Update the existing MO object with the converted values
             # NOTE: UUID cannot be updated as it is used to decide what we update
             # NOTE: objectClass is removed as it is an LDAP implemenation detail
-            # TODO: Why do we not update validity???
-            mo_attributes = mo_attributes - {"validity", "uuid", "objectClass"}
+            mo_attributes = mo_attributes - {"uuid", "objectClass"}
             # Only copy over keys that exist in both sets
             mo_attributes = mo_attributes & converted_mo_object_dict.keys()
 
