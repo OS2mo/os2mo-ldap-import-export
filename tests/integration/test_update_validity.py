@@ -59,7 +59,6 @@ from mo_ldap_import_export.utils import mo_today
         ),
     }
 )
-@pytest.mark.xfail(reason="TDD")
 async def test_to_mo(
     test_client: AsyncClient,
     graphql_client: GraphQLClient,
