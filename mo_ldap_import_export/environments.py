@@ -11,8 +11,8 @@ from uuid import UUID
 from uuid import uuid4
 
 import structlog
-from jinja2 import Environment  # noqa: E402
-from jinja2 import Undefined
+from jinja2 import Environment
+from jinja2 import StrictUndefined
 from ldap3.utils.dn import parse_dn
 from more_itertools import one
 from more_itertools import only
@@ -674,7 +674,7 @@ def construct_globals_dict(
 
 
 def construct_environment(settings: Settings, dataloader: DataLoader) -> Environment:
-    environment = Environment(undefined=Undefined, enable_async=True)
+    environment = Environment(undefined=StrictUndefined, enable_async=True)
 
     environment.filters["bitwise_and"] = bitwise_and
     environment.filters["splitfirst"] = filter_splitfirst

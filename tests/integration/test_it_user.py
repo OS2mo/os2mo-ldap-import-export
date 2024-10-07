@@ -34,7 +34,7 @@ from mo_ldap_import_export.utils import mo_today
                     "Employee": {
                         "objectClass": "ramodels.mo.employee.Employee",
                         "_import_to_mo_": "false",
-                        "uuid": "{{ employee_uuid or NONE }}",  # TODO: why is this required?
+                        "uuid": "{{ employee_uuid or '' }}",  # TODO: why is this required?
                         "cpr_no": "{{ldap.employeeNumber}}",
                     },
                     "ADtitle": {
@@ -42,7 +42,7 @@ from mo_ldap_import_export.utils import mo_today
                         "_import_to_mo_": "true",
                         "_mapper_": "{{ obj.itsystem }}",
                         # carLicense is arbitrarily chosen as an enabled/disabled marker
-                        "_terminate_": "{{ now()|mo_datestring if ldap.carLicense == 'EXPIRED' else NONE}}",
+                        "_terminate_": "{{ now()|mo_datestring if ldap.carLicense == 'EXPIRED' else ''}}",
                         "user_key": "{{ ldap.title }}",
                         "person": "{{ dict(uuid=employee_uuid ) }}",
                         "itsystem": "{{ dict(uuid=get_it_system_uuid('ADtitle')) }}",
@@ -159,7 +159,7 @@ async def test_to_mo(
                     "Employee": {
                         "objectClass": "ramodels.mo.employee.Employee",
                         "_import_to_mo_": "false",
-                        "uuid": "{{ employee_uuid or NONE }}",
+                        "uuid": "{{ employee_uuid or '' }}",
                         "cpr_no": "{{ldap.employeeNumber}}",
                     },
                     "ADtitle": {
