@@ -258,9 +258,11 @@ class LDAPAPI:
             raise ReadOnlyException("Not allowed to write to the specified OU")
 
         logger.info("Adding user to LDAP", dn=dn, attributes=attributes)
-        employee_object_class = self.settings.conversion_mapping.mo_to_ldap[
-            "Employee"
-        ].objectClass
+        employee_object_class = self.settings.ldap_object_class
+        if employee_object_class is None:
+            employee_object_class = self.settings.conversion_mapping.mo_to_ldap[
+                "Employee"
+            ].objectClass
         _, result = await ldap_add(
             self.ldap_connection,
             dn,

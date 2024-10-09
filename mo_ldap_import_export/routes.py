@@ -297,7 +297,11 @@ def load_ldap_overview(ldap_connection: Connection):
 def construct_router(settings: Settings) -> APIRouter:
     router = APIRouter()
 
-    default_ldap_class = settings.conversion_mapping.mo_to_ldap["Employee"].objectClass
+    default_ldap_class = settings.ldap_object_class
+    if default_ldap_class is None:
+        default_ldap_class = settings.conversion_mapping.mo_to_ldap[
+            "Employee"
+        ].objectClass
 
     # Load all users from LDAP, and import them into MO
     @router.get("/Import", status_code=202, tags=["Import"])

@@ -257,7 +257,6 @@ class MO2LDAPMapping(MappingBaseModel):
     class Config:
         extra = Extra.allow
 
-    objectClass: str
     export_to_ldap: Literal["true", "false", "pause"] = Field(alias="_export_to_ldap_")
 
     def export_to_ldap_as_bool(self) -> bool:
@@ -385,6 +384,9 @@ class Settings(BaseSettings):
         ..., description="Search base to utilize for all LDAP requests"
     )
 
+    ldap_object_class: str | None = Field(
+        None, description="The LDAP object class that contains the CPR number"
+    )
     ldap_cpr_attribute: str | None = Field(
         None,
         description="The attribute (if any) that contains the CPR number in LDAP",
