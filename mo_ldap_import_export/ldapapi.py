@@ -88,7 +88,6 @@ class LDAPAPI:
 
     async def modify_ldap(
         self,
-        operation: Literal["MODIFY_DELETE", "MODIFY_REPLACE"],
         dn: str,
         attribute: str,
         value: list[str] | str,
@@ -128,7 +127,7 @@ class LDAPAPI:
         value_exists = await ldap_compare(self.ldap_connection, dn, attribute, value)
 
         # If the value is already as expected, and we are not deleting, we are done
-        if value_exists and "DELETE" not in operation:
+        if value_exists:
             logger.info(
                 "Attribute value already exists",
                 attribute=attribute,
@@ -137,14 +136,11 @@ class LDAPAPI:
             return None
 
         # Modify LDAP
-        changes = {attribute: [(operation, value)]}
+        changes = {attribute: [("MODIFY_REPLACE", value)]}
         logger.info("Uploading the changes", changes=changes, dn=dn)
         _, result = await ldap_modify(self.ldap_connection, dn, changes)
         logger.info("LDAP Result", result=result, dn=dn)
         return result
-
-    delete_ldap = partialmethod(modify_ldap, "MODIFY_DELETE")
-    replace_ldap = partialmethod(modify_ldap, "MODIFY_REPLACE")
 
     async def add_ldap_object(self, dn: str, attributes: dict[str, Any] | None = None):
         """
