@@ -333,6 +333,8 @@ class UserNameGenerator:
         """
         existing_usernames, existing_common_names = await self._get_existing_names()
 
+        assert employee.givenname is not None
+        assert employee.surname is not None
         givenname = employee.givenname
         surname = employee.surname
         name = givenname.split(" ")[:4] + [surname]
@@ -400,6 +402,8 @@ class AlleroedUserNameGenerator(UserNameGenerator):
             {validity.user_key for obj in result.objects for validity in obj.validities}
         )
 
+        assert employee.givenname is not None
+        assert employee.surname is not None
         givenname = employee.givenname.strip()
         surname = employee.surname
         name = givenname.split(" ")[:4] + [surname]
