@@ -276,9 +276,9 @@ class UserNameGenerator:
             # Remove one middlename
             num_middlenames -= 1
             # Try to make a name with the selected number of middlenames
-            givenname, *middlenames, surname = name
+            given_name, *middlenames, surname = name
             middlenames = middlenames[:num_middlenames]
-            common_name = " ".join([givenname] + middlenames + [surname])
+            common_name = " ".join([given_name] + middlenames + [surname])
 
         # Cut off the name (leave place for the permutation counter)
         common_name = common_name[:60]
@@ -333,16 +333,16 @@ class UserNameGenerator:
         """
         existing_usernames, existing_common_names = await self._get_existing_names()
 
-        assert employee.givenname is not None
+        assert employee.given_name is not None
         assert employee.surname is not None
-        givenname = employee.givenname
+        given_name = employee.given_name
         surname = employee.surname
-        name = givenname.split(" ")[:4] + [surname]
+        name = given_name.split(" ")[:4] + [surname]
 
         username = self._create_username(name, existing_usernames)
         logger.info(
             "Generated username based on name",
-            givenname=givenname,
+            given_name=given_name,
             surname=surname,
             username=username,
         )
@@ -350,7 +350,7 @@ class UserNameGenerator:
         common_name = self._create_common_name(name, existing_common_names)
         logger.info(
             "Generated CommonName based on name",
-            givenname=givenname,
+            given_name=given_name,
             surname=surname,
             common_name=common_name,
         )
@@ -402,21 +402,21 @@ class AlleroedUserNameGenerator(UserNameGenerator):
             {validity.user_key for obj in result.objects for validity in obj.validities}
         )
 
-        assert employee.givenname is not None
+        assert employee.given_name is not None
         assert employee.surname is not None
-        givenname = employee.givenname.strip()
+        given_name = employee.given_name.strip()
         surname = employee.surname
-        name = givenname.split(" ")[:4] + [surname]
+        name = given_name.split(" ")[:4] + [surname]
 
         common_name = self._create_common_name(name, existing_common_names)
-        logger.info(f"Generated CommonName for {givenname} {surname}: '{common_name}'")
+        logger.info(f"Generated CommonName for {given_name} {surname}: '{common_name}'")
 
         username = self.generate_username(
             name, existing_usernames + existing_usernames_in_mo
         )
         logger.info(
             "Generated username based on name",
-            givenname=givenname,
+            given_name=given_name,
             surname=surname,
             username=username,
         )

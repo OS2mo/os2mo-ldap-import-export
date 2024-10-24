@@ -335,7 +335,7 @@ async def test_generate_dn(username_generator: UserNameGenerator):
     username_generator.dataloader.sync_tool.render_ldap2mo = render_ldap2mo
     username_generator.settings.conversion_mapping.mo2ldap = """{}"""  # type: ignore
 
-    employee = Employee(givenname="Patrick", surname="Bateman")
+    employee = Employee(given_name="Patrick", surname="Bateman")
     dn = await username_generator.generate_dn(employee)
     assert dn == "CN=Patrick Bateman,DC=bar"
 
@@ -453,7 +453,7 @@ async def test_alleroed_dn_generator(
     alleroed_username_generator.dataloader.graphql_client = graphql_client  # type: ignore
     alleroed_username_generator.dataloader.moapi = MOAPI(settings_mock, graphql_client)  # type: ignore
 
-    employee = Employee(givenname="Patrick", surname="Bateman")
+    employee = Employee(given_name="Patrick", surname="Bateman")
     dn = await alleroed_username_generator.generate_dn(employee)
     assert dn == "CN=Patrick Bateman,DC=bar"
 
