@@ -29,7 +29,6 @@ services:
           "ldap_to_mo": {
             "Employee": {
               "objectClass": "ramodels.mo.employee.Employee",
-              "_import_to_mo_": "true",
               "_ldap_attributes_": ["employeeID", "initials"],
               "cpr_number": "{{ ldap.employeeID|strip_non_digits or '' }}",
               "uuid": "{{ employee_uuid or '' }}",
@@ -41,7 +40,6 @@ services:
             },
             "Engagement": {
               "objectClass": "ramodels.mo.details.engagement.Engagement",
-              "_import_to_mo_": "true",
               "_ldap_attributes_": ["title"],
               "person": "{{ employee_uuid or '' }}",
               "user_key": "{{ get_primary_engagement_dict(employee_uuid).user_key }}",
@@ -54,7 +52,6 @@ services:
             },
             "Active Directory": {
               "objectClass": "ramodels.mo.details.it_system.ITUser",
-              "_import_to_mo_": "true",
               "_ldap_attributes_": ["objectGUID", "sAMAccountName"],
               "uuid": "{{ ldap.objectGUID|remove_curly_brackets }}",
               "user_key": "{{ ldap.sAMAccountName }}",

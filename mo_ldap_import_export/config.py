@@ -122,7 +122,6 @@ class LDAP2MOMapping(MappingBaseModel):
         extra = Extra.allow
 
     objectClass: str
-    import_to_mo: Literal["true", "edit_only", "false"] = Field(alias="_import_to_mo_")
     terminate: str | None = Field(
         alias="_terminate_", description="The date at which to terminate the object"
     )
@@ -137,29 +136,10 @@ class LDAP2MOMapping(MappingBaseModel):
 
     def get_fields(self) -> dict[str, Any]:
         return self.dict(
-            exclude={"objectClass", "import_to_mo", "ldap_attributes"},
+            exclude={"objectClass", "ldap_attributes"},
             by_alias=True,
             exclude_unset=True,
         )
-
-    @validator("import_to_mo", pre=True)
-    def lower_import_to_mo(cls, v: str) -> str:
-        return v.lower()
-
-    @root_validator
-    def check_edit_only_set_for_employee(cls, values: dict[str, Any]) -> dict[str, Any]:
-        """Ensure that edit_only is only set on employees."""
-        if (
-            "import_to_mo" not in values
-            or not values["import_to_mo"]
-            or values["import_to_mo"] != "edit_only"
-        ):
-            return values
-
-        mo_class = import_class(values["objectClass"])
-        if mo_class is not Employee:
-            raise ValueError("Edit only is only supported for employees")
-        return values
 
     @root_validator
     def check_terminate_not_set_on_employee(
@@ -216,7 +196,6 @@ class LDAP2MOMapping(MappingBaseModel):
         accepted_attributes = set(mo_class.schema()["properties"].keys())
         detected_attributes = set(values.keys()) - {
             "objectClass",
-            "import_to_mo",
             "terminate",
             "ldap_attributes",
         }
@@ -283,6 +262,9 @@ class UsernameGeneratorConfig(MappingBaseModel):
 class ConversionMapping(MappingBaseModel):
     ldap_to_mo: dict[str, LDAP2MOMapping] | None = None
     ldap_to_mo_org_unit: dict[str, LDAP2MOMapping] | None = None
+
+    allow_employee_create: bool = True
+
     mo2ldap: str | None = Field(None, description="MO to LDAP mapping template")
     username_generator: UsernameGeneratorConfig = Field(
         default_factory=UsernameGeneratorConfig

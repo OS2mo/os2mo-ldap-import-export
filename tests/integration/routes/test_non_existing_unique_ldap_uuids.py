@@ -19,15 +19,8 @@ from mo_ldap_import_export.types import LDAPUUID
 
 conversion_mapping_with_aduuid_itsystem = {
     "ldap_to_mo": {
-        "Employee": {
-            "objectClass": "Employee",
-            "_import_to_mo_": "false",
-            "_ldap_attributes_": [],
-            "uuid": "{{ employee_uuid or '' }}",
-        },
         "ADUUID": {
             "objectClass": "ITUser",
-            "_import_to_mo_": "true",
             "_ldap_attributes_": ["entryUUID"],
             "user_key": "{{ ldap.entryUUID }}",
             "itsystem": "{{ get_it_system_uuid('ADUUID') }}",

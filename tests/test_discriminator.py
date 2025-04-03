@@ -58,15 +58,7 @@ def settings(
         "CONVERSION_MAPPING",
         json.dumps(
             {
-                "ldap_to_mo": {
-                    "Employee": {
-                        "objectClass": "Employee",
-                        "_import_to_mo_": "false",
-                        "_ldap_attributes_": ["employeeID"],
-                        "cpr_number": "{{ldap.employeeID or None}}",
-                        "uuid": "{{ employee_uuid or '' }}",
-                    }
-                },
+                "ldap_to_mo": {},
                 "mo2ldap": """
                 {}
                 """,
@@ -524,7 +516,6 @@ async def context(sync_tool_and_context: tuple[SyncTool, Context]) -> Context:
                 "ldap_to_mo": {
                     "Employee": {
                         "objectClass": "Employee",
-                        "_import_to_mo_": "false",
                         "_ldap_attributes_": ["employeeID"],
                         "cpr_number": "{{ldap.employeeID or None}}",
                         "uuid": "{{ employee_uuid or '' }}",

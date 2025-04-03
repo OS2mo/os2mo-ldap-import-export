@@ -35,15 +35,8 @@ from mo_ldap_import_export.utils import mo_today
         "CONVERSION_MAPPING": json.dumps(
             {
                 "ldap_to_mo": {
-                    "Employee": {
-                        "objectClass": "Employee",
-                        "_import_to_mo_": "false",
-                        "_ldap_attributes_": [],
-                        "uuid": "{{ employee_uuid or '' }}",
-                    },
                     "EmailEmployee": {
                         "objectClass": "Address",
-                        "_import_to_mo_": "true",
                         "_ldap_attributes_": ["carLicense", "mail"],
                         # carLicense is arbitrarily chosen as an enabled/disabled marker
                         "_terminate_": "{{ now()|mo_datestring if ldap.carLicense == 'EXPIRED' else '' }}",
@@ -148,15 +141,8 @@ async def test_to_mo(
         "CONVERSION_MAPPING": json.dumps(
             {
                 "ldap_to_mo": {
-                    "Employee": {
-                        "objectClass": "Employee",
-                        "_import_to_mo_": "false",
-                        "_ldap_attributes_": [],
-                        "uuid": "{{ employee_uuid or '' }}",
-                    },
                     "EmailEmployee": {
                         "objectClass": "Address",
-                        "_import_to_mo_": "true",
                         "_ldap_attributes_": ["mail"],
                         "_terminate_": "{{ now()|mo_datestring }}",
                         "uuid": "{{ get_address_uuid({'address_type': {'user_key': 'EmailEmployee'}, 'employee': {'uuids': [employee_uuid]}}) }}",
@@ -298,15 +284,8 @@ async def test_to_ldap(
         "CONVERSION_MAPPING": json.dumps(
             {
                 "ldap_to_mo": {
-                    "Employee": {
-                        "objectClass": "Employee",
-                        "_import_to_mo_": "false",
-                        "_ldap_attributes_": [],
-                        "uuid": "{{ employee_uuid or '' }}",
-                    },
                     "EmailEmployee": {
                         "objectClass": "Address",
-                        "_import_to_mo_": "true",
                         "_ldap_attributes_": ["carLicense", "mail"],
                         # carLicense is arbitrarily chosen as an enabled/disabled marker
                         "_terminate_": "{{ now()|mo_datestring if ldap.carLicense == 'EXPIRED' else '' }}",

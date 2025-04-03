@@ -58,7 +58,6 @@ def converter_mapping() -> dict[str, Any]:
         "ldap_to_mo": {
             "Employee": {
                 "objectClass": "Employee",
-                "_import_to_mo_": "True",
                 "_ldap_attributes_": ["givenName", "sn", "employeeID"],
                 "given_name": "{{ldap.givenName}}",
                 "surname": "{{ldap.sn}}",
@@ -67,7 +66,6 @@ def converter_mapping() -> dict[str, Any]:
             },
             "Email": {
                 "objectClass": "Address",
-                "_import_to_mo_": "True",
                 "_ldap_attributes_": ["mail"],
                 "value": "{{ldap.mail}}",
                 "address_type": "{{ 'f376deb8-4743-4ca6-a047-3241de8fe9d2' }}",
@@ -75,7 +73,6 @@ def converter_mapping() -> dict[str, Any]:
             },
             "Active Directory": {
                 "objectClass": "ITUser",
-                "_import_to_mo_": "True",
                 "_ldap_attributes_": ["msSFU30Name"],
                 "user_key": "{{ ldap.msSFU30Name or '' }}",
                 "itsystem": "{{ get_it_system_uuid(ldap.itSystemName) }}",
@@ -298,14 +295,12 @@ async def test_ldap_to_mo_dict_validation_error(
         "ldap_to_mo": {
             "Employee": {
                 "objectClass": "Employee",
-                "_import_to_mo_": "True",
                 "_ldap_attributes_": ["employeeID"],
                 "cpr_number": "{{ldap.employeeID or None}}",
                 "uuid": "{{ employee_uuid or '' }}",
             },
             "Custom": {
                 "objectClass": "Custom.JobTitleFromADToMO",
-                "_import_to_mo_": "true",
                 "_ldap_attributes_": ["hkStsuuid"],
                 "user": "{{ ldap.hkStsuuid }}",
                 "job_function": f"{{ {uuid4()} }}",
@@ -363,7 +358,6 @@ async def test_template_strictness(
         "ldap_to_mo": {
             "Employee": {
                 "objectClass": "Employee",
-                "_import_to_mo_": "True",
                 "_ldap_attributes_": ["givenName", "sn"],
                 "user_key": "{{ ldap.dn }}",
                 "given_name": "{{ ldap.get('givenName', 'given_name') }}",
@@ -598,7 +592,6 @@ async def test_get_it_system_uuid(
 def test_check_uuid_refs_in_mo_objects(converter_mapping: dict[str, Any]) -> None:
     address_obj = {
         "objectClass": "Address",
-        "_import_to_mo_": "true",
         "_ldap_attributes_": [],
         "value": "val",
         "validity": "val",
@@ -641,101 +634,11 @@ def test_check_uuid_refs_in_mo_objects(converter_mapping: dict[str, Any]) -> Non
             "ldap_to_mo": {
                 "Employee": {
                     "objectClass": "Employee",
-                    "_import_to_mo_": "true",
                 }
             }
         }
     )
     with pytest.raises(ValidationError, match="Needs to contain a key called 'uuid'"):
-        parse_obj_as(ConversionMapping, converter_mapping)
-
-
-@pytest.mark.usefixtures("minimal_valid_environmental_variables")
-@pytest.mark.parametrize(
-    "import_to_mo,is_ok",
-    [
-        ("True", True),
-        ("False", True),
-        ("manual_import_only", False),
-        ("manual_import", False),
-        ("ldap_please_import", False),
-        ("car_license_expired", False),
-    ],
-)
-def test_import_to_mo_configuration(
-    monkeypatch: pytest.MonkeyPatch,
-    import_to_mo: str,
-    is_ok: bool,
-) -> None:
-    monkeypatch.setenv(
-        "CONVERSION_MAPPING",
-        json.dumps(
-            {
-                "ldap_to_mo": {
-                    "Employee": {
-                        "objectClass": "Employee",
-                        "_import_to_mo_": import_to_mo,
-                        "_ldap_attributes_": [],
-                        "uuid": "{{ employee_uuid or '' }}",
-                    }
-                },
-            }
-        ),
-    )
-    if is_ok:
-        Settings()
-    else:
-        with pytest.raises(ValidationError) as exc_info:
-            Settings()
-        expected_strings = [
-            "1 validation error for Settings",
-            "conversion_mapping -> ldap_to_mo -> Employee -> _import_to_mo",
-            "unexpected value; permitted: 'true', 'edit_only', 'false'",
-            f"given={import_to_mo}",
-        ]
-        for expected in expected_strings:
-            assert expected in str(exc_info.value)
-
-
-@pytest.mark.parametrize(
-    "overlay,expected",
-    [
-        (
-            {
-                "ldap_to_mo": {
-                    "Employee": {**EMPLOYEE_OBJ, "_import_to_mo_": "f"},
-                },
-            },
-            "unexpected value; permitted: ",
-        ),
-        (
-            {
-                "ldap_to_mo": {
-                    "Employee": EMPLOYEE_OBJ,
-                },
-            },
-            "_import_to_mo_\n  field required",
-        ),
-        (
-            {
-                "ldap_to_mo": {
-                    "Employee": {**EMPLOYEE_OBJ, "_import_to_mo_": "True"},
-                },
-            },
-            None,
-        ),
-    ],
-)
-def test_check_import_and_export_flags(
-    converter_mapping: dict[str, Any],
-    overlay: dict[str, Any],
-    expected: str | None,
-) -> None:
-    converter_mapping.update(overlay)
-    if expected:
-        with pytest.raises(ValidationError, match=expected):
-            parse_obj_as(ConversionMapping, converter_mapping)
-    else:
         parse_obj_as(ConversionMapping, converter_mapping)
 
 

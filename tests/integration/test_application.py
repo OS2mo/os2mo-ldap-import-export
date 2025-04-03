@@ -393,15 +393,8 @@ async def test_changed_since(test_client: AsyncClient, expected: list[str]) -> N
         "CONVERSION_MAPPING": json.dumps(
             {
                 "ldap_to_mo": {
-                    "Employee": {
-                        "objectClass": "Employee",
-                        "_import_to_mo_": "false",
-                        "_ldap_attributes_": [],
-                        "uuid": "{{ employee_uuid or '' }}",
-                    },
                     "PublicEmailAddress": {
                         "objectClass": "Address",
-                        "_import_to_mo_": "true",
                         "_ldap_attributes_": ["mail"],
                         "value": "{{ ldap.mail or '' }}",
                         "address_type": "{{ get_employee_address_type_uuid('EmailEmployee') }}",
@@ -475,15 +468,8 @@ async def test_mismatched_json_key_and_address_type(
         "CONVERSION_MAPPING": json.dumps(
             {
                 "ldap_to_mo": {
-                    "Employee": {
-                        "objectClass": "Employee",
-                        "_import_to_mo_": "false",
-                        "_ldap_attributes_": [],
-                        "uuid": "{{ employee_uuid or '' }}",
-                    },
                     "EntryUUID": {
                         "objectClass": "ITUser",
-                        "_import_to_mo_": "true",
                         "_ldap_attributes_": ["entryUUID"],
                         "user_key": "{{ ldap.entryUUID or '' }}",
                         "itsystem": "{{ get_it_system_uuid('ADUUID') }}",
@@ -556,15 +542,8 @@ async def test_mismatched_json_key_and_itsystem(
         "CONVERSION_MAPPING": json.dumps(
             {
                 "ldap_to_mo": {
-                    "Employee": {
-                        "objectClass": "Employee",
-                        "_import_to_mo_": "false",
-                        "_ldap_attributes_": [],
-                        "uuid": "{{ employee_uuid or '' }}",
-                    },
                     "DefaultValidity": {
                         "objectClass": "ITUser",
-                        "_import_to_mo_": "true",
                         "_ldap_attributes_": ["entryUUID"],
                         "user_key": "{{ ldap.entryUUID or '' }}",
                         "itsystem": "{{ get_it_system_uuid('ADUUID') }}",

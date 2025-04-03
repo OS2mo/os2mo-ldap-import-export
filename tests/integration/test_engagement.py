@@ -39,15 +39,8 @@ from mo_ldap_import_export.utils import mo_today
         "CONVERSION_MAPPING": json.dumps(
             {
                 "ldap_to_mo": {
-                    "Employee": {
-                        "objectClass": "Employee",
-                        "_import_to_mo_": "false",
-                        "_ldap_attributes_": [],
-                        "uuid": "{{ employee_uuid or '' }}",  # TODO: why is this required?
-                    },
                     "Engagement": {
                         "objectClass": "Engagement",
-                        "_import_to_mo_": "true",
                         "_ldap_attributes_": [
                             "carLicense",
                             "title",
@@ -293,15 +286,8 @@ async def test_to_ldap(
         "CONVERSION_MAPPING": json.dumps(
             {
                 "ldap_to_mo": {
-                    "Employee": {
-                        "objectClass": "Employee",
-                        "_import_to_mo_": "false",
-                        "_ldap_attributes_": [],
-                        "uuid": "{{ employee_uuid or '' }}",  # TODO: why is this required?
-                    },
                     "Engagement": {
                         "objectClass": "Engagement",
-                        "_import_to_mo_": "true",
                         "_ldap_attributes_": ["title"],
                         "uuid": "{{ skip_if_none(load_mo_primary_engagement(employee_uuid)).uuid }}",
                         "user_key": "{{ skip_if_none(load_mo_primary_engagement(employee_uuid)).user_key }}",
@@ -382,15 +368,8 @@ async def test_to_mo_skip_if_none(
         "CONVERSION_MAPPING": json.dumps(
             {
                 "ldap_to_mo": {
-                    "Employee": {
-                        "objectClass": "Employee",
-                        "_import_to_mo_": "false",
-                        "_ldap_attributes_": [],
-                        "uuid": "{{ skip_if_none(employee_uuid) }}",  # TODO: why is this required?
-                    },
                     "Engagement": {
                         "objectClass": "Engagement",
-                        "_import_to_mo_": "true",
                         "_ldap_attributes_": ["title"],
                         "uuid": "{{ skip_if_none(load_mo_primary_engagement(employee_uuid)).uuid }}",
                         "user_key": "{{ skip_if_none(load_mo_primary_engagement(employee_uuid)).user_key }}",

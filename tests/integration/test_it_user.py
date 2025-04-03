@@ -36,15 +36,8 @@ from mo_ldap_import_export.utils import mo_today
         "CONVERSION_MAPPING": json.dumps(
             {
                 "ldap_to_mo": {
-                    "Employee": {
-                        "objectClass": "Employee",
-                        "_import_to_mo_": "false",
-                        "_ldap_attributes_": [],
-                        "uuid": "{{ employee_uuid or '' }}",  # TODO: why is this required?
-                    },
                     "ADtitle": {
                         "objectClass": "ITUser",
-                        "_import_to_mo_": "true",
                         "_ldap_attributes_": ["carLicense", "title"],
                         # carLicense is arbitrarily chosen as an enabled/disabled marker
                         "_terminate_": "{{ now()|mo_datestring if ldap.carLicense == 'EXPIRED' else ''}}",

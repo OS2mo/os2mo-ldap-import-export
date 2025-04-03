@@ -30,7 +30,6 @@ def address_mapping(minimal_mapping: dict) -> dict:
             "ldap_to_mo": {
                 "EmailEmployee": {
                     "objectClass": "Address",
-                    "_import_to_mo_": "true",
                     "_ldap_attributes_": ["mail"],
                     "value": "{{ldap.mail or ''}}",
                     "address_type": "{{ get_employee_address_type_uuid('EmailEmployee') }}",
@@ -62,7 +61,6 @@ def test_cannot_terminate_employee(minimal_mapping: dict) -> None:
             "ldap_to_mo": {
                 "Employee": {
                     "objectClass": "Employee",
-                    "_import_to_mo_": "false",
                     "_ldap_attributes_": ["employeeID"],
                     "_terminate_": "whatever",
                     "cpr_number": "{{ldap.employeeID or None}}",
@@ -327,42 +325,6 @@ async def test_discriminator_values_jinja_validator_invalid(
     with pytest.raises(ValidationError) as exc_info:
         Settings()
     assert "Unable to parse discriminator_values template" in str(exc_info.value)
-
-
-@pytest.mark.parametrize(
-    "object_class",
-    (
-        "Address",
-        "Engagement",
-        "ITUser",
-    ),
-)
-async def test_edit_only_validator(object_class: str) -> None:
-    with pytest.raises(ValidationError) as exc_info:
-        parse_obj_as(
-            LDAP2MOMapping,
-            {
-                "_import_to_mo_": "edit_only",
-                "_ldap_attributes_": [],
-                "objectClass": object_class,
-                "uuid": "",
-            },
-        )
-
-    assert "Edit only is only supported for employees" in str(exc_info.value)
-
-
-async def test_edit_only_validator_employee_ok() -> None:
-    result = parse_obj_as(
-        LDAP2MOMapping,
-        {
-            "_import_to_mo_": "edit_only",
-            "_ldap_attributes_": [],
-            "objectClass": "Employee",
-            "uuid": "",
-        },
-    )
-    assert result.import_to_mo == "edit_only"
 
 
 @pytest.mark.parametrize("field", ["dn", "value"])

@@ -144,18 +144,7 @@ def integration_test_environment_variables(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setenv("DEFAULT_ORG_UNIT_TYPE", "Afdeling")
     monkeypatch.setenv("DEFAULT_ORG_UNIT_LEVEL", "N1")
     mapping = {
-        "ldap_to_mo": {
-            "Employee": {
-                "objectClass": "Employee",
-                "_import_to_mo_": "false",
-                "_ldap_attributes_": ["employeeNumber", "title", "givenName", "sn"],
-                "uuid": "{{ employee_uuid or '' }}",
-                "cpr_number": "{{ldap.employeeNumber|strip_non_digits or ''}}",
-                "user_key": "{{ ldap.title }}",
-                "given_name": "{{ ldap.givenName }}",
-                "surname": "{{ ldap.sn }}",
-            }
-        },
+        "ldap_to_mo": {},
         "mo2ldap": """
             {% set mo_employee = load_mo_employee(uuid, current_objects_only=False) %}
             {{
@@ -292,8 +281,6 @@ def converter() -> MagicMock:
         "Address",
         "EmailEmployee",
     ]
-    converter._import_to_mo_ = MagicMock()
-    converter._import_to_mo_.return_value = True
 
     converter.to_ldap = AsyncMock()
     converter.from_ldap = AsyncMock()

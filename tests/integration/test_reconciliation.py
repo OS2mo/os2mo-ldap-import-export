@@ -29,7 +29,6 @@ from mo_ldap_import_export.types import DN
                 "ldap_to_mo": {
                     "Employee": {
                         "objectClass": "Employee",
-                        "_import_to_mo_": "true",
                         "_ldap_attributes_": ["employeeNumber", "givenName", "sn"],
                         "uuid": "{{ employee_uuid or '' }}",  # TODO: why is this required?
                         "cpr_number": "{{ ldap.employeeNumber }}",

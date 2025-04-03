@@ -52,11 +52,11 @@ def settings_overrides() -> Iterator[dict[str, str]]:
     Yields:
         Minimal set of overrides.
     """
+    # TODOTODOTODO
     conversion_mapping_dict = {
         "ldap_to_mo": {
             "Employee": {
                 "objectClass": "Employee",
-                "_import_to_mo_": "false",
                 "_ldap_attributes_": [],
                 "uuid": "{{ employee_uuid or '' }}",
             }
@@ -154,9 +154,6 @@ def dataloader(
 @pytest.fixture
 def converter() -> MagicMock:
     converter = MagicMock()
-    converter._import_to_mo_ = MagicMock()
-    converter._import_to_mo_.return_value = True
-
     converter.from_ldap = AsyncMock()
     converter.from_ldap.return_value = Employee(given_name="Angus", surname="Angusson")
 

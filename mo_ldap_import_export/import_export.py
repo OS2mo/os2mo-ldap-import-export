@@ -448,10 +448,8 @@ class SyncTool:
                     "Employee not found in MO, and no ldap_to_mo Employee mapping"
                 )
                 return
-            employee_mapping = ldap_to_mo["Employee"]
 
-            create_employee = employee_mapping.import_to_mo == "true"
-            if not create_employee:
+            if not self.settings.conversion_mapping.allow_employee_create:
                 # If we do not want to create the employee and it does not exist, there
                 # is no more to be done, as we cannot create dependent resources with no
                 # employee to attach them to.
@@ -506,18 +504,9 @@ class SyncTool:
         dn = best_dn
         exit_stack.enter_context(bound_contextvars(dn=dn))
 
-        json_keys = set(self.settings.conversion_mapping.ldap_to_mo.keys())
         json_keys = {
             json_key
-            for json_key in json_keys
-            if self.settings.conversion_mapping.ldap_to_mo[json_key].import_to_mo
-            != "false"
-        }
-        logger.info("Import to MO filtered", json_keys=json_keys)
-
-        json_keys = {
-            json_key
-            for json_key in json_keys
+            for json_key in set(self.settings.conversion_mapping.ldap_to_mo.keys())
             if await self.perform_import_checks(dn, json_key)
         }
         logger.info("Import checks executed", json_keys=json_keys)
