@@ -27,6 +27,7 @@ from more_itertools import unzip
 from pydantic import parse_obj_as
 
 from mo_ldap_import_export.ldap import get_ldap_object
+from mo_ldap_import_export.ldapapi import LDAPAPI
 from mo_ldap_import_export.moapi import MOAPI
 from mo_ldap_import_export.moapi import extract_current_or_latest_validity
 from mo_ldap_import_export.moapi import flatten_validities
@@ -50,6 +51,7 @@ from .exceptions import NoObjectsReturnedException
 from .exceptions import SkipObject
 from .exceptions import UUIDNotFoundException
 from .types import DN
+from .types import LDAPUUID
 from .types import EmployeeUUID
 from .types import EngagementUUID
 from .utils import MO_TZ
@@ -580,6 +582,10 @@ async def get_person_dn(dataloader: DataLoader, uuid: EmployeeUUID) -> DN | None
     return dn
 
 
+async def uuid_to_dn(ldapapi: LDAPAPI, uuid: LDAPUUID) -> DN | None:
+    return only(await ldapapi.convert_ldap_uuids_to_dns({uuid}))
+
+
 def skip_if_none(obj: T | None) -> T:
     if obj is None:
         raise SkipObject("Skipping: Object is None")
@@ -645,6 +651,7 @@ def construct_globals_dict(
         "get_manager_person_uuid": partial(get_manager_person_uuid, graphql_client),
         "get_person_dn": partial(get_person_dn, dataloader),
         "dn_to_uuid": dataloader.ldapapi.get_ldap_unique_ldap_uuid,
+        "uuid_to_dn": partial(uuid_to_dn, dataloader.ldapapi),
         "get_engagement_type_uuid": partial(get_engagement_type_uuid, graphql_client),
         "get_primary_type_uuid": partial(get_primary_type_uuid, graphql_client),
     }

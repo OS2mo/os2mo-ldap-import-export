@@ -130,6 +130,7 @@ class SyncTool:
         assert mo2ldap_template is not None
         template = self.converter.environment.from_string(mo2ldap_template)
         result = await template.render_async({"uuid": uuid, "dn": dn})
+        print(result)
         parsed = json.loads(result)
         assert isinstance(parsed, dict)
         assert all(isinstance(key, str) for key in parsed)
