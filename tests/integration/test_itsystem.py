@@ -3,6 +3,7 @@
 import json
 from collections.abc import Awaitable
 from collections.abc import Callable
+from uuid import UUID
 
 import pytest
 from ldap3 import Connection
@@ -50,10 +51,10 @@ from tests.integration.conftest import DN2UUID
 async def test_to_mo(
     trigger_ldap_sync: Callable[[LDAPUUID], Awaitable[None]],
     dn2uuid: DN2UUID,
-    graphql_client: GraphQLClient,
     ldap_connection: Connection,
     ldap_org: list[str],
     ldap_person_dn: DN,
+    read_itsystem_by_user_key: Callable[[str], Awaitable[UUID]],
 ) -> None:
     # Create an LDAP group with one member
     group_dn = combine_dn_strings(["cn=os2mo"] + ldap_org)
@@ -72,4 +73,4 @@ async def test_to_mo(
     await trigger_ldap_sync(group_uuid)
 
     # Check that an ITSystem was created from our LDAP group
-    one((await graphql_client.read_itsystem_uuid(str(group_uuid))).objects)
+    await read_itsystem_by_user_key(str(group_uuid))
