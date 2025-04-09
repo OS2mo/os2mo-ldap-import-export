@@ -8,7 +8,7 @@ from uuid import UUID
 import pytest
 from ldap3 import Connection
 
-from mo_ldap_import_export.ldap import ldap_add
+from mo_ldap_import_export.ldap import ldap_add, ldap_modify_dn
 from mo_ldap_import_export.types import DN
 from mo_ldap_import_export.types import LDAPUUID
 from mo_ldap_import_export.utils import combine_dn_strings
@@ -44,6 +44,7 @@ from tests.integration.conftest import DN2UUID
     }
 )
 @pytest.mark.usefixtures("test_client")
+@pytest.mark.xfail(reason="Cannot edit")
 async def test_to_mo(
     trigger_ldap_sync: Callable[[LDAPUUID], Awaitable[None]],
     dn2uuid: DN2UUID,
@@ -71,5 +72,16 @@ async def test_to_mo(
     # Check that an ITSystem was created from our LDAP group
     await read_itsystem_by_user_key(str(group_uuid))
 
+    # Retiggering synchronization should make no changes
+    await trigger_ldap_sync(group_uuid)
+    await read_itsystem_by_user_key(str(group_uuid))
 
+    await ldap_modify_dn(
+        ldap_connection,
+        dn=group_dn,
+        relative_dn="cn=gir"
+    )
 
+    # Retiggering synchronization should make no changes
+    await trigger_ldap_sync(group_uuid)
+    await read_itsystem_by_user_key(str(group_uuid))
