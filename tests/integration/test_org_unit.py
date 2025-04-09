@@ -31,18 +31,20 @@ from tests.integration.conftest import DN2UUID
         "LISTEN_TO_CHANGES_IN_LDAP": "True",
         "CONVERSION_MAPPING": json.dumps(
             {
-                "ldap_to_mo_org_unit": {
-                    "OrganisationUnit": {
-                        "objectClass": "OrganisationUnit",
-                        "_import_to_mo_": "true",
-                        "_ldap_attributes_": ["entryUUID", "ou", "l"],
-                        # "l" is arbitrarily chosen as an enabled/disabled marker
-                        "_terminate_": "{{ now()|mo_datestring if ldap.l == 'EXPIRED' else '' }}",
-                        "uuid": "{{ get_org_unit_uuid({'user_keys': [ldap.entryUUID]}) or uuid4() }}",
-                        "user_key": "{{ ldap.entryUUID }}",
-                        "name": "{{ ldap.ou }}",
-                        "unit_type": "{{ get_org_unit_type_uuid('Afdeling') }}",
-                    },
+                "ldap_to_mo_any": {
+                    "organizationalUnit": {
+                        "OrganisationUnit": {
+                            "objectClass": "OrganisationUnit",
+                            "_import_to_mo_": "true",
+                            "_ldap_attributes_": ["entryUUID", "ou", "l"],
+                            # "l" is arbitrarily chosen as an enabled/disabled marker
+                            "_terminate_": "{{ now()|mo_datestring if ldap.l == 'EXPIRED' else '' }}",
+                            "uuid": "{{ get_org_unit_uuid({'user_keys': [ldap.entryUUID]}) or uuid4() }}",
+                            "user_key": "{{ ldap.entryUUID }}",
+                            "name": "{{ ldap.ou }}",
+                            "unit_type": "{{ get_org_unit_type_uuid('Afdeling') }}",
+                        },
+                    }
                 },
                 # TODO: why is this required?
                 "username_generator": {
@@ -128,22 +130,24 @@ async def test_to_mo(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
         "CONVERSION_MAPPING": json.dumps(
             {
-                "ldap_to_mo_org_unit": {
-                    "OrganisationUnit": {
-                        "objectClass": "OrganisationUnit",
-                        "_import_to_mo_": "true",
-                        "_ldap_attributes_": ["entryUUID", "ou"],
-                        "uuid": "{{ get_org_unit_uuid({'user_keys': [ldap.entryUUID]}) or uuid4() }}",
-                        "user_key": "{{ ldap.entryUUID }}",
-                        "name": "{{ ldap.ou }}",
-                        "parent": """
-                            {% set parent_dn = parent_dn(ldap.dn) %}
-                            {% if dn_has_ou(parent_dn) %}
-                                {{ skip_if_none(get_org_unit_uuid({'user_keys': [dn_to_uuid(parent_dn)|string]})) }}
-                            {% endif %}
-                        """,
-                        "unit_type": "{{ get_org_unit_type_uuid('Afdeling') }}",
-                    },
+                "ldap_to_mo_any": {
+                    "organizationalUnit": {
+                        "OrganisationUnit": {
+                            "objectClass": "OrganisationUnit",
+                            "_import_to_mo_": "true",
+                            "_ldap_attributes_": ["entryUUID", "ou"],
+                            "uuid": "{{ get_org_unit_uuid({'user_keys': [ldap.entryUUID]}) or uuid4() }}",
+                            "user_key": "{{ ldap.entryUUID }}",
+                            "name": "{{ ldap.ou }}",
+                            "parent": """
+                                {% set parent_dn = parent_dn(ldap.dn) %}
+                                {% if dn_has_ou(parent_dn) %}
+                                    {{ skip_if_none(get_org_unit_uuid({'user_keys': [dn_to_uuid(parent_dn)|string]})) }}
+                                {% endif %}
+                            """,
+                            "unit_type": "{{ get_org_unit_type_uuid('Afdeling') }}",
+                        },
+                    }
                 },
                 # TODO: why is this required?
                 "username_generator": {
