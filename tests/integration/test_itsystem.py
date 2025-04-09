@@ -8,7 +8,9 @@ from uuid import UUID
 import pytest
 from ldap3 import Connection
 
-from mo_ldap_import_export.ldap import ldap_add, ldap_modify_dn
+from mo_ldap_import_export.ldap import ldap_add
+from mo_ldap_import_export.ldap import ldap_modify
+from mo_ldap_import_export.ldap import ldap_modify_dn
 from mo_ldap_import_export.types import DN
 from mo_ldap_import_export.types import LDAPUUID
 from mo_ldap_import_export.utils import combine_dn_strings
@@ -28,7 +30,8 @@ from tests.integration.conftest import DN2UUID
                         "ITSystem": {
                             "objectClass": "ITSystem",
                             "_import_to_mo_": "true",
-                            "_ldap_attributes_": ["cn", "entryUUID"],
+                            "_ldap_attributes_": ["cn", "entryUUID", "description"],
+                            "_terminate_": "{{ now()|mo_datestring if ldap.description == 'DISABLED' else '' }}",
                             "uuid": "{{ get_itsystem_uuid({'user_keys': [ldap.entryUUID]}) }}",
                             "user_key": "{{ ldap.entryUUID }}",
                             "name": "{{ ldap.cn }}",
@@ -44,6 +47,7 @@ from tests.integration.conftest import DN2UUID
     }
 )
 @pytest.mark.usefixtures("test_client")
+@pytest.mark.xfail(reason="Terminations not supported")
 async def test_to_mo(
     trigger_ldap_sync: Callable[[LDAPUUID], Awaitable[None]],
     dn2uuid: DN2UUID,
@@ -75,10 +79,19 @@ async def test_to_mo(
     await trigger_ldap_sync(group_uuid)
     await read_itsystem_by_user_key(str(group_uuid))
 
-    await ldap_modify_dn(
+    await ldap_modify_dn(ldap_connection, dn=group_dn, relative_dn="cn=gir")
+    group_dn = combine_dn_strings(["cn=gir"] + ldap_org)
+
+    # Retiggering synchronization should make no changes
+    await trigger_ldap_sync(group_uuid)
+    await read_itsystem_by_user_key(str(group_uuid))
+
+    await ldap_modify(
         ldap_connection,
         dn=group_dn,
-        relative_dn="cn=gir"
+        changes={
+            "description": [("MODIFY_REPLACE", "DISABLED")],
+        },
     )
 
     # Retiggering synchronization should make no changes
