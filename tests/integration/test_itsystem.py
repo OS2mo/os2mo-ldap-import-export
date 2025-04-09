@@ -7,9 +7,7 @@ from uuid import UUID
 
 import pytest
 from ldap3 import Connection
-from more_itertools import one
 
-from mo_ldap_import_export.depends import GraphQLClient
 from mo_ldap_import_export.ldap import ldap_add
 from mo_ldap_import_export.types import DN
 from mo_ldap_import_export.types import LDAPUUID
