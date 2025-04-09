@@ -486,6 +486,15 @@ async def get_ituser_uuid(
     return obj.uuid if obj else None
 
 
+async def get_itsystem_uuid(
+    graphql_client: GraphQLClient, filter: dict[str, Any]
+) -> UUID | None:
+    itsystem_filter = parse_obj_as(ITSystemFilter, filter)
+    result = await graphql_client.read_itsystem_uuid(itsystem_filter)
+    obj = only(result.objects)
+    return obj.uuid if obj else None
+
+
 async def get_engagement_uuid(
     graphql_client: GraphQLClient, filter: dict[str, Any]
 ) -> UUID | None:
@@ -639,6 +648,7 @@ def construct_globals_dict(
         "generate_common_name": partial(generate_common_name, dataloader),
         "get_address_uuid": partial(get_address_uuid, graphql_client),
         "get_ituser_uuid": partial(get_ituser_uuid, graphql_client),
+        "get_itsystem_uuid": partial(get_itsystem_uuid, graphql_client),
         "get_engagement_uuid": partial(get_engagement_uuid, graphql_client),
         "get_org_unit_uuid": partial(get_org_unit_uuid, graphql_client),
         "get_employment_interval": partial(get_employment_interval, graphql_client),
