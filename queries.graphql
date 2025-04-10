@@ -113,6 +113,30 @@ query __testing__itsystem_read($filter: ITSystemFilter) {
   }
 }
 
+query __testing__rolebinding_read($filter: RoleBindingFilter) {
+  rolebindings(filter: $filter) {
+    objects {
+      validities {
+        uuid
+        user_key
+        validity {
+          from
+          to
+        }
+        ituser {
+          uuid
+        }
+        org_unit {
+          uuid
+        }
+        role {
+          uuid
+        }
+      }
+    }
+  }
+}
+
 query __testing__org_unit_read($filter: OrganisationUnitFilter) {
   org_units(filter: $filter) {
     objects {

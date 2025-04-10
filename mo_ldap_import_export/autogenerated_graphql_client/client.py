@@ -19,6 +19,8 @@ from ._testing__manager_create import TestingManagerCreate
 from ._testing__manager_create import TestingManagerCreateManagerCreate
 from ._testing__org_unit_read import TestingOrgUnitRead
 from ._testing__org_unit_read import TestingOrgUnitReadOrgUnits
+from ._testing__rolebinding_read import TestingRolebindingRead
+from ._testing__rolebinding_read import TestingRolebindingReadRolebindings
 from .address_create import AddressCreate
 from .address_create import AddressCreateAddressCreate
 from .address_terminate import AddressTerminate
@@ -64,6 +66,7 @@ from .input_types import OrganisationUnitFilter
 from .input_types import OrganisationUnitTerminateInput
 from .input_types import OrganisationUnitUpdateInput
 from .input_types import OrgUnitsboundmanagerfilter
+from .input_types import RoleBindingFilter
 from .itsystem_create import ItsystemCreate
 from .itsystem_create import ItsystemCreateItsystemCreate
 from .itsystem_terminate import ItsystemTerminate
@@ -347,6 +350,41 @@ class GraphQLClient(AsyncBaseClient):
         response = await self.execute(query=query, variables=variables)
         data = self.get_data(response)
         return TestingItsystemRead.parse_obj(data).itsystems
+
+    async def _testing__rolebinding_read(
+        self, filter: RoleBindingFilter | None | UnsetType = UNSET
+    ) -> TestingRolebindingReadRolebindings:
+        query = gql(
+            """
+            query __testing__rolebinding_read($filter: RoleBindingFilter) {
+              rolebindings(filter: $filter) {
+                objects {
+                  validities {
+                    uuid
+                    user_key
+                    validity {
+                      from
+                      to
+                    }
+                    ituser {
+                      uuid
+                    }
+                    org_unit {
+                      uuid
+                    }
+                    role {
+                      uuid
+                    }
+                  }
+                }
+              }
+            }
+            """
+        )
+        variables: dict[str, object] = {"filter": filter}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return TestingRolebindingRead.parse_obj(data).rolebindings
 
     async def _testing__org_unit_read(
         self, filter: OrganisationUnitFilter | None | UnsetType = UNSET
