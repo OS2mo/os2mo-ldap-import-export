@@ -322,14 +322,14 @@ class SyncTool:
         exit_stack.enter_context(bound_contextvars(dn=best_dn))
         ldap_desired_state = await self.render_ldap2mo(uuid, best_dn)
 
+        if not ldap_desired_state:
+            logger.info("Not writing to LDAP as changeset is empty")
+            return {}
+
         # If dry-running we do not want to makes changes in LDAP
         if dry_run:
             logger.info("Not writing to LDAP due to dry-running")
             return ldap_desired_state
-
-        if not ldap_desired_state:
-            logger.info("Not writing to LDAP as changeset is empty")
-            return {}
 
         create = False
         if best_dn is None:
