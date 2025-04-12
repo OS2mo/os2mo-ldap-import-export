@@ -262,6 +262,7 @@ class SyncTool:
         if create:
             await self.dataloader.ldapapi.add_ldap_object(best_dn, ldap_desired_state)
             await self.create_ituser_link(uuid, best_dn)
+            return ldap_desired_state
         else:
             # To avoid spamming server logs we compare with current state before writing
             # Without this the LDAP / AD server will register lots of empty writes
@@ -286,8 +287,7 @@ class SyncTool:
                 )
             }
             await self.dataloader.ldapapi.modify_ldap_object(best_dn, ldap_changes)
-
-        return ldap_desired_state
+            return ldap_changes
 
     async def fetch_uuid_object(
         self, uuid: UUID, mo_class: type[MOBase]
