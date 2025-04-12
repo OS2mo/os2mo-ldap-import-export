@@ -383,28 +383,33 @@ def construct_router(settings: Settings) -> APIRouter:
     async def mo2ldap_templating_all(
         graphql_client: depends.GraphQLClient, sync_tool: depends.SyncTool
     ) -> Any:
+        async def get_row(uuid: UUID) -> dict[str, Any]:
+            csv_context: dict[str, Any] = {"__mo_uuid": uuid}
+            try:
+                desired_state = await sync_tool.listen_to_changes_in_employees(
+                    uuid, dry_run=True
+                )
+            except Exception:  # pragma: no cover
+                logger.exception("Exception during Inspect/mo2ldap/all")
+                desired_state = {}
+                csv_context["error"] = "Exception during processing"
+
+            # Unpack lists whenever possible
+            csv_context |= {
+                key: only(value) if len(value) < 2 else value
+                for key, value in desired_state.items()
+            }
+            return csv_context
+
         result = await graphql_client.read_person_uuid()
         uuids = [person.uuid for person in result.objects]
-
+        rows = [await get_row(uuid) for uuid in uuids]
+        header = {key for dicty in rows for key in dicty}
         with open("/tmp/mo2ldap.csv", "w") as fout:
-            writer = csv.writer(fout)
-            for uuid in uuids:
-                try:
-                    desired_state = await sync_tool.listen_to_changes_in_employees(
-                        uuid, dry_run=True
-                    )
-                except Exception:  # pragma: no cover
-                    logger.exception("Exception during Inspect/mo2ldap/all")
-                    continue
-
-                # Unpack lists whenever possible
-                csv_context = {
-                    key: only(value) if len(value) < 2 else value
-                    for key, value in sorted(desired_state.items())
-                }
-                csv_context["__mo_uuid"] = uuid
-
-                writer.writerow(csv_context.values())
+            writer = csv.DictWriter(fout, header)
+            writer.writeheader()
+            for row in rows:
+                writer.writerow(row)
 
         return "OK"
 
