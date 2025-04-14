@@ -407,8 +407,11 @@ def construct_router(settings: Settings) -> APIRouter:
         uuids = [person.uuid for person in result.objects]
         rows = [await get_row(uuid) for uuid in uuids]
         header = {key for dicty in rows for key in dicty}
+
         stream = StringIO()
-        writer = csv.DictWriter(stream, header)
+        writer = csv.DictWriter(
+            stream, header, restval="_NOT_MAPPED_", quoting=csv.QUOTE_NOTNULL
+        )
         writer.writeheader()
         for row in rows:
             writer.writerow(row)
