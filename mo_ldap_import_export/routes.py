@@ -10,6 +10,7 @@ from collections.abc import Callable
 from contextlib import suppress
 from datetime import datetime
 from functools import partial
+from io import StringIO
 from itertools import count
 from typing import Any
 from typing import cast
@@ -19,6 +20,7 @@ import structlog
 from fastapi import APIRouter
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import StreamingResponse
 from ldap3 import Connection
 from ldap3.protocol import oid
 from more_itertools import always_iterable
@@ -405,13 +407,15 @@ def construct_router(settings: Settings) -> APIRouter:
         uuids = [person.uuid for person in result.objects]
         rows = [await get_row(uuid) for uuid in uuids]
         header = {key for dicty in rows for key in dicty}
-        with open("/tmp/mo2ldap.csv", "w") as fout:
-            writer = csv.DictWriter(fout, header)
-            writer.writeheader()
-            for row in rows:
-                writer.writerow(row)
+        stream = StringIO()
+        writer = csv.DictWriter(stream, header)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
 
-        return "OK"
+        response = StreamingResponse(iter([stream.getvalue()]), media_type="text/csv")
+        response.headers["Content-Disposition"] = "attachment; filename=changes.csv"
+        return response
 
     @router.get("/Inspect/mo2ldap/{uuid}", status_code=200, tags=["LDAP"])
     async def mo2ldap_templating(sync_tool: depends.SyncTool, uuid: UUID) -> Any:
