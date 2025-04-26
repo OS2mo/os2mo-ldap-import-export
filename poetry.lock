@@ -483,7 +483,7 @@ trio = ["trio (>=0.22.0,<1.0)"]
 
 [[package]]
 name = "httpx"
-version = "0.27.2"
+version = "0.28.1"
 description = "The next generation HTTP client."
 category = "main"
 optional = false
@@ -494,7 +494,6 @@ anyio = "*"
 certifi = "*"
 httpcore = ">=1.0.0,<2.0.0"
 idna = "*"
-sniffio = "*"
 
 [package.extras]
 brotli = ["brotli", "brotlicffi"]
@@ -1365,7 +1364,7 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.11"
-content-hash = "e18bf7bdc16487751ca0089e9a099d780d26c20fbb68dabe997027b95d40d16e"
+content-hash = "3054e220a6446dfca2cd9625f110496f998eb4430d01facb10ba90255ff7d2c7"
 
 [metadata.files]
 aio-pika = [
@@ -2097,8 +2096,8 @@ httpcore = [
     {file = "httpcore-1.0.9.tar.gz", hash = "sha256:6e34463af53fd2ab5d807f399a9b45ea31c3dfa2276f15a2c3f00afff6e176e8"},
 ]
 httpx = [
-    {file = "httpx-0.27.2-py3-none-any.whl", hash = "sha256:7bb2708e112d8fdd7829cd4243970f0c223274051cb35ee80c03301ee29a3df0"},
-    {file = "httpx-0.27.2.tar.gz", hash = "sha256:f7c2be1d2f3c3c3160d441802406b206c2b76f5947b11115e6df10c6c65e66c2"},
+    {file = "httpx-0.28.1-py3-none-any.whl", hash = "sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad"},
+    {file = "httpx-0.28.1.tar.gz", hash = "sha256:75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc"},
 ]
 hypothesis = [
     {file = "hypothesis-6.130.7-py3-none-any.whl", hash = "sha256:c9f665f43b6b8546e5bf77e38b5ab246b182ac2618b9d9b849c49d4d35add817"},
