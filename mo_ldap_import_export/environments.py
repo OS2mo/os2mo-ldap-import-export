@@ -609,15 +609,9 @@ async def get_manager_person_uuid(
 
 
 async def get_person_dn(dataloader: DataLoader, uuid: EmployeeUUID) -> DN | None:
-    try:
-        dn, create = await dataloader._find_best_dn(uuid, dry_run=True)
-    except NoGoodLDAPAccountFound:
-        return None
-    if create:
-        logger.debug(
-            "_find_best_dn returned create=True in get_person_dn", employee_uuid=uuid
-        )
-        return None
+    dn = None
+    with suppress(NoGoodLDAPAccountFound):
+        dn = await dataloader._find_best_dn(uuid)
     return dn
 
 
