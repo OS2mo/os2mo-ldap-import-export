@@ -446,18 +446,19 @@ async def generate_username(
 async def generate_common_name(
     dataloader: DataLoader,
     employee_uuid: UUID,
-    dn: DN,
+    dn: DN | None,
 ) -> str:
     # Fetch the current common name (if any)
     ldap_connection = dataloader.ldapapi.ldap_connection
     current_common_name = None
-    with suppress(NoObjectsReturnedException):
-        ldap_object = await get_ldap_object(ldap_connection, dn, {"cn"})
-        ldap_common_name = getattr(ldap_object, "cn", None)
-        if ldap_common_name is not None:
-            # This is a list on OpenLDAP, but not on AD
-            # We use ensure_list to ensure that AD is handled like Standard LDAP
-            current_common_name = one(ensure_list(ldap_common_name))
+    if dn is not None:
+        with suppress(NoObjectsReturnedException):
+            ldap_object = await get_ldap_object(ldap_connection, dn, {"cn"})
+            ldap_common_name = getattr(ldap_object, "cn", None)
+            if ldap_common_name is not None:
+                # This is a list on OpenLDAP, but not on AD
+                # We use ensure_list to ensure that AD is handled like Standard LDAP
+                current_common_name = one(ensure_list(ldap_common_name))
 
     employee = await dataloader.moapi.load_mo_employee(employee_uuid)
     if employee is None:  # pragma: no cover
