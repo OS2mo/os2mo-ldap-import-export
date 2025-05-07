@@ -555,6 +555,13 @@ async def test_mo2ldap_mapping(monkeypatch: pytest.MonkeyPatch) -> None:
             """,
             True,
         ),
+        (
+            """
+            def main(dataloader: DataLoader, uuid: UUID) -> None:
+                return None
+            """,
+            False,
+        ),
     ],
 )
 async def test_mo2ldap_mapping_python_script_validator(
@@ -573,9 +580,7 @@ async def test_mo2ldap_mapping_python_script_validator(
             }
         ),
     )
-    if valid:
+    with pytest.raises(ValidationError) as exc_info:
         Settings()
-    else:
-        with pytest.raises(ValidationError) as exc_info:
-            Settings()
+    if not valid:
         assert "Unable to parse MO2LDAPMapping script" in str(exc_info.value)

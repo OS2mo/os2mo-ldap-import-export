@@ -17,6 +17,7 @@ from fastramqpi.config import Settings as FastRAMQPISettings
 from fastramqpi.ramqp.config import AMQPConnectionSettings
 from jinja2 import Environment
 from jinja2 import TemplateSyntaxError
+from more_itertools import one
 from pydantic import AnyHttpUrl
 from pydantic import BaseModel
 from pydantic import BaseSettings
@@ -43,16 +44,6 @@ def validate_jinja(v: str, error: str) -> str:
         env.parse(v)
     except TemplateSyntaxError as e:
         logger.exception("Unable to parse jinja")
-        raise ValueError(error) from e
-    return v
-
-
-def validate_python(v: str, error: str) -> str:
-    # Validate that the python template can be parsed correctly
-    try:
-        ast.parse(v)
-    except SyntaxError as e:
-        logger.exception("Unable to parse python template")
         raise ValueError(error) from e
     return v
 
@@ -300,8 +291,42 @@ class MO2LDAPMapping(MappingBaseModel):
     script: str
 
     @validator("script")
-    def check_if_script_valid(cls, v: str) -> str:
-        return validate_python(v, "Unable to parse MO2LDAPMapping script")
+    def check_if_script_is_valid(cls, v: str) -> str:
+        # Validate that the python template can be parsed correctly
+        try:
+            tree = ast.parse(v)
+        except SyntaxError as e:
+            logger.exception("Unable to parse python template")
+            raise ValueError("Unable to parse MO2LDAPMapping script") from e
+        # Validate that the python template has the expected function defined
+        funcdefs = [
+            node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
+        ]
+        entryfunc = one(
+            [funcdef for funcdef in funcdefs if funcdef.name == "main"],
+            too_short=ValueError(
+                "MO2LDAPMapping script must have a function called 'main'"
+            ),
+            too_long=ValueError(
+                "MO2LDAPMapping script can only have a single function called 'main'"
+            ),
+        )
+        if (
+            entryfunc.returns is None
+            or not isinstance(entryfunc.returns, ast.Constant)
+            or entryfunc.returns.value is not None
+            or entryfunc.returns.kind is not None
+        ):
+            raise ValueError(
+                "MO2LDAPMapping script's main function must be typed to return None"
+            )
+        if entryfunc.args.kwarg is not None:
+            raise ValueError("MO2LDAPMapping script's main function cannot take kwargs")
+        if len(entryfunc.args.args) != 2:
+            raise ValueError(
+                "MO2LDAPMapping script's main function must take exactly two arguments: context, UUID"
+            )
+        return v
 
 
 class ConversionMapping(MappingBaseModel):
