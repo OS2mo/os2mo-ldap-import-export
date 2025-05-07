@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 from typing import Literal
 from uuid import UUID
+from fastramqpi.ramqp.mo import MORoutingKey
 
 import structlog
 import yaml
@@ -284,6 +285,12 @@ class UsernameGeneratorConfig(MappingBaseModel):
         return v
 
 
+class MO2LDAPMapping(MappingBaseModel):
+    identifier: str
+    routing_key: MORoutingKey
+    template: str
+
+
 class ConversionMapping(MappingBaseModel):
     ldap_to_mo: dict[str, LDAP2MOMapping] | None = None
     ldap_to_mo_any: dict[str, dict[str, LDAP2MOMapping]] = Field(
@@ -296,6 +303,7 @@ class ConversionMapping(MappingBaseModel):
         """,
     )
     mo2ldap: str | None = Field(None, description="MO to LDAP mapping template")
+    mo_to_ldap: list[MO2LDAPMapping] = Field(default_factory=list, description="MO to LDAP mappings")
     username_generator: UsernameGeneratorConfig = Field(
         default_factory=UsernameGeneratorConfig
     )

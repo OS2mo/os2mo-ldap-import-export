@@ -91,7 +91,12 @@ class LDAPAPI:
         dn: str = search_result["dn"]
         return dn
 
-    async def add_ldap_object(self, dn: str, attributes: dict[str, Any]) -> None:
+    async def add_ldap_object(
+        self,
+        dn: str,
+        attributes: dict[str, Any],
+        object_class: str | None = None
+    ) -> None:
         """
         Adds a new object to LDAP
 
@@ -144,11 +149,12 @@ class LDAPAPI:
         }
 
         logger.info("Adding user to LDAP", dn=dn, attributes=attributes)
-        employee_object_class = self.settings.ldap_object_class
+        if object_class is None:
+            object_class = self.settings.ldap_object_class
         _, result = await ldap_add(
             self.ldap_connection,
             dn,
-            employee_object_class,
+            object_class,
             attributes=attributes,
         )
         logger.info("LDAP Result", result=result, dn=dn)
