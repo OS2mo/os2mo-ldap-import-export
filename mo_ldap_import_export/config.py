@@ -3,6 +3,7 @@
 # pylint: disable=too-few-public-methods
 """Settings handling."""
 
+import ast
 from contextlib import suppress
 from enum import Enum
 from pathlib import Path
@@ -42,6 +43,16 @@ def validate_jinja(v: str, error: str) -> str:
         env.parse(v)
     except TemplateSyntaxError as e:
         logger.exception("Unable to parse jinja")
+        raise ValueError(error) from e
+    return v
+
+
+def validate_python(v: str, error: str) -> str:
+    # Validate that the python template can be parsed correctly
+    try:
+        ast.parse(v)
+    except SyntaxError as e:
+        logger.exception("Unable to parse python template")
         raise ValueError(error) from e
     return v
 
@@ -284,6 +295,15 @@ class UsernameGeneratorConfig(MappingBaseModel):
         return v
 
 
+class MO2LDAPMapping(MappingBaseModel):
+    routing_key: str
+    script: str
+
+    @validator("script")
+    def check_if_script_valid(cls, v: str) -> str:
+        return validate_python(v, "Unable to parse MO2LDAPMapping script")
+
+
 class ConversionMapping(MappingBaseModel):
     ldap_to_mo: dict[str, LDAP2MOMapping] | None = None
     ldap_to_mo_any: dict[str, dict[str, LDAP2MOMapping]] = Field(
@@ -296,6 +316,9 @@ class ConversionMapping(MappingBaseModel):
         """,
     )
     mo2ldap: str | None = Field(None, description="MO to LDAP mapping template")
+    mo2ldap_py: list[MO2LDAPMapping] = Field(
+        default_factory=list, description="MO to LDAP mappings"
+    )
     username_generator: UsernameGeneratorConfig = Field(
         default_factory=UsernameGeneratorConfig
     )

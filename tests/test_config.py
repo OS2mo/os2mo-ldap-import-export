@@ -3,6 +3,7 @@
 import json
 import pathlib
 from functools import partial
+from textwrap import dedent
 from typing import Any
 from typing import cast
 from unittest.mock import patch
@@ -466,3 +467,115 @@ def test_discriminator_filter_settings(monkeypatch: pytest.MonkeyPatch) -> None:
         settings = Settings()
         assert settings.discriminator_fields == ["xBrugertype", "LDAP_SYNC"]
         assert settings.discriminator_filter == "True"
+
+
+@pytest.mark.usefixtures("minimal_valid_environmental_variables")
+async def test_mo2ldap_mapping(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(
+        "CONVERSION_MAPPING",
+        json.dumps(
+            {
+                "mo2ldap_py": [
+                    {"routing_key": "person", "script": 'print("Hello World")'}
+                ]
+            }
+        ),
+    )
+    settings = Settings()
+    mapping = one(settings.conversion_mapping.mo2ldap_py)
+    assert mapping.routing_key == "person"
+    assert mapping.script == 'print("Hello World")'
+
+
+@pytest.mark.usefixtures("minimal_valid_environmental_variables")
+@pytest.mark.parametrize(
+    "script, valid",
+    [
+        # Hello World
+        (
+            """
+            print("Hello, World")
+            """,
+            True,
+        ),
+        (
+            """
+            print "Hello, World"
+            """,
+            False,
+        ),
+        (
+            """
+            #include <iostream>
+
+            int main() {
+                std::cout << "Hello, World!" << std::endl;
+                return 0;
+            }
+            """,
+            False,
+        ),
+        # Polyglot
+        (
+            """
+            #include <iostream>
+
+            #define exit(code) int main() { code; }
+            #define print(s) std::out << s << std::endl
+
+            exit(print("Hello world"))
+            """,
+            True,
+        ),
+        # Torture tests
+        (
+            """
+            (lambda x = (lambda y = (lambda z = 1 : z) : y()) : x())()
+            """,
+            True,
+        ),
+        (
+            """
+            _: type(...) = (y := [()][[][42:-1:{}]])
+            """,
+            True,
+        ),
+        (
+            """
+            def _():...;yield...
+            try:_[()][...];...
+            except:pass;1if 0else...
+            """,
+            True,
+        ),
+        (
+            """
+            def w(cf=0<1==True is not...!=False>0 is None):
+                return cf is (1>0is not False is True)
+            """,
+            True,
+        ),
+    ],
+)
+async def test_mo2ldap_mapping_python_script_validator(
+    monkeypatch: pytest.MonkeyPatch, script: str, valid: bool
+) -> None:
+    monkeypatch.setenv(
+        "CONVERSION_MAPPING",
+        json.dumps(
+            {
+                "mo2ldap_py": [
+                    {
+                        "routing_key": "person",
+                        "script": dedent(script),
+                    }
+                ]
+            }
+        ),
+    )
+    if valid:
+        Settings()
+    else:
+        with pytest.raises(ValidationError) as exc_info:
+            Settings()
+        assert "Unable to parse MO2LDAPMapping script" in str(exc_info.value)
