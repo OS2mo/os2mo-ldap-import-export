@@ -92,13 +92,18 @@ class LDAPAPI:
         return dn
 
     async def ensure_ldap_object(
-        self, dn: DN, attributes: dict[str, list], object_class: str
+        self,
+        current_dn: DN | None,
+        desired_dn: DN,
+        attributes: dict[str, list],
+        object_class: str,
     ) -> bool:
         """
         Ensures an object exists at `dn` with the provided attributes and object_class.
 
         Args:
-            dn: DN of the object to modify or create.
+            current_dn: DN of the object to modify or create.
+            desired_dn: DN we wish the object to have.
             attributes:
                 Dictionary with attributes to populate in LDAP.
                 See:
@@ -111,19 +116,9 @@ class LDAPAPI:
         Returns:
             Whether an object was created or not.
         """
-        try:
-            ldap_object = await get_ldap_object(
-                self.ldap_connection,
-                dn,
-                attributes=set(attributes.keys()),
-                # Nest false is required, as otherwise we fetch related objects
-                # However we never write related objects, only their DNs,
-                # so to avoid comparing an object with a DN string, we only fetch DNs
-                nest=False,
-            )
-        except NoObjectsReturnedException:
+        if current_dn is None:
             # The object does not yet exist, thus we must create it
-            await self.add_ldap_object(dn, attributes, object_class)
+            await self.add_ldap_object(desired_dn, attributes, object_class)
             return True
 
         # To avoid spamming server logs with noop changes / empty writes,
@@ -133,6 +128,15 @@ class LDAPAPI:
         # NOTE: This part of the function really should use some sort of ETag
         #       functionality to ensure that the current-state read is the same
         #       state that we are overwriting.
+        ldap_object = await get_ldap_object(
+            self.ldap_connection,
+            current_dn,
+            attributes=set(attributes.keys()),
+            # Nest false is required, as otherwise we fetch related objects
+            # However we never write related objects, only their DNs,
+            # so to avoid comparing an object with a DN string, we only fetch DNs
+            nest=False,
+        )
 
         # Ensure both state dictionaries are on the same format.
         current_state = ldap_object.dict()
@@ -147,7 +151,7 @@ class LDAPAPI:
             for key, value in desired_state.items()
             if key not in current_state or current_state[key] != value
         }
-        await self.modify_ldap_object(dn, ldap_changes)
+        await self.modify_ldap_object(current_dn, ldap_changes)
         return False
 
     async def add_ldap_object(

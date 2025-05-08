@@ -7,7 +7,6 @@ from collections.abc import Callable
 from collections.abc import Iterator
 from collections.abc import Sequence
 from contextlib import ExitStack
-from contextlib import suppress
 from functools import wraps
 from typing import Any
 from typing import TypeVar
@@ -40,7 +39,6 @@ from .dataloaders import DN
 from .dataloaders import DataLoader
 from .dataloaders import NoGoodLDAPAccountFound
 from .exceptions import IncorrectMapping
-from .exceptions import NoObjectsReturnedException
 from .exceptions import SkipObject
 from .ldap import apply_discriminator
 from .ldap import filter_dns
@@ -294,7 +292,8 @@ class SyncTool:
             logger.info("Not writing to LDAP as changeset is empty")
             return {}
 
-        if best_dn is None:
+        desired_dn = best_dn
+        if desired_dn is None:
             common_name = (
                 only(ldap_desired_state["cn"]) if "cn" in ldap_desired_state else None
             )
@@ -308,23 +307,12 @@ class SyncTool:
             #       The good solution is to somehow link the LDAP account to MO with
             #       values set during its creation, ensuring we can find them, even if
             #       we crash immediately after the creation of the account.
-            best_dn = await self.dataloader.make_mo_employee_dn(uuid, common_name)
-            with suppress(NoObjectsReturnedException):
-                # If we generated an existing DN, we gotta panic as we otherwise risk
-                # overwriting someone elses data using the ensure operation.
-                # NOTE: This is not thread-safe as it is prone to race-conditions,
-                #       because someone may allocate the name right after our check.
-                await get_ldap_object(
-                    self.ldap_connection,
-                    best_dn,
-                    attributes=set(),
-                )
-                raise ValueError("LDAPEntryAlreadyExistsResult")
+            desired_dn = await self.dataloader.make_mo_employee_dn(uuid, common_name)
 
         await self.dataloader.ldapapi.ensure_ldap_object(
-            best_dn, ldap_desired_state, self.settings.ldap_object_class
+            best_dn, desired_dn, ldap_desired_state, self.settings.ldap_object_class
         )
-        await self.ensure_ituser_link(uuid, best_dn)
+        await self.ensure_ituser_link(uuid, desired_dn)
         return ldap_desired_state
 
     async def fetch_uuid_object(
