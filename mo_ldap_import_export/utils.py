@@ -14,6 +14,8 @@ import structlog
 from ldap3.utils.dn import parse_dn
 from ldap3.utils.dn import safe_dn
 
+from mo_ldap_import_export.types import DN
+
 from .models import Address
 from .models import Class
 from .models import Employee
@@ -71,7 +73,7 @@ def mo_datestring_to_utc(datestring: str | None) -> datetime | None:
     return datetime.fromisoformat(datestring).replace(tzinfo=None)
 
 
-def combine_dn_strings(dn_strings: list[str]) -> str:
+def combine_dn_strings(dn_strings: list[str]) -> DN:
     """
     Combine LDAP DN strings, skipping if a string is empty
 
@@ -80,7 +82,7 @@ def combine_dn_strings(dn_strings: list[str]) -> str:
     >>> combine_dn_strings(["CN=Nick","","DC=bar"])
     >>> "CN=Nick,DC=bar"
     """
-    dn: str = safe_dn(",".join(filter(None, dn_strings)))
+    dn: DN = safe_dn(",".join(filter(None, dn_strings)))
     return dn
 
 
@@ -88,7 +90,7 @@ def remove_vowels(string: str) -> str:
     return re.sub("[aeiouAEIOU]", "", string)
 
 
-def extract_part_from_dn(dn: str, index_string: str) -> str:
+def extract_part_from_dn(dn: DN, index_string: str) -> str:
     """
     Extract a part from an LDAP DN string
 
