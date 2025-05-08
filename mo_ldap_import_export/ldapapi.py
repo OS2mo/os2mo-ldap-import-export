@@ -31,6 +31,7 @@ from .types import DN
 from .types import LDAPUUID
 from .types import CPRNumber
 from .utils import combine_dn_strings
+from .utils import ensure_list
 from .utils import extract_ou_from_dn
 from .utils import is_exception
 
@@ -89,6 +90,65 @@ class LDAPAPI:
         )
         dn: DN = search_result["dn"]
         return dn
+
+    async def ensure_ldap_object(
+        self, dn: DN, attributes: dict[str, list], object_class: str
+    ) -> bool:
+        """
+        Ensures an object exists at `dn` with the provided attributes and object_class.
+
+        Args:
+            dn: DN of the object to modify or create.
+            attributes:
+                Dictionary with attributes to populate in LDAP.
+                See:
+                * https://ldap3.readthedocs.io/en/latest/add.html and
+                * https://ldap3.readthedocs.io/en/latest/modify.html
+                For details
+            object_class:
+                The object class to set on newly created objects.
+
+        Returns:
+            Whether an object was created or not.
+        """
+        try:
+            ldap_object = await get_ldap_object(
+                self.ldap_connection,
+                dn,
+                attributes=set(attributes.keys()),
+                # Nest false is required, as otherwise we fetch related objects
+                # However we never write related objects, only their DNs,
+                # so to avoid comparing an object with a DN string, we only fetch DNs
+                nest=False,
+            )
+        except NoObjectsReturnedException:
+            # The object does not yet exist, thus we must create it
+            await self.add_ldap_object(dn, attributes, object_class)
+            return True
+
+        # To avoid spamming server logs with noop changes / empty writes,
+        # we compare with current state of the object with the desired state
+        # before writing anything.
+        # Without this the LDAP / AD server will register lots of empty writes
+        # NOTE: This part of the function really should use some sort of ETag
+        #       functionality to ensure that the current-state read is the same
+        #       state that we are overwriting.
+
+        # Ensure both state dictionaries are on the same format.
+        current_state = ldap_object.dict()
+        current_state = {
+            key.casefold(): ensure_list(value) for key, value in current_state.items()
+        }
+        desired_state = {key.casefold(): value for key, value in attributes.items()}
+
+        # Calculate the actual changes that must be written
+        ldap_changes = {
+            key: value
+            for key, value in desired_state.items()
+            if key not in current_state or current_state[key] != value
+        }
+        await self.modify_ldap_object(dn, ldap_changes)
+        return False
 
     async def add_ldap_object(
         self, dn: DN, attributes: dict[str, list], object_class: str
