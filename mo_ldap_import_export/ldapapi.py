@@ -378,6 +378,7 @@ class LDAPAPI:
                 raise exc
 
         # MODIFY-DN
+        # TODO: This should only be a single call to ldap_modify_dn, and it should support + syntax
         ldap_uuid = await self.get_ldap_unique_ldap_uuid(dn)
         requested_dn_changes = {
             attribute: values
