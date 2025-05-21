@@ -28,6 +28,7 @@ from more_itertools import unzip
 from pydantic import parse_obj_as
 
 from mo_ldap_import_export.ldap import get_ldap_object
+from mo_ldap_import_export.ldapapi import LDAPAPI
 from mo_ldap_import_export.moapi import MOAPI
 from mo_ldap_import_export.moapi import extract_current_or_latest_validity
 from mo_ldap_import_export.moapi import flatten_validities
@@ -646,6 +647,13 @@ def dn_has_ou(dn: DN) -> bool:
     return bool(extract_ou_from_dn(dn))
 
 
+async def dn_exists(ldapapi: LDAPAPI, dn: DN) -> bool:
+    with suppress(NoObjectsReturnedException):
+        await get_ldap_object(ldapapi.ldap_connection, dn, set())
+        return True
+    return False
+
+
 async def ituser_uuid_to_person_uuid(dataloader: DataLoader, uuid: UUID) -> UUID | None:
     ituser = await dataloader.moapi.load_mo_it_user(uuid)
     if ituser is None:
@@ -657,6 +665,7 @@ def construct_filters_dict(dataloader: DataLoader) -> dict[str, Any]:
     return {
         "ituser_uuid_to_person_uuid": partial(ituser_uuid_to_person_uuid, dataloader),
         "get_person_dn": partial(get_person_dn, dataloader),
+        "dn_exists": partial(dn_exists, dataloader.ldapapi),
     }
 
 
