@@ -646,6 +646,12 @@ def dn_has_ou(dn: DN) -> bool:
     return bool(extract_ou_from_dn(dn))
 
 
+def construct_filters_dict(dataloader: DataLoader) -> dict[str, Any]:
+    return {
+        "get_person_dn": partial(get_person_dn, dataloader),
+    }
+
+
 def construct_globals_dict(
     settings: Settings, dataloader: DataLoader
 ) -> dict[str, Any]:
@@ -739,5 +745,6 @@ def construct_default_environment() -> Environment:
 
 def construct_environment(settings: Settings, dataloader: DataLoader) -> Environment:
     environment = construct_default_environment()
+    environment.filters.update(construct_filters_dict(dataloader))
     environment.globals.update(construct_globals_dict(settings, dataloader))
     return environment
