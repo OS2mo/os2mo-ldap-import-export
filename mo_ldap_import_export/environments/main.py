@@ -646,8 +646,16 @@ def dn_has_ou(dn: DN) -> bool:
     return bool(extract_ou_from_dn(dn))
 
 
+async def ituser_uuid_to_person_uuid(dataloader: DataLoader, uuid: UUID) -> UUID | None:
+    ituser = await dataloader.moapi.load_mo_it_user(uuid)
+    if ituser is None:
+        return None
+    return ituser.person
+
+
 def construct_filters_dict(dataloader: DataLoader) -> dict[str, Any]:
     return {
+        "ituser_uuid_to_person_uuid": partial(ituser_uuid_to_person_uuid, dataloader),
         "get_person_dn": partial(get_person_dn, dataloader),
     }
 
