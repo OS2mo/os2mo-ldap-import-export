@@ -260,7 +260,7 @@ def test_configure_ldap_connection_unknown(
 
 def test_get_client_strategy() -> None:
     strategy = get_client_strategy()
-    assert strategy == "ASYNC"
+    assert strategy == "SAFE_SYNC"
 
 
 @pytest.mark.parametrize("bound", [True, False])
@@ -278,7 +278,7 @@ async def test_ldap_healthcheck(
 ) -> None:
     result = {"type": result_type, "description": description}
 
-    ldap_connection.get_response.return_value = [{}], result
+    ldap_connection.search.return_value = None, result, [{}], None
     ldap_connection.bound = bound
     ldap_connection.listening = listening
     ldap_connection.closed = closed
@@ -296,7 +296,7 @@ async def test_ldap_healthcheck(
 
 
 async def test_ldap_healthcheck_exception(ldap_connection: MagicMock) -> None:
-    ldap_connection.get_response.side_effect = ValueError("BOOM")
+    ldap_connection.search.side_effect = ValueError("BOOM")
     ldap_connection.bound = True
     ldap_connection.listening = True
     ldap_connection.closed = False
