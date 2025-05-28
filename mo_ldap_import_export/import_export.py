@@ -416,9 +416,9 @@ class SyncTool:
 
     async def format_converted_objects(
         self,
-        converted_objects: Sequence[MOBase | Termination],
+        converted_objects: Sequence[MOBase],
         mo_attributes: set[str],
-    ) -> list[tuple[MOBase | Termination, Verb]]:
+    ) -> list[tuple[MOBase, Verb]]:
         """
         for Address and Engagement objects:
             Loops through the objects, and sets the uuid if an existing matching object
@@ -431,9 +431,6 @@ class SyncTool:
         """
         # We can't infer the type from json_key because of Terminate objects
         mo_class = one({type(o) for o in converted_objects})
-
-        if issubclass(mo_class, Termination):
-            return [(obj, Verb.TERMINATE) for obj in converted_objects]
 
         converted_objects = cast(Sequence[MOBase], converted_objects)
 
@@ -448,7 +445,7 @@ class SyncTool:
         updates = cast(Iterator[tuple[MOBase, MOBase]], updates)
 
         # Convert creates to operations
-        operations: list[tuple[MOBase | Termination, Verb]] = [
+        operations: list[tuple[MOBase, Verb]] = [
             (converted_object, Verb.CREATE) for converted_object, _ in creates
         ]
 
@@ -688,10 +685,15 @@ class SyncTool:
             dn=dn,
         )
 
-        mo_attributes = set(mapping.get_fields().keys())
-        operations = await self.format_converted_objects(
-            [converted_object], mo_attributes
-        )
+        operations: list[tuple[Any, Verb]] = []
+        if isinstance(converted_object, Termination):
+            operations = [(converted_object, Verb.TERMINATE)]
+        else:
+            mo_attributes = set(mapping.get_fields().keys())
+            operations = await self.format_converted_objects(
+                [converted_object], mo_attributes
+            )
+
         if not operations:  # pragma: no cover
             logger.info("No converted objects after formatting", dn=dn)
             return
