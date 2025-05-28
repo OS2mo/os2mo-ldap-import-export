@@ -679,6 +679,10 @@ class SyncTool:
             logger.info("Skipping object", dn=dn)
             return
 
+        if converted_object is None:
+            logger.info("Skipping object", dn=dn)
+            return
+
         logger.info(
             "Converted 'n' objects ",
             n=1,

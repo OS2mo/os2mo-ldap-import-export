@@ -13,7 +13,6 @@ from uuid import uuid4
 
 import pytest
 from fastramqpi.context import Context
-from fastramqpi.ramqp.utils import RequeueMessage
 from mergedeep import Strategy  # type: ignore
 from mergedeep import merge
 from pydantic import ValidationError
@@ -238,19 +237,18 @@ async def test_ldap_to_mo(converter: LdapConverter) -> None:
     # Note: Date is always at midnight in MO
     assert start == datetime.datetime(2019, 1, 1, 0, 0, 0)
 
-    with pytest.raises(RequeueMessage) as exc_info:
-        assert settings.conversion_mapping.ldap_to_mo is not None
-        await converter.from_ldap(
-            LdapObject(
-                dn="",
-                mail=[],
-            ),
-            mapping=settings.conversion_mapping.ldap_to_mo["Email"],
-            template_context={
-                "employee_uuid": str(employee_uuid),
-            },
-        )
-    assert "Missing values in LDAP to synchronize" in str(exc_info.value)
+    assert settings.conversion_mapping.ldap_to_mo is not None
+    result = await converter.from_ldap(
+        LdapObject(
+            dn="",
+            mail=[],
+        ),
+        mapping=settings.conversion_mapping.ldap_to_mo["Email"],
+        template_context={
+            "employee_uuid": str(employee_uuid),
+        },
+    )
+    assert result is None
 
 
 async def test_ldap_to_mo_dict_error(
@@ -376,6 +374,7 @@ async def test_template_strictness(
             "employee_uuid": str(uuid4()),
         },
     )
+    assert employee is not None
     expected_employee = {
         "uuid": ANY,
         "user_key": "CN=foo",

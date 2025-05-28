@@ -66,7 +66,7 @@ class LdapConverter:
         ldap_object: LdapObject,
         mapping: LDAP2MOMapping,
         template_context: dict[str, Any],
-    ) -> MOBase | Termination:
+    ) -> MOBase | Termination | None:
         def convert_value(value: Any) -> Any:
             if not is_list(value):
                 return value
@@ -145,7 +145,7 @@ class LdapConverter:
                 mo_class=mo_class,
                 missing_attributes=missing_attributes,
             )
-            raise RequeueMessage("Missing values in LDAP to synchronize")
+            return None
 
         try:
             return mo_class(**mo_dict)
