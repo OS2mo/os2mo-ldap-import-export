@@ -38,6 +38,7 @@ from pydantic import BaseModel
 from pydantic import ValidationError
 from pydantic import parse_raw_as
 from pydantic import validator
+from pydantic import Extra
 from structlog.contextvars import bound_contextvars
 
 from mo_ldap_import_export.ldapapi import LDAPAPI
@@ -433,7 +434,7 @@ async def lifespan(
         yield
 
 
-class JinjaOutput(BaseModel):
+class JinjaOutput(BaseModel, extra=Extra.forbid):
     dn: str
     create: bool
     attributes: dict[str, list[Any]]
@@ -552,7 +553,7 @@ def create_fastramqpi(**kwargs: Any) -> FastRAMQPI:
                     path=f"/mo_to_ldap/{mapping.identifier}",
                 )
                 for mapping in settings.conversion_mapping.mo_to_ldap
-            ]
+            ] if settings.listen_to_changes_in_mo else []
         ),
     )
     fastramqpi.add_context(settings=settings)
