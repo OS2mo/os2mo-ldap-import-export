@@ -1,0 +1,67 @@
+# SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
+# SPDX-License-Identifier: MPL-2.0
+# This repository adheres to the publiccode.yml standard by including this
+# metadata file that makes public software easily discoverable.
+# More info at https://github.com/publiccodeyml/publiccode.yml
+---
+publiccodeYmlVersion: "0.4"
+name: OS2mo-ldap-import-export
+applicationSuite: OS2mo
+url: https://github.com/OS2mo/os2mo-ldap-import-export.git
+landingURL: https://github.com/OS2mo/os2mo-ldap-import-export
+softwareVersion: rolling
+# releaseDate omitted as releases are rolling
+logo: https://www.magenta.dk/wp-content/uploads/2024/02/OS2mo-logo.png
+platforms:
+  - linux
+categories:
+  - business-process-management
+  - contact-management
+  - employee-management
+  - hr
+  - identity-management
+  - it-service-management
+usedBy:
+  - Danish Municipalities
+  - Danish Regions
+  - Greenlandic Tax Department
+developmentStatus: stable
+softwareType: standalone/backend
+# intendedAudience omitted as no auidance is excluded
+description:
+  da:
+    localisedName: os2mo-ldap-import-export
+    shortDescription: >
+      Integration imellem OS2mo og LDAP / Active Directory.
+    longDescription: >
+      OS2mo-ldap-import-export er en to-vejs integration imellem OS2mo og
+      LDAP / Active Directory, der muliggøre oprettelse of vedligehold af vilkårlige
+      objekttyper i såvel MO som i LDAP.
+    documentation: https://rammearkitektur.docs.magenta.dk/os2mo/integrations/ldap_ad_amqp_integration.html
+    # apiDocumentation omitted
+    features:
+      - To-vejs synkronisering
+    genericName: Integration
+    # screenshot, videos and awards omitted
+legal:
+  license: MPL-2.0
+  mainCopyrightOwner: Magenta ApS
+  repoOwner: "OS2"
+maintenance:
+  type: contract
+  contractors:
+    - name: Magenta ApS
+      email: alex@magenta.dk
+      website: https://www.magenta.dk/
+      until: "2038-01-20"  # No contractual enddate
+  # contacts omitted
+localisation:
+  localisationReady: true
+  availableLanguages:
+    - en
+dependsOn:
+  open:
+    - name: PostgreSQL
+      versionMin: "11"
+      versionMax: "15"
+      optional: false
