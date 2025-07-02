@@ -12,6 +12,7 @@ from uuid import uuid4
 
 import structlog
 from fastapi.encoders import jsonable_encoder
+from fastramqpi.ramqp.mo import MOAMQPSystem
 from fastramqpi.ramqp.utils import RequeueMessage
 from jinja2 import Environment
 from jinja2 import StrictUndefined
@@ -696,6 +697,42 @@ async def itsystem_uuid_to_person_uuids(
         for validity in obj.validities
         if validity.employee_uuid is not None
     }
+
+
+async def refresh(
+    graphql_client: GraphQLClient,
+    amqpsystem: MOAMQPSystem,
+    collection: str,
+    uuids: set[UUID],
+) -> None:
+    refreshers = {
+        "address": graphql_client.address_refresh,
+        "association": graphql_client.association_refresh,
+        "class": graphql_client.class_refresh,
+        "engagement": graphql_client.engagement_refresh,
+        "facet": graphql_client.facet_refresh,
+        "itsystem": graphql_client.itsystem_refresh,
+        "ituser": graphql_client.ituser_refresh,
+        "kle": graphql_client.kle_refresh,
+        "leave": graphql_client.leave_refresh,
+        "manager": graphql_client.manager_refresh,
+        "org_unit": graphql_client.org_unit_refresh,
+        "owner": graphql_client.owner_refresh,
+        "person": graphql_client.person_refresh,
+        "related_unit": graphql_client.related_unit_refresh,
+        "rolebinding": graphql_client.rolebinding_refresh,
+    }
+    exchange = amqpsystem.exchange_name
+
+    result = await graphql_client.who_am_i()
+    actor_uuid = result.actor.uuid
+    owner = actor_uuid
+
+    refresher = refreshers[collection]
+    # Refresh on the AMQP system
+    await refresher(uuids=list(uuids), exchange=exchange)
+    # Refresh on GraphQL events
+    await refresher(uuids=list(uuids), owner=owner)
 
 
 def construct_filters_dict(dataloader: DataLoader) -> dict[str, Any]:
