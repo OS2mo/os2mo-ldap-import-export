@@ -24,6 +24,7 @@ from more_itertools import one
 from more_itertools import only
 from more_itertools import unzip
 from pydantic import parse_obj_as
+from fastramqpi.ramqp.mo import MOAMQPSystem
 
 from mo_ldap_import_export.ldap import get_ldap_object
 from mo_ldap_import_export.ldapapi import LDAPAPI
@@ -696,6 +697,28 @@ async def itsystem_uuid_to_person_uuids(
         for validity in obj.validities
         if validity.employee_uuid is not None
     }
+
+
+async def refresh(
+    graphql_client: GraphQLClient,
+    amqpsystem: MOAMQPSystem,
+    collection: str,
+    uuids: set[UUID]
+) -> None:
+    refreshers = {
+        "address": graphql_client.address_refresh
+    }
+    exchange = amqpsystem.exchange_name
+
+    actor_uuid = await whoami()
+    owner = actor_uuid
+
+
+    refresher = refreshers[collection]
+    await refresher(uuids=list(uuids), exchange=exchange)
+    await refresher(uuids=list(uuids), owner=owner)
+
+    pass
 
 
 def construct_filters_dict(dataloader: DataLoader) -> dict[str, Any]:
