@@ -81,14 +81,20 @@ from ._testing__rolebinding_create import TestingRolebindingCreate
 from ._testing__rolebinding_create import TestingRolebindingCreateRolebindingCreate
 from .address_create import AddressCreate
 from .address_create import AddressCreateAddressCreate
+from .address_refresh import AddressRefresh
+from .address_refresh import AddressRefreshAddressRefresh
 from .address_terminate import AddressTerminate
 from .address_terminate import AddressTerminateAddressTerminate
 from .address_update import AddressUpdate
 from .address_update import AddressUpdateAddressUpdate
+from .association_refresh import AssociationRefresh
+from .association_refresh import AssociationRefreshAssociationRefresh
 from .async_base_client import AsyncBaseClient
 from .base_model import BaseModel
 from .class_create import ClassCreate
 from .class_create import ClassCreateClassCreate
+from .class_refresh import ClassRefresh
+from .class_refresh import ClassRefreshClassRefresh
 from .class_terminate import ClassTerminate
 from .class_terminate import ClassTerminateClassTerminate
 from .class_update import ClassUpdate
@@ -96,6 +102,8 @@ from .class_update import ClassUpdateClassUpdate
 from .client import GraphQLClient
 from .engagement_create import EngagementCreate
 from .engagement_create import EngagementCreateEngagementCreate
+from .engagement_refresh import EngagementRefresh
+from .engagement_refresh import EngagementRefreshEngagementRefresh
 from .engagement_terminate import EngagementTerminate
 from .engagement_terminate import EngagementTerminateEngagementTerminate
 from .engagement_update import EngagementUpdate
@@ -108,6 +116,8 @@ from .exceptions import GraphQLClientGraphQLError
 from .exceptions import GraphQLClientGraphQLMultiError
 from .exceptions import GraphQLClientHttpError
 from .exceptions import GraphQlClientInvalidResponseError
+from .facet_refresh import FacetRefresh
+from .facet_refresh import FacetRefreshFacetRefresh
 from .input_types import AccessLogFilter
 from .input_types import AddressCreateInput
 from .input_types import AddressFilter
@@ -239,16 +249,26 @@ from .input_types import UuidsBoundOrganisationUnitFilter
 from .input_types import ValidityInput
 from .itsystem_create import ItsystemCreate
 from .itsystem_create import ItsystemCreateItsystemCreate
+from .itsystem_refresh import ItsystemRefresh
+from .itsystem_refresh import ItsystemRefreshItsystemRefresh
 from .itsystem_terminate import ItsystemTerminate
 from .itsystem_terminate import ItsystemTerminateItsystemTerminate
 from .itsystem_update import ItsystemUpdate
 from .itsystem_update import ItsystemUpdateItsystemUpdate
 from .ituser_create import ItuserCreate
 from .ituser_create import ItuserCreateItuserCreate
+from .ituser_refresh import ItuserRefresh
+from .ituser_refresh import ItuserRefreshItuserRefresh
 from .ituser_terminate import ItuserTerminate
 from .ituser_terminate import ItuserTerminateItuserTerminate
 from .ituser_update import ItuserUpdate
 from .ituser_update import ItuserUpdateItuserUpdate
+from .kle_refresh import KleRefresh
+from .kle_refresh import KleRefreshKleRefresh
+from .leave_refresh import LeaveRefresh
+from .leave_refresh import LeaveRefreshLeaveRefresh
+from .manager_refresh import ManagerRefresh
+from .manager_refresh import ManagerRefreshManagerRefresh
 from .org_unit_create import OrgUnitCreate
 from .org_unit_create import OrgUnitCreateOrgUnitCreate
 from .org_unit_engagements_refresh import OrgUnitEngagementsRefresh
@@ -259,6 +279,8 @@ from .org_unit_terminate import OrgUnitTerminate
 from .org_unit_terminate import OrgUnitTerminateOrgUnitTerminate
 from .org_unit_update import OrgUnitUpdate
 from .org_unit_update import OrgUnitUpdateOrgUnitUpdate
+from .owner_refresh import OwnerRefresh
+from .owner_refresh import OwnerRefreshOwnerRefresh
 from .person_create import PersonCreate
 from .person_create import PersonCreateEmployeeCreate
 from .person_refresh import PersonRefresh
@@ -484,6 +506,10 @@ from .read_rolebindings import ReadRolebindingsRolebindingsObjects
 from .read_rolebindings import ReadRolebindingsRolebindingsObjectsCurrent
 from .read_rolebindings import ReadRolebindingsRolebindingsObjectsCurrentItuser
 from .read_rolebindings import ReadRolebindingsRolebindingsObjectsCurrentItuserPerson
+from .related_unit_refresh import RelatedUnitRefresh
+from .related_unit_refresh import RelatedUnitRefreshRelatedUnitRefresh
+from .rolebinding_refresh import RolebindingRefresh
+from .rolebinding_refresh import RolebindingRefreshRolebindingRefresh
 from .set_job_title import SetJobTitle
 from .set_job_title import SetJobTitleEngagementUpdate
 
@@ -494,6 +520,8 @@ __all__ = [
     "AddressCreateAddressCreate",
     "AddressCreateInput",
     "AddressFilter",
+    "AddressRefresh",
+    "AddressRefreshAddressRefresh",
     "AddressRegistrationFilter",
     "AddressTerminate",
     "AddressTerminateAddressTerminate",
@@ -503,6 +531,8 @@ __all__ = [
     "AddressUpdateInput",
     "AssociationCreateInput",
     "AssociationFilter",
+    "AssociationRefresh",
+    "AssociationRefreshAssociationRefresh",
     "AssociationRegistrationFilter",
     "AssociationTerminateInput",
     "AssociationUpdateInput",
@@ -513,6 +543,8 @@ __all__ = [
     "ClassCreateInput",
     "ClassFilter",
     "ClassOwnerFilter",
+    "ClassRefresh",
+    "ClassRefreshClassRefresh",
     "ClassRegistrationFilter",
     "ClassTerminate",
     "ClassTerminateClassTerminate",
@@ -537,6 +569,8 @@ __all__ = [
     "EngagementCreateEngagementCreate",
     "EngagementCreateInput",
     "EngagementFilter",
+    "EngagementRefresh",
+    "EngagementRefreshEngagementRefresh",
     "EngagementRegistrationFilter",
     "EngagementTerminate",
     "EngagementTerminateEngagementTerminate",
@@ -551,6 +585,8 @@ __all__ = [
     "EventUnsilenceInput",
     "FacetCreateInput",
     "FacetFilter",
+    "FacetRefresh",
+    "FacetRefreshFacetRefresh",
     "FacetRegistrationFilter",
     "FacetTerminateInput",
     "FacetUpdateInput",
@@ -581,6 +617,8 @@ __all__ = [
     "ItSystemboundclassfilter",
     "ItsystemCreate",
     "ItsystemCreateItsystemCreate",
+    "ItsystemRefresh",
+    "ItsystemRefreshItsystemRefresh",
     "ItsystemTerminate",
     "ItsystemTerminateItsystemTerminate",
     "ItsystemUpdate",
@@ -589,6 +627,8 @@ __all__ = [
     "ItuserBoundRoleBindingFilter",
     "ItuserCreate",
     "ItuserCreateItuserCreate",
+    "ItuserRefresh",
+    "ItuserRefreshItuserRefresh",
     "ItuserTerminate",
     "ItuserTerminateItuserTerminate",
     "ItuserUpdate",
@@ -598,8 +638,12 @@ __all__ = [
     "KLERegistrationFilter",
     "KLETerminateInput",
     "KLEUpdateInput",
+    "KleRefresh",
+    "KleRefreshKleRefresh",
     "LeaveCreateInput",
     "LeaveFilter",
+    "LeaveRefresh",
+    "LeaveRefreshLeaveRefresh",
     "LeaveRegistrationFilter",
     "LeaveTerminateInput",
     "LeaveUpdateInput",
@@ -609,6 +653,8 @@ __all__ = [
     "ListenersBoundFullEventFilter",
     "ManagerCreateInput",
     "ManagerFilter",
+    "ManagerRefresh",
+    "ManagerRefreshManagerRefresh",
     "ManagerRegistrationFilter",
     "ManagerTerminateInput",
     "ManagerUpdateInput",
@@ -644,6 +690,8 @@ __all__ = [
     "OwnerCreateInput",
     "OwnerFilter",
     "OwnerInferencePriority",
+    "OwnerRefresh",
+    "OwnerRefreshOwnerRefresh",
     "OwnerTerminateInput",
     "OwnerUpdateInput",
     "ParentsBoundClassFilter",
@@ -822,12 +870,16 @@ __all__ = [
     "ReadRolebindingsRolebindingsObjectsCurrentItuserPerson",
     "RegistrationFilter",
     "RelatedUnitFilter",
+    "RelatedUnitRefresh",
+    "RelatedUnitRefreshRelatedUnitRefresh",
     "RelatedUnitsUpdateInput",
     "RoleBindingCreateInput",
     "RoleBindingFilter",
     "RoleBindingTerminateInput",
     "RoleBindingUpdateInput",
     "RoleRegistrationFilter",
+    "RolebindingRefresh",
+    "RolebindingRefreshRolebindingRefresh",
     "SetJobTitle",
     "SetJobTitleEngagementUpdate",
     "TestingAddressRead",
