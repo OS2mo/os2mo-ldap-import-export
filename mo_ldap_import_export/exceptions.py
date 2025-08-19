@@ -3,6 +3,7 @@
 from collections.abc import Awaitable
 from collections.abc import Callable
 from functools import wraps
+from typing import Any
 from typing import ParamSpec
 from typing import TypeVar
 
@@ -35,7 +36,17 @@ class IncorrectMapping(HTTPException):
 class ReadOnlyException(HTTPException):
     """Raised when the integration would write if not in read-only mode."""
 
-    def __init__(self, message: str) -> None:
+    requested_state: dict[str, list]
+    old_state: dict[str, Any] | None = None
+
+    def __init__(
+        self,
+        message: str,
+        requested_state: dict[str, list],
+        old_state: dict[str, Any] | None = None,
+    ) -> None:
+        self.requested_state = requested_state
+        self.old_state = old_state
         super().__init__(status_code=451, detail=message)
 
 

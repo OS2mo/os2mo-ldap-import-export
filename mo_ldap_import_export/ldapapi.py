@@ -201,7 +201,9 @@ class LDAPAPI:
                 dn=dn,
                 attributes=attributes,
             )
-            raise ReadOnlyException("LDAP connection is read-only")
+            raise ReadOnlyException(
+                "LDAP connection is read-only", requested_state=attributes
+            )
 
         if not self.settings.add_objects_to_ldap:
             logger.info(
@@ -210,7 +212,9 @@ class LDAPAPI:
                 dn=dn,
                 attributes=attributes,
             )
-            raise ReadOnlyException("Adding LDAP objects is disabled")
+            raise ReadOnlyException(
+                "Adding LDAP objects is disabled", requested_state=attributes
+            )
 
         if not self.ou_in_ous_to_write_to(dn):
             logger.info(
@@ -219,7 +223,9 @@ class LDAPAPI:
                 dn=dn,
                 attributes=attributes,
             )
-            raise ReadOnlyException("Not allowed to write to the specified OU")
+            raise ReadOnlyException(
+                "Not allowed to write to the specified OU", requested_state=attributes
+            )
 
         # During edits empty lists are used to clear attributes, however they are not
         # allowed on creation since attributes are by default created as empty if no
@@ -358,6 +364,9 @@ class LDAPAPI:
                 Optional dictionary of attributes describing the current state of the
                 object at `dn` for use in conditional writes, i.e. to ensure the changes
                 in `requested_changes` are only written if the old state matches.
+
+        Raises:
+            ReadOnlyException: If the LDAP connection is read-only.
         """
         # TODO: Remove this when ldap3s read-only flag works
         if self.settings.ldap_read_only:
@@ -365,8 +374,14 @@ class LDAPAPI:
                 "LDAP connection is read-only",
                 operation="modify_ldap",
                 dn=dn,
+                requested_changes=requested_changes,
+                old_state=old_state,
             )
-            raise ReadOnlyException("LDAP connection is read-only")
+            raise ReadOnlyException(
+                "LDAP connection is read-only",
+                requested_state=requested_changes,
+                old_state=old_state,
+            )
 
         # Checks
         if not self.ou_in_ous_to_write_to(dn):
