@@ -6,6 +6,7 @@ from functools import wraps
 from typing import Any
 from typing import ParamSpec
 from typing import TypeVar
+from mo_ldap_import_export.types import DN
 
 import structlog
 from fastapi import HTTPException
@@ -36,15 +37,18 @@ class IncorrectMapping(HTTPException):
 class ReadOnlyException(HTTPException):
     """Raised when the integration would write if not in read-only mode."""
 
+    dn: DN
     requested_state: dict[str, list]
     old_state: dict[str, Any] | None = None
 
     def __init__(
         self,
         message: str,
+        dn: DN,
         requested_state: dict[str, list],
         old_state: dict[str, Any] | None = None,
     ) -> None:
+        self.dn = dn
         self.requested_state = requested_state
         self.old_state = old_state
         super().__init__(status_code=451, detail=message)

@@ -522,12 +522,13 @@ def mo_to_ldap_handler(
         except ReadOnlyException as exc:
             message = "LDAP connection is read-only"
             logger.exception(
-                message, requested_state=exc.requested_state, old_state=exc.old_state
+                message, dn=exc.dn, requested_state=exc.requested_state, old_state=exc.old_state
             )
             raise HTTPException(
                 status_code=500,
                 detail={
                     "message": message,
+                    "dn": exc.dn,
                     "requested_state": exc.requested_state,
                     "old_state": exc.old_state,
                 },

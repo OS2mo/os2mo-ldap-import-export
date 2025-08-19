@@ -22,7 +22,7 @@ class StrictBaseModel(BaseModel):
 
 
 class Validity(StrictBaseModel):
-    start: datetime = Field(alias="from")
+    start: datetime | None = Field(alias="from")
     end: datetime | None = Field(alias="to")
 
 

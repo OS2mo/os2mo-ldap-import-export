@@ -202,7 +202,7 @@ class LDAPAPI:
                 attributes=attributes,
             )
             raise ReadOnlyException(
-                "LDAP connection is read-only", requested_state=attributes
+                "LDAP connection is read-only", dn=dn, requested_state=attributes
             )
 
         if not self.settings.add_objects_to_ldap:
@@ -213,7 +213,7 @@ class LDAPAPI:
                 attributes=attributes,
             )
             raise ReadOnlyException(
-                "Adding LDAP objects is disabled", requested_state=attributes
+                "Adding LDAP objects is disabled", dn=dn, requested_state=attributes
             )
 
         if not self.ou_in_ous_to_write_to(dn):
@@ -224,7 +224,7 @@ class LDAPAPI:
                 attributes=attributes,
             )
             raise ReadOnlyException(
-                "Not allowed to write to the specified OU", requested_state=attributes
+                "Not allowed to write to the specified OU", dn=dn, requested_state=attributes
             )
 
         # During edits empty lists are used to clear attributes, however they are not
@@ -379,6 +379,7 @@ class LDAPAPI:
             )
             raise ReadOnlyException(
                 "LDAP connection is read-only",
+                dn=dn,
                 requested_state=requested_changes,
                 old_state=old_state,
             )
