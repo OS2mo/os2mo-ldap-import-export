@@ -439,8 +439,16 @@ def _extract_letters(name: NameType) -> list[str]:
 
     consonant_name = [strip_non_consonants(part) for part in name]
 
+    if len(consonant_name) == 1:
+        first_name = first(consonant_name)
+        if len(first_name) < 2:
+            raise ValueError(f"cannot create username for input {name!r}")
+        result.append(first_name[0])
+        result.append(first_name[1])
+        return result
+
     # Continue at first letter of the second name part (first part if only one part)
-    p = min(1, len(consonant_name) - 1)  # second name part (or first if only one part)
+    p = 1
     offset = 0  # = first letter
 
     iterations = 0
