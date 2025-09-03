@@ -444,25 +444,29 @@ def _extract_letters(name: NameType) -> list[str]:
         result.append(first_name[1])
         return result
 
-    def consonant_stream(name: list[str]) -> Iterator[str]:
-        first, *rest = name
+    start, *rest = consonant_name
 
-        for part in rest:
-            for letter in part:
-                yield letter
+    # Convert ["AB", "CD", "EF"] to ["A", "B", "C", "D", "E", "F"]
+    rest_consonants = list(flatten(list(part) for part in rest))
 
-        offset = len(rest[-1])
-        for letter in first[offset:]:
-            yield letter
+    # NOTE: This looks really weird, I do not understand why we use the len of the last
+    #       entry in rest as the starting offset into first, but that is what the code
+    #       always did, and I merely refactored it.
+    offset = len(rest[-1])
+    first_consonants = list(start[offset:])
 
-    consonants = list(consonant_stream(consonant_name))
-    if len(consonants) == 0:
+    all_consonants = rest_consonants + first_consonants
+
+    # No consonants mean we have no chance at constructing the username
+    if len(all_consonants) == 0:
         raise ValueError(f"cannot create username for input {name!r}")
-
-    from itertools import cycle
-    stream = cycle(consonants)
-    result.append(next(stream))
-    result.append(next(stream))
+    # One consonant mean we cycle it forever
+    elif len(all_consonants) == 1:
+        result.append(all_consonants[0])
+        result.append(all_consonants[0])
+    else:  # Two all_consonants or more, we simply add the two first
+        result.append(all_consonants[0])
+        result.append(all_consonants[1])
     return result
 
 
