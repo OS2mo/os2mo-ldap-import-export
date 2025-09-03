@@ -481,6 +481,6 @@ class UserNameGenPermutation:
 
             iterations += 1
             if iterations > self._max_iterations:
-                raise ValueError("cannot create username for input %r" % name)
+                raise ValueError(f"cannot create username for input {name!r}")
 
         return result
