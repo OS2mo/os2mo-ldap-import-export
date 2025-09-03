@@ -444,22 +444,26 @@ def _extract_letters(name: NameType) -> list[str]:
         result.append(first_name[1])
         return result
 
-    length = 3
-    for _ in range(length):
-        for part in consonant_name[1:]:
+    def consonant_stream(name: list[str]) -> Iterator[str]:
+        first, *rest = name
+
+        for part in rest:
             for letter in part:
-                result.append(letter)
-                if len(result) >= length:
-                    return result
+                yield letter
 
-        part = consonant_name[0]
-        offset = len(consonant_name[-1])
-        for letter in part[offset:]:
-            result.append(letter)
-            if len(result) >= length:
-                return result
+        offset = len(rest[-1])
+        for letter in first[offset:]:
+            yield letter
 
-    raise ValueError(f"cannot create username for input {name!r}")
+    consonants = list(consonant_stream(consonant_name))
+    if len(consonants) == 0:
+        raise ValueError(f"cannot create username for input {name!r}")
+
+    from itertools import cycle
+    stream = cycle(consonants)
+    result.append(next(stream))
+    result.append(next(stream))
+    return result
 
 
 class UserNameGenPermutation:
