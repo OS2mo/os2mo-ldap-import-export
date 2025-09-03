@@ -408,9 +408,6 @@ async def generate_username(
 
 
 def _extract_letters(name: NameType) -> list[str]:
-    length = 3
-    max_iterations = 1000
-
     # Convert ["Firstname", "Last Name"] -> ["Firstname", "Last", "Name"]
     # and ["First-Name", "Last-Name"] -> ["First", "Name", "Last", "Name"]
     name = flatten(map(partial(re.split, r"[\-\s+]"), name))  # type: ignore
@@ -447,8 +444,8 @@ def _extract_letters(name: NameType) -> list[str]:
         result.append(first_name[1])
         return result
 
-    iterations = 0
-    while len(result) < length:
+    length = 3
+    for _ in range(length):
         for part in consonant_name[1:]:
             for letter in part:
                 result.append(letter)
@@ -462,11 +459,7 @@ def _extract_letters(name: NameType) -> list[str]:
             if len(result) >= length:
                 return result
 
-        iterations += 1
-        if iterations > max_iterations:
-            raise ValueError(f"cannot create username for input {name!r}")
-
-    return result
+    raise ValueError(f"cannot create username for input {name!r}")
 
 
 class UserNameGenPermutation:
