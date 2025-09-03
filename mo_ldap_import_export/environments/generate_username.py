@@ -433,12 +433,11 @@ def _extract_letters(name: NameType) -> list[str]:
     result = [first_ascii_letter]
 
     consonants = "".join(set(string.ascii_lowercase) - set("aeiouy"))
+
     def strip_non_consonants(part: str) -> str:
         return "".join(ch for ch in part if ch.lower() in consonants)
 
-    consonant_name = [
-        strip_non_consonants(part) for part in name
-    ]
+    consonant_name = [strip_non_consonants(part) for part in name]
 
     # Continue at first letter of the second name part (first part if only one part)
     p = min(1, len(consonant_name) - 1)  # second name part (or first if only one part)
@@ -447,9 +446,7 @@ def _extract_letters(name: NameType) -> list[str]:
     iterations = 0
     while len(result) < length:
         part = consonant_name[p]
-        try:
-            result.append(part[offset])
-        except IndexError:
+        if offset >= len(part):
             # Check if there are still more name parts to use
             if p < len(consonant_name) - 1:
                 # If yes, use next name part, starting at first letter
@@ -459,6 +456,7 @@ def _extract_letters(name: NameType) -> list[str]:
                 # If no, go back to first name
                 p = 0
         else:
+            result.append(part[offset])
             offset += 1
 
         iterations += 1
