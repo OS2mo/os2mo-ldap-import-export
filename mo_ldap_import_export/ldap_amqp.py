@@ -181,7 +181,9 @@ def configure_ldap_amqpsystem(fastramqpi: FastRAMQPI, settings: Settings) -> AMQ
         ],
     )
     fastramqpi.add_context(ldap_amqpsystem=ldap_amqpsystem)
-    if settings.listen_to_changes_in_ldap:
+    # The AMQP system is only used for the legacy conversion-mapping setup. The
+    # new customer-based configuration exclusively uses GraphQL events.
+    if settings.customer is None and settings.listen_to_changes_in_ldap:
         ldap_amqpsystem.router.registry.update(ldap_amqp_router.registry)
     ldap_amqpsystem.context = fastramqpi._context
     return ldap_amqpsystem

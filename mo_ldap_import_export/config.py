@@ -380,6 +380,8 @@ class Settings(BaseSettings):
                 file_secret_settings,
             )
 
+    customer: Literal["kolding"] | None = None
+
     conversion_mapping: ConversionMapping = Field(
         description="Conversion mapping between LDAP and OS2mo",
     )

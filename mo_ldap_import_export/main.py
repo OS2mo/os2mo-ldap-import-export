@@ -49,6 +49,8 @@ from .config import Settings
 from .converters import LdapConverter
 from .customer_specific_checks import ExportChecks
 from .customer_specific_checks import ImportChecks
+from .customers.kolding.events import listeners as kolding_listeners
+from .customers.kolding.events import router as kolding_router
 from .database import Base
 from .dataloaders import DataLoader
 from .exceptions import NoObjectsReturnedException
@@ -417,8 +419,11 @@ async def lifespan(
         )
         fastramqpi.add_context(sync_tool=sync_tool)
 
-        logger.info("Starting AMQP listener")
-        await stack.enter_async_context(amqpsystem)
+        # The AMQP system is only used for the legacy conversion-mapping setup.
+        # The new customer-based configuration exclusively uses GraphQL events.
+        if settings.customer is None:
+            logger.info("Starting AMQP listener")
+            await stack.enter_async_context(amqpsystem)
 
         logger.info("Initializing LDAP listener")
         ldap_amqpsystem = configure_ldap_amqpsystem(fastramqpi, settings)
@@ -544,6 +549,37 @@ def create_fastramqpi(**kwargs: Any) -> FastRAMQPI:
         settings.ldap_ous_to_write_to,
     )
 
+    match settings.customer:
+        case "kolding":
+            customer_router = kolding_router
+            customer_listeners = kolding_listeners
+        case None:
+            # Legacy fallback
+            assert settings.conversion_mapping is not None
+            customer_router = APIRouter(prefix="/mo_to_ldap")
+            for mapping in settings.conversion_mapping.mo_to_ldap:
+                handler = mo_to_ldap_handler(
+                    mapping.identifier, mapping.template, mapping.object_class
+                )
+                customer_router.post(f"/{mapping.identifier}")(handler)
+            customer_listeners = [
+                Listener(
+                    namespace="mo",
+                    user_key=mapping.identifier,
+                    routing_key=mapping.routing_key,
+                    path=f"/mo_to_ldap/{mapping.identifier}",
+                )
+                for mapping in settings.conversion_mapping.mo_to_ldap
+            ]
+
+    # Filter legacy conversion-mapping and new customer listeners alike. This
+    # may need to be done differently, but for now it is the least surprising
+    # behaviour.
+    if not settings.listen_to_changes_in_ldap:
+        customer_listeners = [l for l in customer_listeners if l.namespace != "ldap"]
+    if not settings.listen_to_changes_in_mo:
+        customer_listeners = [l for l in customer_listeners if l.namespace != "mo"]
+
     logger.info("Setting up FastRAMQPI")
     fastramqpi = FastRAMQPI(
         application_name="ldap_ie",
@@ -555,48 +591,32 @@ def create_fastramqpi(**kwargs: Any) -> FastRAMQPI:
             declare_namespaces=[
                 Namespace(name="ldap"),
             ],
-            declare_listeners=[
-                # Configure dynamic listeners
-                Listener(
-                    namespace="mo",
-                    user_key=mapping.identifier,
-                    routing_key=mapping.routing_key,
-                    path=f"/mo_to_ldap/{mapping.identifier}",
-                )
-                for mapping in settings.conversion_mapping.mo_to_ldap
-            ]
-            if settings.listen_to_changes_in_mo
-            else [],
+            declare_listeners=customer_listeners,
         ),
     )
     fastramqpi.add_context(settings=settings)
-
-    # Install dynamic endpoints router
-    router = APIRouter(prefix="/mo_to_ldap")
-    for mapping in settings.conversion_mapping.mo_to_ldap:
-        handler = mo_to_ldap_handler(
-            mapping.identifier, mapping.template, mapping.object_class
-        )
-        router.post(f"/{mapping.identifier}")(handler)
     app = fastramqpi.get_app()
-    app.include_router(router)
+    app.include_router(customer_router)
 
-    logger.info("AMQP router setup")
-    amqpsystem = fastramqpi.get_amqpsystem()
-    # Retry messages after a short period of time
-    rate_limit_delay = 10
-    amqpsystem.dependencies = [
-        Depends(rate_limit(rate_limit_delay)),
-        Depends(depends.logger_bound_message_id),
-        Depends(depends.request_id),
-    ]
-    if settings.listen_to_changes_in_mo:
-        amqpsystem.router.registry.update(amqp_router.registry)
+    # The AMQP system is only used for the legacy conversion-mapping setup. The
+    # new customer-based configuration exclusively uses GraphQL events.
+    if settings.customer is None:
+        logger.info("AMQP router setup")
+        amqpsystem = fastramqpi.get_amqpsystem()
+        # Retry messages after a short period of time
+        rate_limit_delay = 10
+        amqpsystem.dependencies = [
+            Depends(rate_limit(rate_limit_delay)),
+            Depends(depends.logger_bound_message_id),
+            Depends(depends.request_id),
+        ]
+        if settings.listen_to_changes_in_mo:
+            amqpsystem.router.registry.update(amqp_router.registry)
 
-    # We delay AMQPSystem start, to detect it from client startup
-    # TODO: This separation should probably be in FastRAMQPI
-    priority_set = fastramqpi._context["lifespan_managers"][1000]
-    priority_set.remove(amqpsystem)
+        # We delay AMQPSystem start, to detect it from client startup
+        # TODO: This separation should probably be in FastRAMQPI
+        priority_set = fastramqpi._context["lifespan_managers"][1000]
+        priority_set.remove(amqpsystem)
 
     fastramqpi.add_lifespan_manager(lifespan(fastramqpi, settings), 2000)
 
@@ -615,9 +635,12 @@ def create_app(fastramqpi: FastRAMQPI | None = None, **kwargs: Any) -> FastAPI:
 
     app = fastramqpi.get_app()
     settings = fastramqpi._context["user_context"]["settings"]
-    app.include_router(construct_router(settings))
-    app.include_router(mo2ldap_router)
-    app.include_router(ldap2mo_router)
-    app.include_router(ldap_event_router)
+    # The legacy routers are only used for the legacy conversion-mapping setup.
+    # The new customer-based configuration exclusively uses its own routes.
+    if settings.customer is None:
+        app.include_router(construct_router(settings))
+        app.include_router(mo2ldap_router)
+        app.include_router(ldap2mo_router)
+        app.include_router(ldap_event_router)
 
     return app

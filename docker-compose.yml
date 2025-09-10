@@ -82,11 +82,12 @@ services:
       DEFAULT_ORG_UNIT_LEVEL: "N1"
       LDAP_CPR_ATTRIBUTE: "employeeNumber"
       LDAP_IT_SYSTEM: "ADUUID"
-    volumes:
-      - ./mo_ldap_import_export/:/app/mo_ldap_import_export:ro
       # Uncomment this to integrate with the mo development stack. Note that
       # this may break unittests.
-      # - ./dev-environment/kolding_fixture.yaml:/var/run/config.yaml:ro
+      CONVERSION_MAPPING: "{}"
+      CUSTOMER: "kolding"
+    volumes:
+      - ./mo_ldap_import_export/:/app/mo_ldap_import_export:ro
       - ./tests/:/app/tests/:ro
     networks:
       - default
