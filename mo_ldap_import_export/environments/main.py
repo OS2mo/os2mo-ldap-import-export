@@ -847,7 +847,7 @@ async def get_org_unit_uuid_from_path(
     return obj.uuid
 
 
-async def create_org_unit(
+async def ensure_org_unit(
     dataloader: DataLoader, unit_type: UUID, org_unit_path: list[str]
 ) -> UUID | None:
     """Create the org-unit and any missing parents in org_unit_path.
@@ -880,7 +880,7 @@ async def create_org_unit(
     *parent_path, name = org_unit_path
 
     # Get or create our parent uuid (recursively)
-    parent_uuid = await create_org_unit(dataloader, unit_type, parent_path)
+    parent_uuid = await ensure_org_unit(dataloader, unit_type, parent_path)
 
     uuid = uuid4()
     org_unit = OrganisationUnit(
@@ -899,42 +899,6 @@ async def create_org_unit(
     )
     await dataloader.moapi.create_org_unit(org_unit)
     return uuid
-
-
-def clean_org_unit_path_string(org_unit_path: list[str]) -> list[str]:
-    """Cleans leading and trailing whitespace from org units names.
-
-    Example:
-        ```python
-        org_unit_path = ["foo ", " bar", " baz "]
-        clean_org_unit_path_string(org_unit_path)
-        # Returns ["foo", "bar", "baz"]
-        ```
-
-    Args:
-        org_unit_path: A list of org-unit names.
-    """
-    return [x.strip() for x in org_unit_path]
-
-
-async def get_or_create_org_unit_uuid(
-    dataloader: DataLoader,
-    settings: Settings,
-    unit_type: UUID,
-    org_unit_path_string: str,
-):
-    logger.info(
-        "Finding org-unit uuid",
-        org_unit_path_string=org_unit_path_string,
-    )
-
-    if not org_unit_path_string:
-        raise UUIDNotFoundException("Organization unit string is empty")
-
-    # Clean leading and trailing whitespace from org unit path string
-    org_unit_path = org_unit_path_string.split(settings.org_unit_path_string_separator)
-    org_unit_path = clean_org_unit_path_string(org_unit_path)
-    return str(await create_org_unit(dataloader, unit_type, org_unit_path))
 
 
 def org_unit_path_from_dn(dn: DN) -> list[str]:
@@ -1036,9 +1000,7 @@ def construct_globals_dict(
         ),
         "refresh": partial(refresh, graphql_client, amqpsystem),
         "find_mo_employee_uuid": dataloader.find_mo_employee_uuid,
-        "get_or_create_org_unit_uuid": partial(
-            get_or_create_org_unit_uuid, dataloader, settings
-        ),
+        "ensure_org_unit": partial(ensure_org_unit, dataloader),
     }
 
 

@@ -28,12 +28,10 @@ from mo_ldap_import_export.utils import combine_dn_strings
                     "Engagement": {
                         "objectClass": "Engagement",
                         "_import_to_mo_": "true",
-                        "_ldap_attributes_": [
-                            "departmentNumber",
-                        ],
+                        "_ldap_attributes_": [],
                         "user_key": "my key",
                         "person": "{{ employee_uuid }}",
-                        "org_unit": "{{ get_or_create_org_unit_uuid(get_org_unit_type_uuid('Afdeling'), ldap.departmentNumber) }}",
+                        "org_unit": "{{ ensure_org_unit(get_org_unit_type_uuid('Afdeling'), org_unit_path_from_dn(ldap.dn)) }}",
                         "engagement_type": "{{ get_engagement_type_uuid('Ansat') }}",
                         "job_function": "{{ get_class_uuid({'user_keys': ['Jurist'], 'facet': {'user_keys': ['engagement_job_function']}}) }}",
                         "primary": "{{ get_primary_type_uuid('primary') }}",
@@ -43,19 +41,28 @@ from mo_ldap_import_export.utils import combine_dn_strings
         ),
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "afdeling", "ansat", "jurist", "primary")
 async def test_create_org_unit(
     graphql_client: GraphQLClient,
     mo_person: UUID,
     ldap_api: LDAPAPI,
     ldap_org: list[str],
-    afdeling: UUID,
-    ansat: UUID,
-    jurist: UUID,
-    primary: UUID,
 ) -> None:
-    person_dn = combine_dn_strings(["uid=abk"] + ldap_org)
+    async def create_ldap_org_unit(name: str, parent: list[str]) -> list[str]:
+        ou_dn = ["ou=" + name] + parent
+        await ldap_api.ldap_connection.ldap_add(
+            combine_dn_strings(ou_dn),
+            object_class=["top", "organizationalUnit"],
+            attributes={"objectClass": ["top", "organizationalUnit"], "ou": name},
+        )
+        return ou_dn
 
+    ou_dn = ldap_org
+    ou_dn = await create_ldap_org_unit("foo", ou_dn)
+    ou_dn = await create_ldap_org_unit("bar", ou_dn)
+    ou_dn = await create_ldap_org_unit("baz", ou_dn)
+
+    person_dn = combine_dn_strings(["uid=abk"] + ou_dn)
     # LDAP: Create
     await ldap_api.ldap_connection.ldap_add(
         dn=person_dn,
@@ -66,7 +73,6 @@ async def test_create_org_unit(
             "cn": "Aage Bach Klarskov",
             "sn": "Bach Klarskov",
             "employeeNumber": "2108613133",
-            "departmentNumber": "Foo\\Bar",
         },
     )
 
@@ -85,7 +91,7 @@ async def test_create_org_unit(
             org_unit_names = {
                 await get_org_unit_name(obj.uuid): obj.uuid for obj in org_units.objects
             }
-            assert org_unit_names.keys() >= {"Foo", "Bar"}
+            assert org_unit_names.keys() == {"foo", "bar", "baz"}
 
             # Verify engagement
             engagements = await graphql_client._testing__engagement_read(
@@ -95,4 +101,4 @@ async def test_create_org_unit(
             )
             engagement = one(engagements.objects)
             validities = one(engagement.validities)
-            assert one(validities.org_unit).uuid == org_unit_names["Bar"]
+            assert one(validities.org_unit).uuid == org_unit_names["baz"]
