@@ -847,7 +847,7 @@ async def get_org_unit_uuid_from_path(
     return obj.uuid
 
 
-async def create_org_unit(
+async def ensure_org_unit(
     dataloader: DataLoader, unit_type: UUID, org_unit_path: list[str]
 ) -> UUID | None:
     """Create the org-unit and any missing parents in org_unit_path.
@@ -880,7 +880,7 @@ async def create_org_unit(
     *parent_path, name = org_unit_path
 
     # Get or create our parent uuid (recursively)
-    parent_uuid = await create_org_unit(dataloader, unit_type, parent_path)
+    parent_uuid = await ensure_org_unit(dataloader, unit_type, parent_path)
 
     uuid = uuid4()
     org_unit = OrganisationUnit(
@@ -901,81 +901,19 @@ async def create_org_unit(
     return uuid
 
 
-def clean_org_unit_path_string(org_unit_path: list[str]) -> list[str]:
-    """Cleans leading and trailing whitespace from org units names.
-
-    Example:
-        ```python
-        org_unit_path = ["foo ", " bar", " baz "]
-        clean_org_unit_path_string(org_unit_path)
-        # Returns ["foo", "bar", "baz"]
-        ```
-
-    Args:
-        org_unit_path: A list of org-unit names.
+def org_unit_path_from_dn(dn: DN) -> list[str]:
     """
-    return [x.strip() for x in org_unit_path]
-
-
-async def get_or_create_org_unit_uuid(
-    dataloader: DataLoader,
-    settings: Settings,
-    unit_type: UUID,
-    org_unit_path_string: str,
-):
-    logger.info(
-        "Finding org-unit uuid",
-        org_unit_path_string=org_unit_path_string,
-    )
-
-    if not org_unit_path_string:
-        raise UUIDNotFoundException("Organization unit string is empty")
-
-    # Clean leading and trailing whitespace from org unit path string
-    org_unit_path = org_unit_path_string.split(settings.org_unit_path_string_separator)
-    org_unit_path = clean_org_unit_path_string(org_unit_path)
-    return str(await create_org_unit(dataloader, unit_type, org_unit_path))
-
-
-def org_unit_path_string_from_dn(
-    org_unit_path_string_separator: str, dn: DN, number_of_ous_to_ignore: int = 0
-) -> str:
-    """
-    Constructs an org-unit path string from a DN.
-
-    If number_of_ous_to_ignore is specified, ignores this many OUs in the path
+    Constructs an org-unit path from a DN.
 
     Examples
     -----------
     >>> dn = "CN=Jim,OU=Technicians,OU=Users,OU=demo,OU=OS2MO,DC=ad,DC=addev"
-    >>> org_unit_path_string_from_dn(dn,2)
-    >>> "Users/Technicians"
-    >>>
-    >>> org_unit_path_string_from_dn(dn,1)
-    >>> "demo/Users/Technicians"
+    >>> org_unit_path_from_dn(dn)
+    >>> ["OS2MO", demo", Users", "Technicians"]
     """
-    sep = org_unit_path_string_separator
-
     ou_decomposed = parse_dn(extract_ou_from_dn(dn))[::-1]
     org_unit_list = [ou[1] for ou in ou_decomposed]
-
-    if number_of_ous_to_ignore >= len(org_unit_list):
-        logger.info(
-            "DN cannot be mapped to org-unit-path",
-            dn=dn,
-            org_unit_list=org_unit_list,
-            number_of_ous_to_ignore=number_of_ous_to_ignore,
-        )
-        return ""
-    org_unit_path_string = sep.join(org_unit_list[number_of_ous_to_ignore:])
-
-    logger.info(
-        "Constructed org unit path string from dn",
-        dn=dn,
-        org_unit_path_string=org_unit_path_string,
-        number_of_ous_to_ignore=number_of_ous_to_ignore,
-    )
-    return org_unit_path_string
+    return org_unit_list
 
 
 def construct_filters_dict(dataloader: DataLoader) -> dict[str, Any]:
@@ -1055,13 +993,7 @@ def construct_globals_dict(
         ),
         "refresh": partial(refresh, graphql_client, amqpsystem),
         "find_mo_employee_uuid": dataloader.find_mo_employee_uuid,
-        "get_or_create_org_unit_uuid": partial(
-            get_or_create_org_unit_uuid, dataloader, settings
-        ),
-        "org_unit_path_string_from_dn": partial(
-            org_unit_path_string_from_dn,
-            settings.org_unit_path_string_separator,
-        ),
+        "ensure_org_unit": partial(ensure_org_unit, dataloader),
     }
 
 
@@ -1100,6 +1032,7 @@ def construct_default_environment() -> Environment:
     environment.globals["uuid4"] = uuid4
     environment.globals["parent_dn"] = parent_dn
     environment.globals["dn_has_ou"] = dn_has_ou
+    environment.globals["org_unit_path_from_dn"] = org_unit_path_from_dn
 
     return environment
 
