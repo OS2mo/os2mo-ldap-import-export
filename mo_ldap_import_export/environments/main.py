@@ -22,6 +22,7 @@ from jinja2 import StrictUndefined
 from jinja2 import TemplateRuntimeError
 from jinja2 import UndefinedError
 from jinja2.utils import missing
+from ldap3.utils.dn import parse_dn
 from ldap3.utils.dn import safe_dn
 from ldap3.utils.dn import to_dn
 from more_itertools import one
@@ -825,6 +826,47 @@ async def refresh(
     )
 
 
+def org_unit_path_string_from_dn(
+    org_unit_path_string_separator: str, dn: DN, number_of_ous_to_ignore: int = 0
+) -> str:
+    """
+    Constructs an org-unit path string from a DN.
+
+    If number_of_ous_to_ignore is specified, ignores this many OUs in the path
+
+    Examples
+    -----------
+    >>> dn = "CN=Jim,OU=Technicians,OU=Users,OU=demo,OU=OS2MO,DC=ad,DC=addev"
+    >>> org_unit_path_string_from_dn(dn,2)
+    >>> "Users/Technicians"
+    >>>
+    >>> org_unit_path_string_from_dn(dn,1)
+    >>> "demo/Users/Technicians"
+    """
+    sep = org_unit_path_string_separator
+
+    ou_decomposed = parse_dn(extract_ou_from_dn(dn))[::-1]
+    org_unit_list = [ou[1] for ou in ou_decomposed]
+
+    if number_of_ous_to_ignore >= len(org_unit_list):
+        logger.info(
+            "DN cannot be mapped to org-unit-path",
+            dn=dn,
+            org_unit_list=org_unit_list,
+            number_of_ous_to_ignore=number_of_ous_to_ignore,
+        )
+        return ""
+    org_unit_path_string = sep.join(org_unit_list[number_of_ous_to_ignore:])
+
+    logger.info(
+        "Constructed org unit path string from dn",
+        dn=dn,
+        org_unit_path_string=org_unit_path_string,
+        number_of_ous_to_ignore=number_of_ous_to_ignore,
+    )
+    return org_unit_path_string
+
+
 def construct_filters_dict(dataloader: DataLoader) -> dict[str, Any]:
     return {
         "get_person_dn": partial(get_person_dn, dataloader),
@@ -902,6 +944,10 @@ def construct_globals_dict(
         ),
         "refresh": partial(refresh, graphql_client, amqpsystem),
         "find_mo_employee_uuid": dataloader.find_mo_employee_uuid,
+        "org_unit_path_string_from_dn": partial(
+            org_unit_path_string_from_dn,
+            settings.org_unit_path_string_separator,
+        ),
     }
 
 
