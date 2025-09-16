@@ -826,45 +826,26 @@ async def refresh(
     )
 
 
-def org_unit_path_string_from_dn(
-    org_unit_path_string_separator: str, dn: DN, number_of_ous_to_ignore: int = 0
-) -> str:
+def org_unit_path_from_dn(dn: DN) -> list[str]:
     """
-    Constructs an org-unit path string from a DN.
+    Constructs an org-unit path from a DN.
 
-    If number_of_ous_to_ignore is specified, ignores this many OUs in the path
+    Example:
+        ```
+        dn = "CN=Jim,OU=Technicians,OU=Users,OU=demo,OU=OS2MO,DC=ad,DC=addev"
+        path = org_unit_path_from_dn(dn)
+        assert path == ["OS2MO", "demo", "Users", "Technicians"]
+        ```
 
-    Examples
-    -----------
-    >>> dn = "CN=Jim,OU=Technicians,OU=Users,OU=demo,OU=OS2MO,DC=ad,DC=addev"
-    >>> org_unit_path_string_from_dn(dn,2)
-    >>> "Users/Technicians"
-    >>>
-    >>> org_unit_path_string_from_dn(dn,1)
-    >>> "demo/Users/Technicians"
+    Args:
+        dn: The argument to extract the org-path from.
+
+    Returns:
+        A list of org-units in the path, sorted from root towards the leaf.
     """
-    sep = org_unit_path_string_separator
-
     ou_decomposed = parse_dn(extract_ou_from_dn(dn))[::-1]
     org_unit_list = [ou[1] for ou in ou_decomposed]
-
-    if number_of_ous_to_ignore >= len(org_unit_list):
-        logger.info(
-            "DN cannot be mapped to org-unit-path",
-            dn=dn,
-            org_unit_list=org_unit_list,
-            number_of_ous_to_ignore=number_of_ous_to_ignore,
-        )
-        return ""
-    org_unit_path_string = sep.join(org_unit_list[number_of_ous_to_ignore:])
-
-    logger.info(
-        "Constructed org unit path string from dn",
-        dn=dn,
-        org_unit_path_string=org_unit_path_string,
-        number_of_ous_to_ignore=number_of_ous_to_ignore,
-    )
-    return org_unit_path_string
+    return org_unit_list
 
 
 def construct_filters_dict(dataloader: DataLoader) -> dict[str, Any]:
@@ -944,10 +925,6 @@ def construct_globals_dict(
         ),
         "refresh": partial(refresh, graphql_client, amqpsystem),
         "find_mo_employee_uuid": dataloader.find_mo_employee_uuid,
-        "org_unit_path_string_from_dn": partial(
-            org_unit_path_string_from_dn,
-            settings.org_unit_path_string_separator,
-        ),
     }
 
 
@@ -986,6 +963,7 @@ def construct_default_environment() -> Environment:
     environment.globals["uuid4"] = uuid4
     environment.globals["parent_dn"] = parent_dn
     environment.globals["dn_has_ou"] = dn_has_ou
+    environment.globals["org_unit_path_from_dn"] = org_unit_path_from_dn
 
     return environment
 
