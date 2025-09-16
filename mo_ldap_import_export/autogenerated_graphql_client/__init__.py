@@ -519,6 +519,8 @@ from .read_rolebindings import ReadRolebindingsRolebindingsObjectsCurrent
 from .read_rolebindings import ReadRolebindingsRolebindingsObjectsCurrentItuser
 from .read_rolebindings import ReadRolebindingsRolebindingsObjectsCurrentItuserPerson
 from .read_rolebindings import ReadRolebindingsRolebindingsObjectsCurrentRole
+from .read_root_org_uuid import ReadRootOrgUuid
+from .read_root_org_uuid import ReadRootOrgUuidOrg
 from .related_unit_refresh import RelatedUnitRefresh
 from .related_unit_refresh import RelatedUnitRefreshRelatedUnitRefresh
 from .rolebinding_refresh import RolebindingRefresh
@@ -904,6 +906,8 @@ __all__ = [
     "ReadRolebindingsRolebindingsObjectsCurrentItuser",
     "ReadRolebindingsRolebindingsObjectsCurrentItuserPerson",
     "ReadRolebindingsRolebindingsObjectsCurrentRole",
+    "ReadRootOrgUuid",
+    "ReadRootOrgUuidOrg",
     "RegistrationFilter",
     "RelatedUnitFilter",
     "RelatedUnitRefresh",

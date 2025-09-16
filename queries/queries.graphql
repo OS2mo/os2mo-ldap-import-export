@@ -588,3 +588,9 @@ query read_rolebindings($filter: RoleBindingFilter) {
     }
   }
 }
+
+query read_root_org_uuid {
+  org {
+    uuid
+  }
+}
