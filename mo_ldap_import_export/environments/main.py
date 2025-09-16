@@ -868,7 +868,7 @@ async def create_org_unit(
     # If the org-unit path already exists, no need to create, simply return it
     with suppress(UUIDNotFoundException):
         return await get_org_unit_uuid_from_path(
-            dataloader.graphql_client, org_unit_path
+            dataloader.moapi.graphql_client, org_unit_path
         )
 
     # If we get here, the path did not already exist, so we need to create it
@@ -884,7 +884,7 @@ async def create_org_unit(
 
     default_org_unit_type_uuid = UUID(
         await get_org_unit_type_uuid(
-            dataloader.graphql_client, settings.default_org_unit_type
+            dataloader.moapi.graphql_client, settings.default_org_unit_type
         )
     )
 
@@ -903,7 +903,7 @@ async def create_org_unit(
         parent=parent_uuid,
         uuid=uuid,
     )
-    await dataloader.create_org_unit(org_unit)
+    await dataloader.moapi.create_org_unit(org_unit)
     return uuid
 
 
