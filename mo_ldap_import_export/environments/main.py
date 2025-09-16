@@ -61,6 +61,7 @@ from ..models import Class
 from ..models import Engagement
 from ..models import ITSystem
 from ..models import ITUser
+from ..models import OrganisationUnit
 from ..types import DN
 from ..types import EmployeeUUID
 from ..types import EngagementUUID
@@ -886,30 +887,22 @@ async def create_org_unit(
             dataloader.graphql_client, settings.default_org_unit_type
         )
     )
-    default_org_unit_level_uuid = UUID(
-        await get_org_unit_level_uuid(
-            dataloader.graphql_client, settings.default_org_unit_level
-        )
-    )
 
     uuid = uuid4()
-    org_unit = OrganisationUnit.from_simplified_fields(
-        org_unit_type_uuid=default_org_unit_type_uuid,
-        org_unit_level_uuid=default_org_unit_level_uuid,
+    org_unit = OrganisationUnit(
+        unit_type=default_org_unit_type_uuid,
         # Note: 1902 seems to be the earliest accepted year by OS2mo
         # We pick 1960 because MO's dummy data also starts all organizations
         # in 1960...
         # We just want a very early date here, to avoid that imported employee
         # engagements start before the org-unit existed.
-        from_date="1960-01-01T00:00:00",
+        validity={"from": "1960-01-01T00:00:00Z"},
         # Org-unit specific fields
-        user_key=str(uuid4()),
+        user_key="-",
         name=name,
-        parent_uuid=parent_uuid,
+        parent=parent_uuid,
         uuid=uuid,
     )
-    # from_simplified_fields() has bad type annotation
-    assert isinstance(org_unit, OrganisationUnit)
     await dataloader.create_org_unit(org_unit)
     return uuid
 
