@@ -848,7 +848,7 @@ async def get_org_unit_uuid_from_path(
 
 
 async def create_org_unit(
-    dataloader: DataLoader, settings: Settings, org_unit_path: list[str]
+    dataloader: DataLoader, unit_type: UUID, org_unit_path: list[str]
 ) -> UUID | None:
     """Create the org-unit and any missing parents in org_unit_path.
 
@@ -880,17 +880,11 @@ async def create_org_unit(
     *parent_path, name = org_unit_path
 
     # Get or create our parent uuid (recursively)
-    parent_uuid = await create_org_unit(dataloader, settings, parent_path)
-
-    default_org_unit_type_uuid = UUID(
-        await get_org_unit_type_uuid(
-            dataloader.moapi.graphql_client, settings.default_org_unit_type
-        )
-    )
+    parent_uuid = await create_org_unit(dataloader, unit_type, parent_path)
 
     uuid = uuid4()
     org_unit = OrganisationUnit(
-        unit_type=default_org_unit_type_uuid,
+        unit_type=unit_type,
         # Note: 1902 seems to be the earliest accepted year by OS2mo
         # We pick 1960 because MO's dummy data also starts all organizations
         # in 1960...
@@ -924,7 +918,10 @@ def clean_org_unit_path_string(org_unit_path: list[str]) -> list[str]:
 
 
 async def get_or_create_org_unit_uuid(
-    dataloader: DataLoader, settings: Settings, org_unit_path_string: str
+    dataloader: DataLoader,
+    settings: Settings,
+    unit_type: UUID,
+    org_unit_path_string: str,
 ):
     logger.info(
         "Finding org-unit uuid",
@@ -937,7 +934,7 @@ async def get_or_create_org_unit_uuid(
     # Clean leading and trailing whitespace from org unit path string
     org_unit_path = org_unit_path_string.split(settings.org_unit_path_string_separator)
     org_unit_path = clean_org_unit_path_string(org_unit_path)
-    return str(await create_org_unit(dataloader, settings, org_unit_path))
+    return str(await create_org_unit(dataloader, unit_type, org_unit_path))
 
 
 def org_unit_path_from_dn(dn: DN) -> list[str]:
