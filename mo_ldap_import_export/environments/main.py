@@ -827,19 +827,6 @@ async def refresh(
     )
 
 
-async def load_mo_root_org_uuid(graphql_client: GraphQLClient) -> UUID:
-    """Get the UUID of the root organisational unit in MO.
-
-    Args:
-        graphql_client: GraphQLClient to fetch root org from MO with.
-
-    Returns:
-        The UUID of the root organisational unit.
-    """
-    result = await graphql_client.read_root_org_uuid()
-    return result.uuid
-
-
 async def get_org_unit_uuid_from_path(
     graphql_client: GraphQLClient,
     org_unit_path: list[str],
@@ -861,7 +848,7 @@ async def get_org_unit_uuid_from_path(
 
 async def create_org_unit(
     dataloader: DataLoader, settings: Settings, org_unit_path: list[str]
-) -> UUID:
+) -> UUID | None:
     """Create the org-unit and any missing parents in org_unit_path.
 
     The function works by recursively creating parents until an existing parent is
@@ -875,7 +862,7 @@ async def create_org_unit(
     """
     # If asked to create the root org, simply return it
     if not org_unit_path:
-        return await load_mo_root_org_uuid(dataloader.graphql_client)
+        return None
 
     # If the org-unit path already exists, no need to create, simply return it
     with suppress(UUIDNotFoundException):

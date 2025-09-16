@@ -226,8 +226,6 @@ from .read_person_uuid import ReadPersonUuid
 from .read_person_uuid import ReadPersonUuidEmployees
 from .read_rolebindings import ReadRolebindings
 from .read_rolebindings import ReadRolebindingsRolebindings
-from .read_root_org_uuid import ReadRootOrgUuid
-from .read_root_org_uuid import ReadRootOrgUuidOrg
 from .related_unit_refresh import RelatedUnitRefresh
 from .related_unit_refresh import RelatedUnitRefreshRelatedUnitRefresh
 from .rolebinding_refresh import RolebindingRefresh
@@ -1677,21 +1675,6 @@ class GraphQLClient(AsyncBaseClient):
         response = await self.execute(query=query, variables=variables)
         data = self.get_data(response)
         return ReadRolebindings.parse_obj(data).rolebindings
-
-    async def read_root_org_uuid(self) -> ReadRootOrgUuidOrg:
-        query = gql(
-            """
-            query read_root_org_uuid {
-              org {
-                uuid
-              }
-            }
-            """
-        )
-        variables: dict[str, object] = {}
-        response = await self.execute(query=query, variables=variables)
-        data = self.get_data(response)
-        return ReadRootOrgUuid.parse_obj(data).org
 
     async def address_refresh(
         self,
