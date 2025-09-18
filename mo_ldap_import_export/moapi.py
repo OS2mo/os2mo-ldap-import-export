@@ -664,7 +664,6 @@ class MOAPI:
                 itsystem=obj.itsystem,
                 person=obj.person,
                 org_unit=obj.org_unit,
-                engagement=obj.engagement,
                 engagements=obj.engagements,
                 validity=RAValidityInput(
                     from_=obj.validity.start,
@@ -813,7 +812,6 @@ class MOAPI:
                 person=obj.person,
                 org_unit=obj.org_unit,
                 engagement=obj.engagement,
-                engagements=obj.engagements,
                 validity=RAValidityInput(
                     from_=obj.validity.start,
                     to=obj.validity.end,
