@@ -26,6 +26,9 @@ sqlalchemy = "^2"
 websockets = "^13"
 pyasn1 = "^0.6.1"
 typer = "^0.16.0"
+pip-audit = "^2.9.0"
+liccheck = "^0.9.2"
+boolean-py = "4"
 
 [tool.poetry.group.pre-commit.dependencies]
 mypy = "^1"
@@ -137,3 +140,33 @@ ignore = [
 
 [tool.ruff.lint.isort]
 force-single-line = true
+
+[tool.liccheck]
+strategy = "ALLOW"
+authorized_licenses = [
+  "MIT",
+  # Apache
+  "Apache Software",
+  "Apache Software License",
+  "Apache 2.0",
+  "Apache-2.0",
+  # BSD
+  "BSD",
+  "BSD License",
+  "BSD-3-Clause",
+  "BSD-2-Clause",
+  # MPL
+  "Mozilla Public License 2.0 (MPL 2.0)",
+  "MPL-2.0",
+  # ISC
+  "ISC",
+  "ISC License (ISCL)",
+  # PSF
+  "Python Software Foundation",
+  "PSF-2.0",
+  # LGPLv3
+  # "GNU Lesser General Public License v3 (LGPLv3)",
+  # Unlicense
+  "The Unlicense (Unlicense)",
+]
+dependencies = true
