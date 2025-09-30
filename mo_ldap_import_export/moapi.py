@@ -319,6 +319,9 @@ class MOAPI:
             name=entry.name,
             parent=entry.parent.uuid if entry.parent is not None else None,
             unit_type=entry.unit_type.uuid,
+            unit_level=(
+                entry.org_unit_level.uuid if entry.org_unit_level is not None else None
+            ),
             validity=models.Validity(
                 start=entry.validity.from_,
                 end=entry.validity.to,
@@ -711,6 +714,7 @@ class MOAPI:
                 name=obj.name,
                 parent=obj.parent,
                 org_unit_type=obj.unit_type,
+                org_unit_level=obj.unit_level,
                 validity=RAValidityInput(
                     from_=obj.validity.start,
                     to=obj.validity.end,
@@ -858,6 +862,7 @@ class MOAPI:
                 name=obj.name,
                 parent=obj.parent,
                 org_unit_type=obj.unit_type,
+                org_unit_level=obj.unit_level,
                 validity=RAValidityInput(
                     from_=obj.validity.start,
                     to=obj.validity.end,

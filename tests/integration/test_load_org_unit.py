@@ -26,6 +26,7 @@ async def test_load_org_unit(
     graphql_client: GraphQLClient,
     mo_org_unit: UUID,
     afdeling: UUID,
+    n1: UUID,
 ) -> None:
     org_unit = await graphql_client.org_unit_create(
         input=OrganisationUnitCreateInput(
@@ -33,6 +34,7 @@ async def test_load_org_unit(
             name="foo",
             parent=mo_org_unit,
             org_unit_type=afdeling,
+            org_unit_level=n1,
             validity=RAValidityInput(
                 from_=datetime(2020, 1, 1),
                 to=datetime(2030, 1, 1),
@@ -48,6 +50,7 @@ async def test_load_org_unit(
         name="foo",
         parent=mo_org_unit,
         unit_type=afdeling,
+        unit_level=n1,
         validity=Validity(
             start=datetime(2020, 1, 1, tzinfo=MO_TZ),
             end=datetime(2030, 1, 1, tzinfo=MO_TZ),

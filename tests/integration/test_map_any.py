@@ -79,6 +79,7 @@ async def test_to_mo_org_unit(
         "name": "create",
         "parent": None,
         "unit_type": {"user_key": "Afdeling"},
+        "org_unit_level": {"user_key": "N1"},
         "validity": {
             "from_": mo_today(),
             "to": None,

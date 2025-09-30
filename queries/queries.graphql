@@ -146,6 +146,9 @@ query read_org_units(
         unit_type {
           uuid
         }
+        org_unit_level {
+          uuid
+        }
         validity {
           to
           from

@@ -89,6 +89,7 @@ async def test_to_mo(
         "name": "create",
         "parent": None,
         "unit_type": {"user_key": "Afdeling"},
+        "org_unit_level": {"user_key": "N1"},
         "validity": {
             "from_": mo_today(),
             "to": None,
@@ -192,6 +193,7 @@ async def test_to_mo_parent(
         "name": "os2mo",
         "parent": None,
         "unit_type": {"user_key": "Afdeling"},
+        "org_unit_level": {"user_key": "N1"},
         "validity": {
             "from_": mo_today(),
             "to": None,
@@ -374,6 +376,7 @@ async def test_to_mo_change_parent(
             "name": name,
             "parent": None,
             "unit_type": {"user_key": "Afdeling"},
+            "org_unit_level": None,
             "validity": {
                 "from_": mo_today(),
                 "to": None,

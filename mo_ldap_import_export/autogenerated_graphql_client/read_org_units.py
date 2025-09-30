@@ -25,6 +25,7 @@ class ReadOrgUnitsOrgUnitsObjectsValidities(BaseModel):
     name: str
     parent: Optional["ReadOrgUnitsOrgUnitsObjectsValiditiesParent"]
     unit_type: Optional["ReadOrgUnitsOrgUnitsObjectsValiditiesUnitType"]
+    org_unit_level: Optional["ReadOrgUnitsOrgUnitsObjectsValiditiesOrgUnitLevel"]
     validity: "ReadOrgUnitsOrgUnitsObjectsValiditiesValidity"
 
 
@@ -33,6 +34,10 @@ class ReadOrgUnitsOrgUnitsObjectsValiditiesParent(BaseModel):
 
 
 class ReadOrgUnitsOrgUnitsObjectsValiditiesUnitType(BaseModel):
+    uuid: UUID
+
+
+class ReadOrgUnitsOrgUnitsObjectsValiditiesOrgUnitLevel(BaseModel):
     uuid: UUID
 
 
@@ -47,4 +52,5 @@ ReadOrgUnitsOrgUnitsObjects.update_forward_refs()
 ReadOrgUnitsOrgUnitsObjectsValidities.update_forward_refs()
 ReadOrgUnitsOrgUnitsObjectsValiditiesParent.update_forward_refs()
 ReadOrgUnitsOrgUnitsObjectsValiditiesUnitType.update_forward_refs()
+ReadOrgUnitsOrgUnitsObjectsValiditiesOrgUnitLevel.update_forward_refs()
 ReadOrgUnitsOrgUnitsObjectsValiditiesValidity.update_forward_refs()

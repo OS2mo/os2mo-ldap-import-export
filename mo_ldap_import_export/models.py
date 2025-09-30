@@ -74,6 +74,7 @@ class OrganisationUnit(StrictBaseModel):
     name: str
     parent: UUID | None = None
     unit_type: UUID
+    unit_level: UUID | None = None
     validity: Validity
 
 

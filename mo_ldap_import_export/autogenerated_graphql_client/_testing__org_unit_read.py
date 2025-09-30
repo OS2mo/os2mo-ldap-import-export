@@ -25,6 +25,7 @@ class TestingOrgUnitReadOrgUnitsObjectsValidities(BaseModel):
     name: str
     parent: Optional["TestingOrgUnitReadOrgUnitsObjectsValiditiesParent"]
     unit_type: Optional["TestingOrgUnitReadOrgUnitsObjectsValiditiesUnitType"]
+    org_unit_level: Optional["TestingOrgUnitReadOrgUnitsObjectsValiditiesOrgUnitLevel"]
     validity: "TestingOrgUnitReadOrgUnitsObjectsValiditiesValidity"
 
 
@@ -33,6 +34,10 @@ class TestingOrgUnitReadOrgUnitsObjectsValiditiesParent(BaseModel):
 
 
 class TestingOrgUnitReadOrgUnitsObjectsValiditiesUnitType(BaseModel):
+    user_key: str
+
+
+class TestingOrgUnitReadOrgUnitsObjectsValiditiesOrgUnitLevel(BaseModel):
     user_key: str
 
 
@@ -47,4 +52,5 @@ TestingOrgUnitReadOrgUnitsObjects.update_forward_refs()
 TestingOrgUnitReadOrgUnitsObjectsValidities.update_forward_refs()
 TestingOrgUnitReadOrgUnitsObjectsValiditiesParent.update_forward_refs()
 TestingOrgUnitReadOrgUnitsObjectsValiditiesUnitType.update_forward_refs()
+TestingOrgUnitReadOrgUnitsObjectsValiditiesOrgUnitLevel.update_forward_refs()
 TestingOrgUnitReadOrgUnitsObjectsValiditiesValidity.update_forward_refs()

@@ -152,6 +152,9 @@ query __testing__org_unit_read($filter: OrganisationUnitFilter) {
         unit_type {
           user_key
         }
+        org_unit_level {
+          user_key
+        }
         validity {
           from
           to

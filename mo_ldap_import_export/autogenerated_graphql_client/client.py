@@ -892,6 +892,9 @@ class GraphQLClient(AsyncBaseClient):
                     unit_type {
                       uuid
                     }
+                    org_unit_level {
+                      uuid
+                    }
                     validity {
                       to
                       from
@@ -2316,6 +2319,9 @@ class GraphQLClient(AsyncBaseClient):
                       uuid
                     }
                     unit_type {
+                      user_key
+                    }
+                    org_unit_level {
                       user_key
                     }
                     validity {

@@ -186,6 +186,17 @@ async def afdeling(graphql_client: GraphQLClient) -> UUID:
 
 
 @pytest.fixture
+async def n1(graphql_client: GraphQLClient) -> UUID:
+    return one(
+        (
+            await graphql_client.read_class_uuid_by_facet_and_class_user_key(
+                "org_unit_level", "N1"
+            )
+        ).objects
+    ).uuid
+
+
+@pytest.fixture
 async def mo_org_unit(graphql_client: GraphQLClient, afdeling: UUID) -> UUID:
     r = await graphql_client.org_unit_create(
         input=OrganisationUnitCreateInput(
