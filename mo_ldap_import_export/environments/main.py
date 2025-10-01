@@ -1024,6 +1024,7 @@ def construct_default_environment() -> Environment:
     environment.globals["dn_has_ou"] = dn_has_ou
     environment.globals["first"] = first
     environment.globals["last"] = last
+    environment.globals["sorted"] = sorted
 
     return environment
 
