@@ -25,6 +25,8 @@ from jinja2 import UndefinedError
 from jinja2.utils import missing
 from ldap3.utils.dn import safe_dn
 from ldap3.utils.dn import to_dn
+from more_itertools import first
+from more_itertools import last
 from more_itertools import one
 from more_itertools import only
 from more_itertools import unzip
@@ -1020,6 +1022,8 @@ def construct_default_environment() -> Environment:
     environment.globals["uuid4"] = uuid4
     environment.globals["parent_dn"] = parent_dn
     environment.globals["dn_has_ou"] = dn_has_ou
+    environment.globals["first"] = first
+    environment.globals["last"] = last
 
     return environment
 
