@@ -619,11 +619,11 @@ async def get_employment_interval(
     return startdate, enddate
 
 
-async def get_manager_person_uuid(
+async def get_manager_person_uuids(
     graphql_client: GraphQLClient,
     engagement_uuid: EngagementUUID,
     filter: dict[str, Any] | None = None,
-) -> UUID | None:
+) -> set[UUID | None]:
     manager_filter = None
     if filter:
         manager_filter = parse_obj_as(OrgUnitsboundmanagerfilter, filter)
@@ -634,35 +634,49 @@ async def get_manager_person_uuid(
     obj = only(result.objects)
     if obj is None:
         logger.debug("Invalid engagement", engagement_uuid=engagement_uuid)
-        return None
+        return set()
 
     current = obj.current
     # Our lookup is specifically for current engagements
     assert current is not None
 
-    # NOTE: We assume that there is at most one manager in managers, as any others
-    #       should have have been filtered using the manager filter.
-    manager = only(current.managers)
-    if manager is None:
+    managers = current.managers
+    if not managers:
         logger.debug(
-            "No manager relation found",
+            "No manager relation(s) found",
             engagement_uuid=engagement_uuid,
             manager_filter=filter,
         )
-        return None
+        return set()
 
     # NOTE: manager.person may be null if we hit a vacant manager position
-    #       The caller can avoid this, by setting `employee: null` on the manager filter.
-    if manager.person is None:
+    has_vacant_manager = any(manager.person is None for manager in managers)
+    if has_vacant_manager:
         logger.debug(
-            "Vacant manager found",
+            "Vacant manager(s) found",
+            suggestion="Can be avoided by setting `employee: null` on the manager filter",
             engagement_uuid=engagement_uuid,
             manager_filter=filter,
         )
-        return None
 
-    manager_validity = one(manager.person)
-    return manager_validity.uuid
+    manager_persons: set[UUID | None] = {
+        one(manager.person).uuid for manager in managers if manager.person is not None
+    }
+    if has_vacant_manager:
+        manager_persons.add(None)
+    return manager_persons
+
+
+async def get_manager_person_uuid(
+    graphql_client: GraphQLClient,
+    engagement_uuid: EngagementUUID,
+    filter: dict[str, Any] | None = None,
+) -> UUID | None:
+    manager_persons = await get_manager_person_uuids(
+        graphql_client, engagement_uuid, filter
+    )
+    manager_person = only(manager_persons)
+    return manager_person
 
 
 async def get_person_dn(dataloader: DataLoader, uuid: EmployeeUUID) -> DN | None:
@@ -958,6 +972,7 @@ def construct_globals_dict(
         "get_org_unit_uuid": partial(get_org_unit_uuid, graphql_client),
         "get_employment_interval": partial(get_employment_interval, graphql_client),
         "get_manager_person_uuid": partial(get_manager_person_uuid, graphql_client),
+        "get_manager_person_uuids": partial(get_manager_person_uuids, graphql_client),
         "get_person_dn": partial(get_person_dn, dataloader),
         "dn_to_uuid": dataloader.ldapapi.get_ldap_unique_ldap_uuid,
         "uuid_to_dn": dataloader.ldapapi.get_ldap_dn,
