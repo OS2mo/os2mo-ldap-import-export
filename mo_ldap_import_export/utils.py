@@ -3,6 +3,7 @@
 import re
 from datetime import datetime
 from datetime import time
+from datetime import timedelta
 from functools import partial
 from functools import wraps
 from typing import Any
@@ -38,6 +39,15 @@ def mo_today() -> datetime:
     """MO does not support datetimes with a time, haha."""
     now = datetime.now(tz=MO_TZ)
     return datetime.combine(now, time.min, now.tzinfo)
+
+
+def mo_yesterday() -> datetime:
+    """
+    Terminating today keeps the object 'current' until the end of the day.
+    Often you want an object terminated NOW, so you need to set the termination
+    day to yesterday, haha.
+    """
+    return mo_today() - timedelta(days=1)
 
 
 def import_class(name: str) -> type[MOBase]:

@@ -54,7 +54,7 @@ from .types import ITUserUUID
 from .utils import combine_dn_strings
 from .utils import ensure_list
 from .utils import extract_ou_from_dn
-from .utils import mo_today
+from .utils import mo_yesterday
 
 logger = structlog.stdlib.get_logger()
 
@@ -851,7 +851,9 @@ def construct_router(settings: Settings) -> APIRouter:
             # Actually terminate all but one address
             for address_uuid in delete_uuids:
                 await graphql_client.address_terminate(
-                    input=AddressTerminateInput(to=at or mo_today(), uuid=address_uuid)
+                    input=AddressTerminateInput(
+                        to=at or mo_yesterday(), uuid=address_uuid
+                    )
                 )
 
             # Emit a refresh event
