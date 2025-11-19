@@ -10,6 +10,7 @@ from fastramqpi.context import Context
 from fastramqpi.pytest_util import retrying
 from sqlalchemy import select
 
+from mo_ldap_import_export.config import Settings
 from mo_ldap_import_export.depends import GraphQLClient
 from mo_ldap_import_export.ldap_emit import publish_uuids
 from mo_ldap_import_export.ldap_event_generator import MICROSOFT_EPOCH
@@ -132,7 +133,7 @@ async def test_event_handler_does_not_run_without_listen(
     # Publish a message to the LDAP AMQP queue
     assert await get_num_published_messages() == 0
     assert await get_num_queued_messages() == 0
-    await publish_uuids(graphql_client, [person_uuid])
+    await publish_uuids(Settings(), graphql_client, [person_uuid])
 
     # Prove that no messages have been published, and none have been consumed
     assert await get_num_published_messages() == 0
