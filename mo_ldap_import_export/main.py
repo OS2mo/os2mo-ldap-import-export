@@ -184,16 +184,16 @@ async def handle_ituser(
 
 
 @mo2ldap_router.post("/person")
-@handle_exclusively_decorator(key=lambda object_uuid, *_, **__: object_uuid)
 @http_reject_on_failure
 async def http_process_person(
     event: Event[EmployeeUUID],
     settings: depends.Settings,
     sync_tool: depends.SyncTool,
 ) -> dict[str, list[Any]]:
-    return await handle_person(event.subject, settings, sync_tool)
+    return await handle_person(event.subject, settings, sync_tool)  # type: ignore[no-any-return]
 
 
+@handle_exclusively_decorator(key=lambda object_uuid, *_, **__: object_uuid)
 async def handle_person(
     object_uuid: EmployeeUUID, settings: Settings, sync_tool: SyncTool
 ) -> dict[str, list[Any]]:
