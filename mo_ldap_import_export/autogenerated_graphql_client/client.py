@@ -2146,13 +2146,17 @@ class GraphQLClient(AsyncBaseClient):
         return RolebindingRefresh.parse_obj(data).rolebinding_refresh
 
     async def org_unit_engagements_refresh(
-        self, exchange: str, org_unit_uuid: UUID
+        self,
+        org_unit_uuid: UUID,
+        exchange: str | None | UnsetType = UNSET,
+        owner: UUID | None | UnsetType = UNSET,
     ) -> OrgUnitEngagementsRefreshEngagementRefresh:
         query = gql(
             """
-            mutation org_unit_engagements_refresh($exchange: String!, $org_unit_uuid: UUID!) {
+            mutation org_unit_engagements_refresh($exchange: String, $owner: UUID, $org_unit_uuid: UUID!) {
               engagement_refresh(
                 exchange: $exchange
+                owner: $owner
                 filter: {org_unit: {uuids: [$org_unit_uuid]}, from_date: null, to_date: null}
               ) {
                 objects
@@ -2162,6 +2166,7 @@ class GraphQLClient(AsyncBaseClient):
         )
         variables: dict[str, object] = {
             "exchange": exchange,
+            "owner": owner,
             "org_unit_uuid": org_unit_uuid,
         }
         response = await self.execute(query=query, variables=variables)
