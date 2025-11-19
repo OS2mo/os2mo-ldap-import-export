@@ -559,6 +559,47 @@ def create_fastramqpi(**kwargs: Any) -> FastRAMQPI:
     # GraphQL event listeners
     listeners: list[Listener] = []
     if settings.listen_to_changes_in_mo:
+        # Static listeners
+        listeners.extend(
+            [
+                Listener(
+                    namespace="mo",
+                    user_key="process_address",
+                    routing_key="address",
+                    path="/mo2ldap/address",
+                ),
+                Listener(
+                    namespace="mo",
+                    user_key="engagement",
+                    routing_key="process_engagement",
+                    path="/mo2ldap/engagement",
+                ),
+                Listener(
+                    namespace="mo",
+                    user_key="process_ituser",
+                    routing_key="ituser",
+                    path="/mo2ldap/ituser",
+                ),
+                Listener(
+                    namespace="mo",
+                    user_key="process_person",
+                    routing_key="person",
+                    path="/mo2ldap/person",
+                ),
+                Listener(
+                    namespace="mo",
+                    user_key="reconcile_person",
+                    routing_key="person",
+                    path="/mo2ldap/reconcile",
+                ),
+                Listener(
+                    namespace="mo",
+                    user_key="process_org_unit",
+                    routing_key="org_unit",
+                    path="/mo2ldap/org_unit",
+                ),
+            ]
+        )
         # Dynamic listeners
         listeners.extend(
             Listener(
