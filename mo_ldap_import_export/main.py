@@ -8,13 +8,11 @@ from collections.abc import Callable
 from contextlib import AsyncExitStack
 from contextlib import asynccontextmanager
 from contextlib import suppress
-from typing import Annotated
 from typing import Any
 from uuid import UUID
 
 import structlog
 from fastapi import APIRouter
-from fastapi import Body
 from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
@@ -76,10 +74,10 @@ mo2ldap_router = APIRouter(prefix="/mo2ldap")
 @mo2ldap_router.post("/address")
 @http_reject_on_failure
 async def http_process_address(
-    object_uuid: Annotated[UUID, Body()],
+    event: Event[UUID],
     graphql_client: depends.GraphQLClient,
 ) -> None:
-    await handle_address(object_uuid, graphql_client)
+    await handle_address(event.subject, graphql_client)
 
 
 async def handle_address(
@@ -119,10 +117,10 @@ async def handle_address(
 @mo2ldap_router.post("/engagement")
 @http_reject_on_failure
 async def http_process_engagement(
-    object_uuid: Annotated[UUID, Body()],
+    event: Event[UUID],
     graphql_client: depends.GraphQLClient,
 ) -> None:
-    await handle_engagement(object_uuid, graphql_client)
+    await handle_engagement(event.subject, graphql_client)
 
 
 async def handle_engagement(
@@ -146,10 +144,10 @@ async def handle_engagement(
 @mo2ldap_router.post("/ituser")
 @http_reject_on_failure
 async def http_process_ituser(
-    object_uuid: Annotated[UUID, Body()],
+    event: Event[UUID],
     graphql_client: depends.GraphQLClient,
 ) -> None:
-    await handle_ituser(object_uuid, graphql_client)
+    await handle_ituser(event.subject, graphql_client)
 
 
 async def handle_ituser(
@@ -189,11 +187,11 @@ async def handle_ituser(
 @handle_exclusively_decorator(key=lambda object_uuid, *_, **__: object_uuid)
 @http_reject_on_failure
 async def http_process_person(
-    object_uuid: Annotated[EmployeeUUID, Body()],
+    event: Event[EmployeeUUID],
     settings: depends.Settings,
     sync_tool: depends.SyncTool,
 ) -> dict[str, list[Any]]:
-    return await handle_person(object_uuid, settings, sync_tool)
+    return await handle_person(event.subject, settings, sync_tool)
 
 
 async def handle_person(
@@ -210,13 +208,13 @@ async def handle_person(
 @mo2ldap_router.post("/reconcile")
 @http_reject_on_failure
 async def http_reconcile_person(
-    object_uuid: Annotated[UUID, Body()],
+    event: Event[UUID],
     settings: depends.Settings,
     dataloader: depends.DataLoader,
     graphql_client: depends.GraphQLClient,
 ) -> None:
     await handle_person_reconciliation(
-        object_uuid, settings, dataloader, graphql_client
+        event.subject, settings, dataloader, graphql_client
     )
 
 
@@ -246,10 +244,10 @@ async def handle_person_reconciliation(
 @mo2ldap_router.post("/org_unit")
 @http_reject_on_failure
 async def http_process_org_unit(
-    object_uuid: Annotated[UUID, Body()],
+    event: Event[UUID],
     graphql_client: depends.GraphQLClient,
 ) -> None:
-    await handle_org_unit(object_uuid, graphql_client)
+    await handle_org_unit(event.subject, graphql_client)
 
 
 async def handle_org_unit(
