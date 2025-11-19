@@ -22,14 +22,12 @@ from mo_ldap_import_export.depends import GraphQLClient
 from mo_ldap_import_export.environments.main import construct_environment
 from mo_ldap_import_export.import_export import SyncTool
 from mo_ldap_import_export.main import GRAPHQL_VERSION
-from mo_ldap_import_export.main import handle_org_unit
 from mo_ldap_import_export.moapi import Verb
 from mo_ldap_import_export.moapi import get_primary_engagement
 from mo_ldap_import_export.models import Employee
 from mo_ldap_import_export.models import Engagement
 from mo_ldap_import_export.types import DN
 from mo_ldap_import_export.types import EmployeeUUID
-from mo_ldap_import_export.types import OrgUnitUUID
 from tests.graphql_mocker import GraphQLMocker
 
 
@@ -252,16 +250,6 @@ async def test_import_single_object_from_LDAP_but_import_equals_false(
         messages = [w["event"] for w in cap_logs if w["log_level"] == "info"]
         assert "Import to MO filtered" in messages
         assert "Loading object" not in messages
-
-
-async def test_publish_engagements_for_org_unit(dataloader: AsyncMock) -> None:
-    amqpsystem = AsyncMock()
-    amqpsystem.exchange_name = "my-unique-exchange-name"
-    uuid = OrgUnitUUID(uuid4())
-    await handle_org_unit(uuid, dataloader.graphql_client, amqpsystem)
-    dataloader.graphql_client.org_unit_engagements_refresh.assert_called_with(
-        amqpsystem.exchange_name, uuid
-    )
 
 
 async def test_perform_import_checks_noop(sync_tool: SyncTool) -> None:

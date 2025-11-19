@@ -11,7 +11,6 @@ from fastramqpi.ramqp.amqp import AMQPSystem
 from fastramqpi.ramqp.amqp import Router
 from fastramqpi.ramqp.depends import get_payload_as_type
 from fastramqpi.ramqp.depends import rate_limit
-from fastramqpi.ramqp.mo import MOAMQPSystem
 from fastramqpi.ramqp.utils import RejectMessage
 
 from . import depends
@@ -85,16 +84,16 @@ async def handle_uuid(
 async def http_reconcile_uuid(
     settings: Settings,
     dataloader: DataLoader,
-    amqpsystem: depends.AMQPSystem,
+    graphql_client: depends.GraphQLClient,
     uuid: Annotated[LDAPUUID, Body()],
 ) -> None:
-    await handle_ldap_reconciliation(settings, dataloader, amqpsystem, uuid)
+    await handle_ldap_reconciliation(settings, dataloader, graphql_client, uuid)
 
 
 async def handle_ldap_reconciliation(
     settings: Settings,
     dataloader: DataLoader,
-    amqpsystem: MOAMQPSystem,
+    graphql_client: depends.GraphQLClient,
     uuid: LDAPUUID,
 ) -> None:
     logger.info("Received LDAP AMQP event (Reconcile)", uuid=uuid)
@@ -112,9 +111,9 @@ async def handle_ldap_reconciliation(
     if person_uuid is None:
         return
     # We handle reconciliation by seeding events into the normal processing queue
-    queue_prefix = settings.fastramqpi.amqp.queue_prefix
-    queue_name = f"{queue_prefix}_process_person"
-    await amqpsystem.publish_message_to_queue(queue_name, person_uuid)  # type: ignore
+    # TODO: This ignores `event_namespace` and refreshes all integrations
+    me = await graphql_client.who_am_i()
+    await graphql_client.person_refresh(uuids=[person_uuid], owner=me.actor.uuid)
 
 
 def configure_ldap_amqpsystem(fastramqpi: FastRAMQPI, settings: Settings) -> AMQPSystem:
