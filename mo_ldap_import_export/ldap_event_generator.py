@@ -19,7 +19,6 @@ import structlog
 from fastapi import APIRouter
 from fastapi import Body
 from fastramqpi.context import Context
-from fastramqpi.ramqp.amqp import AMQPSystem
 from ldap3 import Connection
 from sqlalchemy import ARRAY
 from sqlalchemy import TIMESTAMP
@@ -102,14 +101,12 @@ class LDAPEventGenerator(AbstractAsyncContextManager):
         sessionmaker: async_sessionmaker[AsyncSession],
         settings: Settings,
         graphql_client: GraphQLClient,
-        ldap_amqpsystem: AMQPSystem,
         ldap_connection: Connection,
     ) -> None:
         """Periodically poll LDAP for changes."""
         self.sessionmaker = sessionmaker
         self.graphql_client = graphql_client
         self.settings = settings
-        self.ldap_amqpsystem = ldap_amqpsystem
         self.ldap_connection = ldap_connection
 
         self._pollers: set[asyncio.Task] = set()
@@ -134,7 +131,6 @@ class LDAPEventGenerator(AbstractAsyncContextManager):
             setup_poller(
                 self.settings,
                 self.graphql_client,
-                self.ldap_amqpsystem,
                 self.ldap_connection,
                 self.sessionmaker,
                 search_base,
@@ -162,7 +158,6 @@ class LDAPEventGenerator(AbstractAsyncContextManager):
 def setup_poller(
     settings: Settings,
     graphql_client: GraphQLClient,
-    ldap_amqpsystem: AMQPSystem,
     ldap_connection: Connection,
     sessionmaker: async_sessionmaker[AsyncSession],
     search_base: str,
@@ -177,7 +172,6 @@ def setup_poller(
         _poller(
             settings,
             graphql_client,
-            ldap_amqpsystem,
             ldap_connection,
             search_base,
             sessionmaker,
@@ -258,7 +252,6 @@ async def _poll(
 async def _poller(
     settings: Settings,
     graphql_client: GraphQLClient,
-    ldap_amqpsystem: AMQPSystem,
     ldap_connection: Connection,
     search_base: str,
     sessionmaker: async_sessionmaker[AsyncSession],
@@ -286,7 +279,6 @@ async def _poller(
         await asyncio.shield(
             _generate_events(
                 graphql_client,
-                ldap_amqpsystem,
                 search_base,
                 sessionmaker,
                 seeded_poller,
@@ -298,7 +290,6 @@ async def _poller(
 
 async def _generate_events(
     graphql_client: GraphQLClient,
-    ldap_amqpsystem: AMQPSystem,
     search_base: str,
     sessionmaker: async_sessionmaker[AsyncSession],
     seeded_poller: Callable[..., Awaitable[tuple[set[LDAPUUID], datetime | None]]],
@@ -328,7 +319,7 @@ async def _generate_events(
         # seconds effectively spamming the queue, which is a big issue if the UUID
         # that is getting spammed is stuck.
         if uuids != set(last_run.uuids) or timestamp != last_run.datetime:
-            await publish_uuids(graphql_client, ldap_amqpsystem, list(uuids))
+            await publish_uuids(graphql_client, list(uuids))
 
         # No events found means no timestamps, which means we reuse the old last_run
         if timestamp is None:

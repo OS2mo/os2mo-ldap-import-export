@@ -19,7 +19,6 @@ from uuid import uuid4
 
 import structlog
 from fastapi.encoders import jsonable_encoder
-from fastramqpi.ramqp import AMQPSystem
 from fastramqpi.ramqp.mo import MOAMQPSystem
 from fastramqpi.ramqp.utils import RequeueMessage
 from jinja2 import Environment
@@ -937,17 +936,13 @@ async def refresh(
     )
 
 
-async def refresh_ldap(
-    graphql_client: GraphQLClient,
-    amqpsystem: AMQPSystem,
-    uuids: set[LDAPUUID],
-) -> None:
-    """Send events for the provided UUIDs on both AMQP and GraphQL Events."""
+async def refresh_ldap(graphql_client: GraphQLClient, uuids: set[LDAPUUID]) -> None:
+    """Send GraphQL events for the provided UUIDs."""
     # This is a noop according to the typing, but it's actually required
     # because the input is from jinja, and thus not type-checkable.
     uuids = parse_obj_as(set[LDAPUUID], uuids)
     logger.info("refresh_ldap called", uuids=uuids)
-    await publish_uuids(graphql_client, amqpsystem, list(uuids))
+    await publish_uuids(graphql_client, list(uuids))
 
 
 class DARAddress(BaseModel):
@@ -1005,7 +1000,6 @@ def construct_globals_dict(
     settings: Settings,
     dataloader: DataLoader,
     mo_amqpsystem: MOAMQPSystem,
-    ldap_amqpsystem: AMQPSystem,
 ) -> dict[str, Any]:
     moapi = dataloader.moapi
     graphql_client = moapi.graphql_client
@@ -1080,7 +1074,7 @@ def construct_globals_dict(
             ituser_uuid_to_rolebinding_uuids, graphql_client
         ),
         "refresh": partial(refresh, graphql_client, mo_amqpsystem),
-        "refresh_ldap": partial(refresh_ldap, graphql_client, ldap_amqpsystem),
+        "refresh_ldap": partial(refresh_ldap, graphql_client),
         "find_mo_employee_uuid": dataloader.find_mo_employee_uuid,
         "resolve_dar_address": partial(resolve_dar_address, graphql_client),
         "get_legacy_manager_person_uuid": partial(
@@ -1143,11 +1137,10 @@ def construct_environment(
     settings: Settings,
     dataloader: DataLoader,
     mo_amqpsystem: MOAMQPSystem,
-    ldap_amqpsystem: AMQPSystem,
 ) -> Environment:
     environment = construct_default_environment()
     environment.filters.update(construct_filters_dict(dataloader))
     environment.globals.update(
-        construct_globals_dict(settings, dataloader, mo_amqpsystem, ldap_amqpsystem)
+        construct_globals_dict(settings, dataloader, mo_amqpsystem)
     )
     return environment

@@ -408,7 +408,7 @@ async def lifespan(
         logger.info("Initializing jinja template environment")
         mo_amqpsystem = fastramqpi.get_amqpsystem()
         template_environment = construct_environment(
-            settings, dataloader, mo_amqpsystem, ldap_amqpsystem
+            settings, dataloader, mo_amqpsystem
         )
 
         logger.info("Initializing converters")
@@ -435,7 +435,7 @@ async def lifespan(
             logger.info("Initializing LDAP event generator")
             sessionmaker = fastramqpi.get_context()["sessionmaker"]
             ldap_event_generator = LDAPEventGenerator(
-                sessionmaker, settings, graphql_client, ldap_amqpsystem, ldap_connection
+                sessionmaker, settings, graphql_client, ldap_connection
             )
             fastramqpi.add_healthcheck(
                 name="LDAPEventGenerator", healthcheck=ldap_event_generator.healthcheck

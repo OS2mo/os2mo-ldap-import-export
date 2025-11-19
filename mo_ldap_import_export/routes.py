@@ -797,7 +797,6 @@ def construct_router(settings: Settings) -> APIRouter:
     @router.delete("/danger/purge_addresses")
     async def purge_addresses(
         graphql_client: depends.GraphQLClient,
-        ldap_amqpsystem: depends.LDAPAMQPSystem,
         dataloader: depends.DataLoader,
         address_type_user_key: str,
         at: datetime | None = None,
@@ -864,7 +863,7 @@ def construct_router(settings: Settings) -> APIRouter:
                 )
 
             # Emit a refresh event
-            await publish_uuids(graphql_client, ldap_amqpsystem, [ldap_uuid])
+            await publish_uuids(graphql_client, [ldap_uuid])
 
         return cleaned
 

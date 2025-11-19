@@ -3,7 +3,6 @@
 from asyncio import sleep
 from datetime import timedelta
 from functools import partial
-from unittest.mock import AsyncMock
 from uuid import UUID
 
 import pytest
@@ -83,7 +82,6 @@ async def test_no_desync(
     async def generate_events() -> set[LDAPUUID]:
         await _generate_events(
             graphql_client=graphql_client,
-            ldap_amqpsystem=AsyncMock(),
             search_base=search_base,
             sessionmaker=sessionmaker,
             seeded_poller=partial(
