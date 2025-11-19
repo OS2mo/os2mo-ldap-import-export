@@ -5,7 +5,6 @@ from collections.abc import Awaitable
 from collections.abc import Callable
 from typing import Any
 from unittest.mock import ANY
-from unittest.mock import AsyncMock
 from uuid import UUID
 
 import pytest
@@ -352,11 +351,7 @@ async def test_refresh_ldap(
     )
 
     uuid = LDAPUUID("c5471289-a5d0-43fa-a63f-58f23583ee82")
-    await refresh_ldap(
-        graphql_client=graphql_client,
-        amqpsystem=AsyncMock(),
-        uuids={uuid},
-    )
+    await refresh_ldap(graphql_client=graphql_client, uuids={uuid})
 
     events = await graphql_client.list_events(listener.uuid)
     uuids = {LDAPUUID(e.subject) for e in events.objects}

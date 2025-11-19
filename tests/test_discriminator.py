@@ -471,9 +471,7 @@ async def sync_tool_and_context(
     )
     context["user_context"]["dataloader"] = dataloader
 
-    template_environment = construct_environment(
-        settings, dataloader, MagicMock(), MagicMock()
-    )
+    template_environment = construct_environment(settings, dataloader, MagicMock())
     converter = LdapConverter(template_environment)
     context["user_context"]["converter"] = converter
 

@@ -549,7 +549,6 @@ async def test_setup_poller() -> None:
 
     settings = MagicMock()
     graphql_client = AsyncMock()
-    ldap_amqpsystem = AsyncMock()
     sessionmaker = AsyncMock()
     ldap_connection = AsyncMock()
 
@@ -559,7 +558,6 @@ async def test_setup_poller() -> None:
         handle = setup_poller(
             settings,
             graphql_client,
-            ldap_amqpsystem,
             ldap_connection,
             sessionmaker,
             search_base,
@@ -721,10 +719,9 @@ async def test_poller_healthcheck(running: list[bool], expected: bool) -> None:
     sessionmaker = AsyncMock()
     settings = MagicMock()
     graphql_client = AsyncMock()
-    ldap_amqpsystem = AsyncMock()
     ldap_connection = MagicMock()
     ldap_event_generator = LDAPEventGenerator(
-        sessionmaker, settings, graphql_client, ldap_amqpsystem, ldap_connection
+        sessionmaker, settings, graphql_client, ldap_connection
     )
     ldap_event_generator._pollers = pollers
 

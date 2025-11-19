@@ -110,8 +110,6 @@ async def test_event_handler_does_not_run_without_listen(
     ldap_api: LDAPAPI,
     ldap_org_unit: list[str],
 ) -> None:
-    ldap_amqpsystem = context["user_context"]["ldap_amqpsystem"]
-
     # Add a person to LDAP and fetch its UUID
     person_dn = combine_dn_strings(["uid=abk"] + ldap_org_unit)
     await ldap_api.ldap_connection.ldap_add(
@@ -134,7 +132,7 @@ async def test_event_handler_does_not_run_without_listen(
     # Publish a message to the LDAP AMQP queue
     assert await get_num_published_messages() == 0
     assert await get_num_queued_messages() == 0
-    await publish_uuids(graphql_client, ldap_amqpsystem, [person_uuid])
+    await publish_uuids(graphql_client, [person_uuid])
 
     # Prove that no messages have been published, and none have been consumed
     assert await get_num_published_messages() == 0
