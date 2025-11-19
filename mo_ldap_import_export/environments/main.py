@@ -936,13 +936,15 @@ async def refresh(
     )
 
 
-async def refresh_ldap(graphql_client: GraphQLClient, uuids: set[LDAPUUID]) -> None:
+async def refresh_ldap(
+    settings: Settings, graphql_client: GraphQLClient, uuids: set[LDAPUUID]
+) -> None:
     """Send GraphQL events for the provided UUIDs."""
     # This is a noop according to the typing, but it's actually required
     # because the input is from jinja, and thus not type-checkable.
     uuids = parse_obj_as(set[LDAPUUID], uuids)
     logger.info("refresh_ldap called", uuids=uuids)
-    await publish_uuids(graphql_client, list(uuids))
+    await publish_uuids(settings, graphql_client, list(uuids))
 
 
 class DARAddress(BaseModel):
@@ -1074,7 +1076,7 @@ def construct_globals_dict(
             ituser_uuid_to_rolebinding_uuids, graphql_client
         ),
         "refresh": partial(refresh, graphql_client, mo_amqpsystem),
-        "refresh_ldap": partial(refresh_ldap, graphql_client),
+        "refresh_ldap": partial(refresh_ldap, settings, graphql_client),
         "find_mo_employee_uuid": dataloader.find_mo_employee_uuid,
         "resolve_dar_address": partial(resolve_dar_address, graphql_client),
         "get_legacy_manager_person_uuid": partial(

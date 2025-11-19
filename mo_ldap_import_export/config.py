@@ -388,6 +388,11 @@ class Settings(BaseSettings):
         description="LDAP amqp settings",
     )
 
+    event_namespace: str = Field(
+        default="ldap",
+        description="Unique GraphQL event namespace in cases where the integration is deployed multiple times for a single OS2mo.",
+    )
+
     fastramqpi: FastFAMQPIApplicationSettings
 
     @root_validator(pre=True)
