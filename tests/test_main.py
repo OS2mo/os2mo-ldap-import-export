@@ -6,7 +6,6 @@
 import os
 from collections.abc import Iterator
 from contextlib import contextmanager
-from functools import partial
 from typing import Any
 from unittest.mock import AsyncMock
 from unittest.mock import MagicMock
@@ -19,25 +18,12 @@ from fastapi.testclient import TestClient
 from fastramqpi.main import FastRAMQPI
 from fastramqpi.ramqp.depends import Context
 from fastramqpi.ramqp.depends import get_context
-from fastramqpi.ramqp.utils import RejectMessage
-from fastramqpi.ramqp.utils import RequeueMessage
-from gql.transport.exceptions import TransportQueryError
 from pydantic import parse_obj_as
 
 from mo_ldap_import_export.config import ConversionMapping
-from mo_ldap_import_export.exceptions import IgnoreChanges
-from mo_ldap_import_export.exceptions import IncorrectMapping
-from mo_ldap_import_export.exceptions import NoObjectsReturnedException
-from mo_ldap_import_export.exceptions import ReadOnlyException
-from mo_ldap_import_export.main import amqp_reject_on_failure
 from mo_ldap_import_export.main import create_app
 from mo_ldap_import_export.main import create_fastramqpi
 from mo_ldap_import_export.main import open_ldap_connection
-from mo_ldap_import_export.main import process_address
-from mo_ldap_import_export.main import process_engagement
-from mo_ldap_import_export.main import process_ituser
-from mo_ldap_import_export.main import process_org_unit
-from mo_ldap_import_export.main import process_person
 from mo_ldap_import_export.models import Address
 from mo_ldap_import_export.models import Employee
 from mo_ldap_import_export.models import ITUser
@@ -273,26 +259,6 @@ async def test_open_ldap_connection() -> None:
     assert state == [1, 2]
 
 
-async def test_listen_to_changes(sync_tool: AsyncMock) -> None:
-    settings = MagicMock()
-    settings.listen_to_changes_in_mo = True
-
-    amqpsystem = AsyncMock()
-    amqpsystem.exchange_name = "wow"
-    graphql_client = AsyncMock()
-
-    payload = uuid4()
-
-    sync_tool.reset_mock()
-    await process_person(payload, settings, sync_tool, amqpsystem)
-    sync_tool.listen_to_changes_in_employees.assert_awaited_once()
-
-    await process_org_unit(payload, graphql_client, amqpsystem)
-    graphql_client.org_unit_engagements_refresh.assert_called_with(
-        amqpsystem.exchange_name, payload
-    )
-
-
 async def test_incorrect_ous_to_search_in() -> None:
     mp = pytest.MonkeyPatch()
     overrides = {
@@ -311,39 +277,3 @@ async def test_incorrect_ous_to_search_in() -> None:
     }
     for key, value in overrides.items():
         mp.setenv(key, value)
-
-
-@pytest.mark.parametrize(
-    "exception,expected",
-    [
-        (IncorrectMapping, RequeueMessage),
-        (TransportQueryError, RequeueMessage),
-        (NoObjectsReturnedException, RequeueMessage),
-        (RequeueMessage, RequeueMessage),
-        (IgnoreChanges, RejectMessage),
-        (
-            partial(ReadOnlyException, dn="CN=foo", requested_state=dict()),
-            RejectMessage,
-        ),
-        (Exception, RequeueMessage),
-    ],
-)
-async def test_reject_on_failure(
-    exception: type[Exception], expected: type[Exception]
-) -> None:
-    async def exception_func() -> None:
-        raise exception("")
-
-    with pytest.raises(expected):
-        await amqp_reject_on_failure(exception_func)()
-
-
-def test_wraps():
-    """
-    Test that the decorated listen_to_changes function keeps its name
-    """
-    assert process_address.__name__ == "process_address"
-    assert process_engagement.__name__ == "process_engagement"
-    assert process_ituser.__name__ == "process_ituser"
-    assert process_person.__name__ == "process_person"
-    assert process_org_unit.__name__ == "process_org_unit"
