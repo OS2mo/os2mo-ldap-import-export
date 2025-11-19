@@ -610,6 +610,23 @@ def create_fastramqpi(**kwargs: Any) -> FastRAMQPI:
             )
             for mapping in settings.conversion_mapping.mo_to_ldap
         )
+    if settings.listen_to_changes_in_ldap:
+        listeners.extend(
+            [
+                Listener(
+                    namespace="ldap",
+                    user_key="process_uuid",
+                    routing_key="uuid",
+                    path="/ldap2mo/uuid",
+                ),
+                Listener(
+                    namespace="ldap",
+                    user_key="reconcile_uuid",
+                    routing_key="uuid",
+                    path="/ldap2mo/reconcile",
+                ),
+            ]
+        )
 
     logger.info("Setting up FastRAMQPI")
     fastramqpi = FastRAMQPI(
