@@ -4,8 +4,8 @@ from typing import Annotated
 
 import structlog
 from fastapi import APIRouter
-from fastapi import Body
 from fastapi import Depends
+from fastramqpi.events import Event
 from fastramqpi.main import FastRAMQPI
 from fastramqpi.ramqp.amqp import AMQPSystem
 from fastramqpi.ramqp.amqp import Router
@@ -36,9 +36,9 @@ async def http_process_uuid(
     settings: Settings,
     sync_tool: SyncTool,
     dataloader: DataLoader,
-    uuid: Annotated[LDAPUUID, Body()],
+    event: Event[LDAPUUID],
 ) -> None:
-    await handle_uuid(settings, sync_tool, dataloader, uuid)
+    await handle_uuid(settings, sync_tool, dataloader, event.subject)
 
 
 async def handle_uuid(
@@ -85,9 +85,11 @@ async def http_reconcile_uuid(
     settings: Settings,
     dataloader: DataLoader,
     graphql_client: depends.GraphQLClient,
-    uuid: Annotated[LDAPUUID, Body()],
+    event: Event[LDAPUUID],
 ) -> None:
-    await handle_ldap_reconciliation(settings, dataloader, graphql_client, uuid)
+    await handle_ldap_reconciliation(
+        settings, dataloader, graphql_client, event.subject
+    )
 
 
 async def handle_ldap_reconciliation(

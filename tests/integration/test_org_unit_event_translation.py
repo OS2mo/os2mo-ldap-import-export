@@ -162,9 +162,7 @@ async def test_orgunit2engagement2person(
     )
 
     result = await test_client.post(
-        "/mo2ldap/org_unit",
-        headers={"Content-Type": "text/plain"},
-        content=str(org_unit.uuid),
+        "/mo2ldap/org_unit", json={"subject": str(org_unit.uuid), "priority": 1}
     )
     result.raise_for_status()
 
@@ -212,9 +210,7 @@ async def test_orgunit2engagement2person_multiple_engagements(
     )
 
     result = await test_client.post(
-        "/mo2ldap/org_unit",
-        headers={"Content-Type": "text/plain"},
-        content=str(mo_org_unit),
+        "/mo2ldap/org_unit", json={"subject": str(mo_org_unit), "priority": 1}
     )
     result.raise_for_status()
 
@@ -277,9 +273,7 @@ async def test_orgunit2engagement2person_parallel_engagements(
     )
 
     result = await test_client.post(
-        "/mo2ldap/org_unit",
-        headers={"Content-Type": "text/plain"},
-        content=str(mo_org_unit),
+        "/mo2ldap/org_unit", json={"subject": str(mo_org_unit), "priority": 1}
     )
     result.raise_for_status()
 
