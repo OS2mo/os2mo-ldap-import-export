@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
-import asyncio
 import string
 from collections.abc import AsyncIterator
 from collections.abc import Awaitable
@@ -911,7 +910,6 @@ def collection2refresher(graphql_client: GraphQLClient, collection: str) -> Refr
 
 async def refresh(
     graphql_client: GraphQLClient,
-    amqpsystem: MOAMQPSystem,
     collection: str,
     uuids: set[UUID],
 ) -> None:
@@ -922,18 +920,13 @@ async def refresh(
     uuids = parse_obj_as(set[UUID], uuids)
 
     logger.info("refresh called", collection=collection, uuids=uuids)
-    exchange = amqpsystem.exchange_name
 
     result = await graphql_client.who_am_i()
     owner = result.actor.uuid
 
     refresher = collection2refresher(graphql_client, collection)
-    await asyncio.gather(
-        # Refresh on the AMQP system
-        refresher(uuids=list(uuids), exchange=exchange),
-        # Refresh on GraphQL events
-        refresher(uuids=list(uuids), owner=owner),
-    )
+    # Refresh on GraphQL events
+    await refresher(uuids=list(uuids), owner=owner)
 
 
 async def refresh_ldap(
@@ -1075,7 +1068,7 @@ def construct_globals_dict(
         "ituser_uuid_to_rolebinding_uuids": partial(
             ituser_uuid_to_rolebinding_uuids, graphql_client
         ),
-        "refresh": partial(refresh, graphql_client, mo_amqpsystem),
+        "refresh": partial(refresh, graphql_client),
         "refresh_ldap": partial(refresh_ldap, settings, graphql_client),
         "find_mo_employee_uuid": dataloader.find_mo_employee_uuid,
         "resolve_dar_address": partial(resolve_dar_address, graphql_client),
