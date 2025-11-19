@@ -23,10 +23,8 @@ from fastramqpi.events import GraphQLEvents
 from fastramqpi.events import Listener
 from fastramqpi.events import Namespace
 from fastramqpi.main import FastRAMQPI
-from fastramqpi.ramqp.amqp import AMQPSystem
 from fastramqpi.ramqp.depends import handle_exclusively_decorator
 from fastramqpi.ramqp.depends import rate_limit
-from fastramqpi.ramqp.mo import MOAMQPSystem
 from fastramqpi.ramqp.mo import PayloadUUID
 from ldap3 import Connection
 from ldap3.core.exceptions import LDAPNoSuchObjectResult
@@ -58,6 +56,7 @@ from .ldap import configure_ldap_connection
 from .ldap import ldap_healthcheck
 from .ldap_amqp import configure_ldap_amqpsystem
 from .ldap_amqp import ldap2mo_router
+from .ldap_emit import publish_uuids
 from .ldap_event_generator import LDAPEventGenerator
 from .ldapapi import LDAPAPI
 from .moapi import MOAPI
@@ -79,15 +78,13 @@ mo2ldap_router = APIRouter(prefix="/mo2ldap")
 async def http_process_address(
     object_uuid: Annotated[UUID, Body()],
     graphql_client: depends.GraphQLClient,
-    amqpsystem: depends.AMQPSystem,
 ) -> None:
-    await handle_address(object_uuid, graphql_client, amqpsystem)
+    await handle_address(object_uuid, graphql_client)
 
 
 async def handle_address(
     object_uuid: UUID,
     graphql_client: depends.GraphQLClient,
-    amqpsystem: depends.AMQPSystem,
 ) -> None:
     logger.info("Registered change in an address", object_uuid=object_uuid)
     result = await graphql_client.read_address_relation_uuids(object_uuid)
@@ -106,12 +103,16 @@ async def handle_address(
 
     if person_uuids:
         # TODO: Add support for refreshing persons with a certain address directly
+        # TODO: This ignores `event_namespace` and refreshes all integrations
+        me = await graphql_client.who_am_i()
         await graphql_client.person_refresh(
-            list(person_uuids), amqpsystem.exchange_name
+            uuids=list(person_uuids), owner=me.actor.uuid
         )
     if org_unit_uuids:
+        # TODO: This ignores `event_namespace` and refreshes all integrations
+        me = await graphql_client.who_am_i()
         await graphql_client.org_unit_refresh(
-            list(org_unit_uuids), amqpsystem.exchange_name
+            uuids=list(org_unit_uuids), owner=me.actor.uuid
         )
 
 
@@ -120,15 +121,13 @@ async def handle_address(
 async def http_process_engagement(
     object_uuid: Annotated[UUID, Body()],
     graphql_client: depends.GraphQLClient,
-    amqpsystem: depends.AMQPSystem,
 ) -> None:
-    await handle_engagement(object_uuid, graphql_client, amqpsystem)
+    await handle_engagement(object_uuid, graphql_client)
 
 
 async def handle_engagement(
     object_uuid: UUID,
     graphql_client: depends.GraphQLClient,
-    amqpsystem: depends.AMQPSystem,
 ) -> None:
     logger.info("Registered change in an engagement", object_uuid=object_uuid)
     result = await graphql_client.read_engagement_employee_uuid(object_uuid)
@@ -139,7 +138,9 @@ async def handle_engagement(
         logger.warning("Unable to lookup Engagement", uuid=object_uuid)
         return
     # TODO: Add support for refreshing persons with a certain engagement directly
-    await graphql_client.person_refresh(list(person_uuids), amqpsystem.exchange_name)
+    # TODO: This ignores `event_namespace` and refreshes all integrations
+    me = await graphql_client.who_am_i()
+    await graphql_client.person_refresh(uuids=list(person_uuids), owner=me.actor.uuid)
 
 
 @mo2ldap_router.post("/ituser")
@@ -147,15 +148,13 @@ async def handle_engagement(
 async def http_process_ituser(
     object_uuid: Annotated[UUID, Body()],
     graphql_client: depends.GraphQLClient,
-    amqpsystem: depends.AMQPSystem,
 ) -> None:
-    await handle_ituser(object_uuid, graphql_client, amqpsystem)
+    await handle_ituser(object_uuid, graphql_client)
 
 
 async def handle_ituser(
     object_uuid: UUID,
     graphql_client: depends.GraphQLClient,
-    amqpsystem: depends.AMQPSystem,
 ) -> None:
     logger.info("Registered change in an ituser", object_uuid=object_uuid)
     result = await graphql_client.read_ituser_relation_uuids(object_uuid)
@@ -173,12 +172,16 @@ async def handle_ituser(
     }
     if person_uuids:
         # TODO: Add support for refreshing persons with a certain address directly
+        # TODO: This ignores `event_namespace` and refreshes all integrations
+        me = await graphql_client.who_am_i()
         await graphql_client.person_refresh(
-            list(person_uuids), amqpsystem.exchange_name
+            uuids=list(person_uuids), owner=me.actor.uuid
         )
     if org_unit_uuids:
+        # TODO: This ignores `event_namespace` and refreshes all integrations
+        me = await graphql_client.who_am_i()
         await graphql_client.org_unit_refresh(
-            list(org_unit_uuids), amqpsystem.exchange_name
+            uuids=list(org_unit_uuids), owner=me.actor.uuid
         )
 
 
@@ -210,10 +213,10 @@ async def http_reconcile_person(
     object_uuid: Annotated[UUID, Body()],
     settings: depends.Settings,
     dataloader: depends.DataLoader,
-    ldap_amqpsystem: depends.LDAPAMQPSystem,
+    graphql_client: depends.GraphQLClient,
 ) -> None:
     await handle_person_reconciliation(
-        object_uuid, settings, dataloader, ldap_amqpsystem
+        object_uuid, settings, dataloader, graphql_client
     )
 
 
@@ -221,7 +224,7 @@ async def handle_person_reconciliation(
     object_uuid: PayloadUUID,
     settings: depends.Settings,
     dataloader: depends.DataLoader,
-    ldap_amqpsystem: AMQPSystem,
+    graphql_client: depends.GraphQLClient,
 ) -> None:
     logger.info("Registered change in a person (Reconcile)", object_uuid=object_uuid)
     if object_uuid in settings.mo_uuids_to_ignore:
@@ -234,11 +237,10 @@ async def handle_person_reconciliation(
         with suppress(NoObjectsReturnedException):
             ldap_uuids.add(await dataloader.ldapapi.get_ldap_unique_ldap_uuid(dn))
 
-    for ldap_uuid in ldap_uuids:
-        # We handle reconciliation by seeding events into the normal processing queue
-        queue_prefix = settings.ldap_amqp.queue_prefix
-        queue_name = f"{queue_prefix}_process_uuid"
-        await ldap_amqpsystem.publish_message_to_queue(queue_name, ldap_uuid)
+    # We handle reconciliation by seeding events into the normal processing queue
+    await publish_uuids(
+        settings=settings, graphql_client=graphql_client, uuids=list(ldap_uuids)
+    )
 
 
 @mo2ldap_router.post("/org_unit")
@@ -246,22 +248,22 @@ async def handle_person_reconciliation(
 async def http_process_org_unit(
     object_uuid: Annotated[UUID, Body()],
     graphql_client: depends.GraphQLClient,
-    amqpsystem: depends.AMQPSystem,
 ) -> None:
-    await handle_org_unit(object_uuid, graphql_client, amqpsystem)
+    await handle_org_unit(object_uuid, graphql_client)
 
 
 async def handle_org_unit(
     object_uuid: UUID,
     graphql_client: GraphQLClient,
-    amqpsystem: MOAMQPSystem,
 ) -> None:
     logger.info("Registered change in an org_unit", object_uuid=object_uuid)
     # In case the name of the org-unit changed, we need to publish an
     # "engagement" message for each of its employees. Because org-unit
     # LDAP mapping is primarily done through the "Engagement" json-key.
+    # TODO: This ignores `event_namespace` and refreshes all integrations
+    me = await graphql_client.who_am_i()
     await graphql_client.org_unit_engagements_refresh(
-        amqpsystem.exchange_name, object_uuid
+        owner=me.actor.uuid, org_unit_uuid=object_uuid
     )
 
 
