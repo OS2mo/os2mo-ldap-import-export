@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
-import asyncio
 from typing import Annotated
 
 import structlog
@@ -14,24 +13,19 @@ from fastramqpi.ramqp.depends import get_payload_as_type
 from fastramqpi.ramqp.depends import rate_limit
 from fastramqpi.ramqp.mo import MOAMQPSystem
 from fastramqpi.ramqp.utils import RejectMessage
-from fastramqpi.ramqp.utils import RequeueMessage
 
 from . import depends
-from .config import SLEEP_ON_ERROR
 from .depends import DataLoader
-from .depends import LDAPAMQPSystem
 from .depends import Settings
 from .depends import SyncTool
 from .depends import logger_bound_message_id
 from .depends import request_id
-from .exceptions import amqp_reject_on_failure
 from .exceptions import http_reject_on_failure
 from .types import LDAPUUID
 
 logger = structlog.stdlib.get_logger()
 
 
-ldap_amqp_router = Router()
 ldap2mo_router = APIRouter(prefix="/ldap2mo")
 
 PayloadUUID = Annotated[LDAPUUID, Depends(get_payload_as_type(LDAPUUID))]
@@ -46,28 +40,6 @@ async def http_process_uuid(
     uuid: Annotated[LDAPUUID, Body()],
 ) -> None:
     await handle_uuid(settings, sync_tool, dataloader, uuid)
-
-
-@ldap_amqp_router.register("uuid")
-async def process_uuid(
-    settings: Settings,
-    ldap_amqpsystem: LDAPAMQPSystem,
-    sync_tool: SyncTool,
-    dataloader: DataLoader,
-    uuid: PayloadUUID,
-) -> None:
-    try:
-        await amqp_reject_on_failure(handle_uuid)(settings, sync_tool, dataloader, uuid)
-    except RequeueMessage:  # pragma: no cover
-        # NOTE: This is a hack to cycle messages because quorum queues do not work
-        # NOTE: We intentionally publish to this specific queue instead of the exchange,
-        #       as we may otherwise trigger both this handler AND the reconcile handler
-        #       and if both handlers end up failing, we have an exponential growth in
-        #       the number of unhandled messages.
-        await asyncio.sleep(SLEEP_ON_ERROR)
-        queue_prefix = settings.ldap_amqp.queue_prefix
-        queue_name = f"{queue_prefix}_process_uuid"
-        await ldap_amqpsystem.publish_message_to_queue(queue_name, uuid)
 
 
 async def handle_uuid(
@@ -119,30 +91,6 @@ async def http_reconcile_uuid(
     await handle_ldap_reconciliation(settings, dataloader, amqpsystem, uuid)
 
 
-@ldap_amqp_router.register("uuid")
-async def reconcile_uuid(
-    settings: Settings,
-    ldap_amqpsystem: LDAPAMQPSystem,
-    dataloader: DataLoader,
-    amqpsystem: depends.AMQPSystem,
-    uuid: PayloadUUID,
-) -> None:
-    try:
-        await amqp_reject_on_failure(handle_ldap_reconciliation)(
-            settings, dataloader, amqpsystem, uuid
-        )
-    except RequeueMessage:  # pragma: no cover
-        # NOTE: This is a hack to cycle messages because quorum queues do not work
-        # NOTE: We intentionally publish to this specific queue instead of the exchange,
-        #       as we may otherwise trigger both this handler AND the reconcile handler
-        #       and if both handlers end up failing, we have an exponential growth in
-        #       the number of unhandled messages.
-        await asyncio.sleep(SLEEP_ON_ERROR)
-        queue_prefix = settings.ldap_amqp.queue_prefix
-        queue_name = f"{queue_prefix}_reconcile_uuid"
-        await ldap_amqpsystem.publish_message_to_queue(queue_name, uuid)
-
-
 async def handle_ldap_reconciliation(
     settings: Settings,
     dataloader: DataLoader,
@@ -181,7 +129,5 @@ def configure_ldap_amqpsystem(fastramqpi: FastRAMQPI, settings: Settings) -> AMQ
         ],
     )
     fastramqpi.add_context(ldap_amqpsystem=ldap_amqpsystem)
-    if settings.listen_to_changes_in_ldap:
-        ldap_amqpsystem.router.registry.update(ldap_amqp_router.registry)
     ldap_amqpsystem.context = fastramqpi._context
     return ldap_amqpsystem
