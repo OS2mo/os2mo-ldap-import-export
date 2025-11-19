@@ -258,7 +258,7 @@ class LDAPEventGenerator(AbstractAsyncContextManager):
             # seconds effectively spamming the queue, which is a big issue if the UUID
             # that is getting spammed is stuck.
             if uuids != set(last_run.uuids) or timestamp != last_run.datetime:
-                await publish_uuids(self.graphql_client, list(uuids))
+                await publish_uuids(self.settings, self.graphql_client, list(uuids))
 
             # No events found means no timestamps, which means we reuse the old last_run
             if timestamp is None:
