@@ -288,19 +288,17 @@ async def test_create_ldap_person_blocked_by_itsystem_check(
 
 @pytest.mark.integration_test
 async def test_ldap2mo(test_client: AsyncClient) -> None:
-    content = str(uuid4())
-    headers = {"Content-Type": "text/plain"}
-    result = await test_client.post("/ldap2mo/uuid", content=content, headers=headers)
+    result = await test_client.post(
+        "/ldap2mo/uuid", json={"subject": str(uuid4()), "priority": 1}
+    )
     assert result.status_code == 451
     assert result.json() == {"detail": "LDAP UUID could not be found"}
 
 
 @pytest.mark.integration_test
 async def test_ldap2mo_reconciliation(test_client: AsyncClient) -> None:
-    content = str(uuid4())
-    headers = {"Content-Type": "text/plain"}
     result = await test_client.post(
-        "/ldap2mo/reconcile", content=content, headers=headers
+        "/ldap2mo/reconcile", json={"subject": str(uuid4()), "priority": 1}
     )
     assert result.status_code == 451
     assert result.json() == {"detail": "LDAP UUID could not be found"}
@@ -308,10 +306,8 @@ async def test_ldap2mo_reconciliation(test_client: AsyncClient) -> None:
 
 @pytest.mark.integration_test
 async def test_mo2ldap_address(test_client: AsyncClient) -> None:
-    content = str(uuid4())
-    headers = {"Content-Type": "text/plain"}
     result = await test_client.post(
-        "/mo2ldap/address", content=content, headers=headers
+        "/mo2ldap/address", json={"subject": str(str(uuid4())), "priority": 1}
     )
     assert result.status_code == 200
     assert result.text == "null"
@@ -319,10 +315,8 @@ async def test_mo2ldap_address(test_client: AsyncClient) -> None:
 
 @pytest.mark.integration_test
 async def test_mo2ldap_engagement(test_client: AsyncClient) -> None:
-    content = str(uuid4())
-    headers = {"Content-Type": "text/plain"}
     result = await test_client.post(
-        "/mo2ldap/engagement", content=content, headers=headers
+        "/mo2ldap/engagement", json={"subject": str(str(uuid4())), "priority": 1}
     )
     assert result.status_code == 200
     assert result.text == "null"
@@ -330,18 +324,18 @@ async def test_mo2ldap_engagement(test_client: AsyncClient) -> None:
 
 @pytest.mark.integration_test
 async def test_mo2ldap_ituser(test_client: AsyncClient) -> None:
-    content = str(uuid4())
-    headers = {"Content-Type": "text/plain"}
-    result = await test_client.post("/mo2ldap/ituser", content=content, headers=headers)
+    result = await test_client.post(
+        "/mo2ldap/ituser", json={"subject": str(str(uuid4())), "priority": 1}
+    )
     assert result.status_code == 200
     assert result.text == "null"
 
 
 @pytest.mark.integration_test
 async def test_mo2ldap_person(test_client: AsyncClient) -> None:
-    content = str(uuid4())
-    headers = {"Content-Type": "text/plain"}
-    result = await test_client.post("/mo2ldap/person", content=content, headers=headers)
+    result = await test_client.post(
+        "/mo2ldap/person", json={"subject": str(str(uuid4())), "priority": 1}
+    )
     assert result.status_code == 500
     payload = result.json()
     assert payload.keys() == {"detail"}
@@ -350,10 +344,8 @@ async def test_mo2ldap_person(test_client: AsyncClient) -> None:
 
 @pytest.mark.integration_test
 async def test_mo2ldap_reconciliation(test_client: AsyncClient) -> None:
-    content = str(uuid4())
-    headers = {"Content-Type": "text/plain"}
     result = await test_client.post(
-        "/mo2ldap/reconcile", content=content, headers=headers
+        "/mo2ldap/reconcile", json={"subject": str(str(uuid4())), "priority": 1}
     )
     assert result.status_code == 500
     payload = result.json()
@@ -363,10 +355,8 @@ async def test_mo2ldap_reconciliation(test_client: AsyncClient) -> None:
 
 @pytest.mark.integration_test
 async def test_mo2ldap_org_unit_unit(test_client: AsyncClient) -> None:
-    content = str(uuid4())
-    headers = {"Content-Type": "text/plain"}
     result = await test_client.post(
-        "/mo2ldap/org_unit", content=content, headers=headers
+        "/mo2ldap/org_unit", json={"subject": str(str(uuid4())), "priority": 1}
     )
     assert result.status_code == 200
     assert result.json() is None

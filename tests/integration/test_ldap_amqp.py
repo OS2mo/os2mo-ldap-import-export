@@ -19,8 +19,10 @@ async def test_process_uuid_missing_uuid(test_client: AsyncClient) -> None:
     with capture_logs() as cap_logs:
         result = await test_client.post(
             "/ldap2mo/uuid",
-            headers={"Content-Type": "text/plain"},
-            content=str(UUID("00000000-00000000-00000000-00000000")),
+            json={
+                "subject": str(UUID("00000000-00000000-00000000-00000000")),
+                "priority": 1,
+            },
         )
 
     assert result.status_code == 451
@@ -47,8 +49,7 @@ async def test_process_uuid_bad_sync(
     with capture_logs() as cap_logs:
         result = await test_client.post(
             "/ldap2mo/uuid",
-            headers={"Content-Type": "text/plain"},
-            content=str(ldap_person_uuid),
+            json={"subject": str(ldap_person_uuid), "priority": 1},
         )
 
     assert result.status_code == 500

@@ -68,17 +68,13 @@ async def test_ituser2person(
     route.result = {"employee_refresh": {"objects": [mo_person]}}
 
     result = await test_client.post(
-        "/mo2ldap/ituser",
-        headers={"Content-Type": "text/plain"},
-        content=str(ituser.uuid),
+        "/mo2ldap/ituser", json={"subject": str(ituser.uuid), "priority": 1}
     )
     result.raise_for_status()
 
     # Check that we send the event to MO
     assert route.called
-    assert route.request_variables == [
-        {"exchange": "os2mo_ldap_ie", "uuids": [str(mo_person)]}
-    ]
+    assert route.request_variables == [{"owner": ANY, "uuids": [str(mo_person)]}]
 
 
 @pytest.mark.integration_test
@@ -116,17 +112,13 @@ async def test_ituser2person_between(
     route.result = {"employee_refresh": {"objects": [mo_person]}}
 
     result = await test_client.post(
-        "/mo2ldap/ituser",
-        headers={"Content-Type": "text/plain"},
-        content=str(ituser.uuid),
+        "/mo2ldap/ituser", json={"subject": str(ituser.uuid), "priority": 1}
     )
     result.raise_for_status()
 
     # Check that we send the event to MO
     assert route.called
-    assert route.request_variables == [
-        {"exchange": "os2mo_ldap_ie", "uuids": [str(mo_person)]}
-    ]
+    assert route.request_variables == [{"owner": ANY, "uuids": [str(mo_person)]}]
 
 
 @pytest.mark.integration_test
@@ -179,16 +171,14 @@ async def test_ituser2person_change_person(
     route.result = {"employee_refresh": {"objects": [person1.uuid, person2.uuid]}}
 
     result = await test_client.post(
-        "/mo2ldap/ituser",
-        headers={"Content-Type": "text/plain"},
-        content=str(ituser.uuid),
+        "/mo2ldap/ituser", json={"subject": str(ituser.uuid), "priority": 1}
     )
     result.raise_for_status()
 
     # Check that we send the event to MO
     assert route.called
     request_variables = one(route.request_variables)
-    assert request_variables == {"exchange": "os2mo_ldap_ie", "uuids": ANY}
+    assert request_variables == {"owner": ANY, "uuids": ANY}
     assert set(request_variables["uuids"]) == {str(person1.uuid), str(person2.uuid)}
 
 
@@ -233,17 +223,13 @@ async def test_ituser2orgunit(
     route.result = {"org_unit_refresh": {"objects": [mo_org_unit]}}
 
     result = await test_client.post(
-        "/mo2ldap/ituser",
-        headers={"Content-Type": "text/plain"},
-        content=str(ituser.uuid),
+        "/mo2ldap/ituser", json={"subject": str(ituser.uuid), "priority": 1}
     )
     result.raise_for_status()
 
     # Check that we send the event to MO
     assert route.called
-    assert route.request_variables == [
-        {"exchange": "os2mo_ldap_ie", "uuids": [str(mo_org_unit)]}
-    ]
+    assert route.request_variables == [{"owner": ANY, "uuids": [str(mo_org_unit)]}]
 
 
 @pytest.mark.integration_test
@@ -281,16 +267,12 @@ async def test_ituser2orgunit_between(
     route.result = {"org_unit_refresh": {"objects": [mo_org_unit]}}
 
     result = await test_client.post(
-        "/mo2ldap/ituser",
-        headers={"Content-Type": "text/plain"},
-        content=str(ituser.uuid),
+        "/mo2ldap/ituser", json={"subject": str(ituser.uuid), "priority": 1}
     )
     result.raise_for_status()
 
     # Check that we send the event to MO
-    assert route.request_variables == [
-        {"exchange": "os2mo_ldap_ie", "uuids": [str(mo_org_unit)]}
-    ]
+    assert route.request_variables == [{"owner": ANY, "uuids": [str(mo_org_unit)]}]
 
 
 @pytest.mark.integration_test
@@ -343,14 +325,12 @@ async def test_ituser2orgunit_change_orgunit(
     route.result = {"org_unit_refresh": {"objects": [org_unit1.uuid, org_unit2.uuid]}}
 
     result = await test_client.post(
-        "/mo2ldap/ituser",
-        headers={"Content-Type": "text/plain"},
-        content=str(ituser.uuid),
+        "/mo2ldap/ituser", json={"subject": str(ituser.uuid), "priority": 1}
     )
     result.raise_for_status()
 
     # Check that we send the event to MO
     assert route.called
     request_variables = one(route.request_variables)
-    assert request_variables == {"exchange": "os2mo_ldap_ie", "uuids": ANY}
+    assert request_variables == {"owner": ANY, "uuids": ANY}
     assert set(request_variables["uuids"]) == {str(org_unit1.uuid), str(org_unit2.uuid)}
