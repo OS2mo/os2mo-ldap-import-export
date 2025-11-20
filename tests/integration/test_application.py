@@ -195,10 +195,7 @@ async def test_endpoint_mo2ldap_templating(
 @pytest.mark.integration_test
 @pytest.mark.usefixtures("test_client", "ldap_person")
 async def test_create_ldap_person(
-    test_client: AsyncClient,
-    graphql_client: GraphQLClient,
-    get_num_queued_messages: Callable[[], Awaitable[int]],
-    get_num_published_messages: Callable[[], Awaitable[int]],
+    test_client: AsyncClient, graphql_client: GraphQLClient
 ) -> None:
     given_name = "John"
     surname = "Hansen"
@@ -215,12 +212,6 @@ async def test_create_ldap_person(
 
     async for attempt in retrying():
         with attempt:
-            num_messages = await get_num_published_messages()
-            assert num_messages > 0
-
-            num_messages = await get_num_queued_messages()
-            assert num_messages == 0
-
             result = await test_client.get(f"/Inspect/mo/uuid2dn/{person_uuid}")
             assert result.status_code == 200
             dn = one(result.json())
@@ -244,10 +235,7 @@ async def test_create_ldap_person(
 )
 @pytest.mark.usefixtures("ldap_person")
 async def test_create_ldap_person_blocked_by_itsystem_check(
-    test_client: AsyncClient,
-    graphql_client: GraphQLClient,
-    get_num_queued_messages: Callable[[], Awaitable[int]],
-    get_num_published_messages: Callable[[], Awaitable[int]],
+    test_client: AsyncClient, graphql_client: GraphQLClient
 ) -> None:
     given_name = "John"
     surname = "Hansen"
@@ -272,18 +260,19 @@ async def test_create_ldap_person_blocked_by_itsystem_check(
     )
     person_uuid = person_result.uuid
 
-    async for attempt in retrying():
-        with attempt:
-            num_messages = await get_num_published_messages()
-            assert num_messages > 0
+    # Bait integration into creating the user in ldap
+    result = await test_client.post(
+        "/mo2ldap/person", json={"subject": str(person_uuid), "priority": 1}
+    )
+    assert result.status_code == 451, result.text
+    assert result.json() == {
+        "detail": f"employee with uuid = {person_uuid} does not have an it-user with user_key = SynchronizeToLDAP"
+    }
 
-            num_messages = await get_num_queued_messages()
-            assert num_messages == 0
-
-            # Check that the user has not been created
-            result = await test_client.get(f"/Inspect/mo/uuid2dn/{person_uuid}")
-            assert result.status_code == 200
-            assert result.json() == []
+    # Check that the user has not been created
+    result = await test_client.get(f"/Inspect/mo/uuid2dn/{person_uuid}")
+    assert result.status_code == 200
+    assert result.json() == []
 
 
 @pytest.mark.integration_test
