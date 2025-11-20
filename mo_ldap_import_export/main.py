@@ -480,7 +480,7 @@ def create_fastramqpi(**kwargs: Any) -> FastRAMQPI:
                 Listener(
                     namespace="mo",
                     user_key=f"{settings.event_namespace}_engagement",
-                    routing_key="process_engagement",
+                    routing_key="engagement",
                     path="/mo2ldap/engagement",
                     parallelism=3,
                 ),
