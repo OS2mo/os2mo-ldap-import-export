@@ -475,36 +475,42 @@ def create_fastramqpi(**kwargs: Any) -> FastRAMQPI:
                     user_key=f"{settings.event_namespace}_process_address",
                     routing_key="address",
                     path="/mo2ldap/address",
+                    parallelism=3,
                 ),
                 Listener(
                     namespace="mo",
                     user_key=f"{settings.event_namespace}_engagement",
                     routing_key="process_engagement",
                     path="/mo2ldap/engagement",
+                    parallelism=3,
                 ),
                 Listener(
                     namespace="mo",
                     user_key=f"{settings.event_namespace}_process_ituser",
                     routing_key="ituser",
                     path="/mo2ldap/ituser",
+                    parallelism=3,
                 ),
                 Listener(
                     namespace="mo",
                     user_key=f"{settings.event_namespace}_process_person",
                     routing_key="person",
                     path="/mo2ldap/person",
+                    parallelism=3,
                 ),
                 Listener(
                     namespace="mo",
                     user_key=f"{settings.event_namespace}_reconcile_person",
                     routing_key="person",
                     path="/mo2ldap/reconcile",
+                    parallelism=3,
                 ),
                 Listener(
                     namespace="mo",
                     user_key=f"{settings.event_namespace}_process_org_unit",
                     routing_key="org_unit",
                     path="/mo2ldap/org_unit",
+                    parallelism=3,
                 ),
             ]
         )
@@ -515,6 +521,7 @@ def create_fastramqpi(**kwargs: Any) -> FastRAMQPI:
                 user_key=f"{settings.event_namespace}_{mapping.identifier}",
                 routing_key=mapping.routing_key,
                 path=f"/mo_to_ldap/{mapping.identifier}",
+                parallelism=3,
             )
             for mapping in settings.conversion_mapping.mo_to_ldap
         )
@@ -526,12 +533,14 @@ def create_fastramqpi(**kwargs: Any) -> FastRAMQPI:
                     user_key="process_uuid",
                     routing_key="uuid",
                     path="/ldap2mo/uuid",
+                    parallelism=3,
                 ),
                 Listener(
                     namespace=settings.event_namespace,
                     user_key="reconcile_uuid",
                     routing_key="uuid",
                     path="/ldap2mo/reconcile",
+                    parallelism=3,
                 ),
             ]
         )
