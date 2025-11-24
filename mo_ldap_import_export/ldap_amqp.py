@@ -6,19 +6,13 @@ import structlog
 from fastapi import APIRouter
 from fastapi import Depends
 from fastramqpi.events import Event
-from fastramqpi.main import FastRAMQPI
-from fastramqpi.ramqp.amqp import AMQPSystem
-from fastramqpi.ramqp.amqp import Router
 from fastramqpi.ramqp.depends import get_payload_as_type
-from fastramqpi.ramqp.depends import rate_limit
 from fastramqpi.ramqp.utils import RejectMessage
 
 from . import depends
 from .depends import DataLoader
 from .depends import Settings
 from .depends import SyncTool
-from .depends import logger_bound_message_id
-from .depends import request_id
 from .exceptions import http_reject_on_failure
 from .types import LDAPUUID
 
@@ -116,19 +110,3 @@ async def handle_ldap_reconciliation(
     # TODO: This ignores `event_namespace` and refreshes all integrations
     me = await graphql_client.who_am_i()
     await graphql_client.person_refresh(uuids=[person_uuid], owner=me.actor.uuid)
-
-
-def configure_ldap_amqpsystem(fastramqpi: FastRAMQPI, settings: Settings) -> AMQPSystem:
-    logger.info("Initializing LDAP AMQP system")
-    ldap_amqpsystem = AMQPSystem(
-        settings=settings.ldap_amqp,
-        router=Router(),
-        dependencies=[
-            Depends(rate_limit(10)),
-            Depends(logger_bound_message_id),
-            Depends(request_id),
-        ],
-    )
-    fastramqpi.add_context(ldap_amqpsystem=ldap_amqpsystem)
-    ldap_amqpsystem.context = fastramqpi._context
-    return ldap_amqpsystem
