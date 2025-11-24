@@ -52,7 +52,6 @@ from .import_export import SyncTool
 from .ldap import check_ou_in_list_of_ous
 from .ldap import configure_ldap_connection
 from .ldap import ldap_healthcheck
-from .ldap_amqp import configure_ldap_amqpsystem
 from .ldap_amqp import ldap2mo_router
 from .ldap_emit import publish_uuids
 from .ldap_event_generator import LDAPEventGenerator
@@ -308,8 +307,6 @@ async def lifespan(
         export_checks = ExportChecks(dataloader)
         import_checks = ImportChecks()
 
-        ldap_amqpsystem = configure_ldap_amqpsystem(fastramqpi, settings)
-
         logger.info("Initializing jinja template environment")
         mo_amqpsystem = fastramqpi.get_amqpsystem()
         template_environment = construct_environment(
@@ -335,7 +332,6 @@ async def lifespan(
         await stack.enter_async_context(mo_amqpsystem)
 
         logger.info("Initializing LDAP listener")
-        await stack.enter_async_context(ldap_amqpsystem)
         ldap_event_generator = LDAPEventGenerator(
             sessionmaker=fastramqpi.get_context()["sessionmaker"],
             settings=settings,

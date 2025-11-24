@@ -437,9 +437,6 @@ ldap_search_base: OU=HK,DC=holstebro,DC=dk
 ldap_user: svc_os2mo
 # Mapping
 conversion_mapping: {}
-# LDAP AMQP
-ldap_amqp:
-    url: "amqp://msg_broker:5672/"
 fastramqpi:
     # OS2mo
     client_id: ldap_import_export
