@@ -32,15 +32,7 @@ async def http_process_uuid(
     dataloader: DataLoader,
     event: Event[LDAPUUID],
 ) -> None:
-    await handle_uuid(settings, sync_tool, dataloader, event.subject)
-
-
-async def handle_uuid(
-    settings: Settings,
-    sync_tool: SyncTool,
-    dataloader: DataLoader,
-    uuid: LDAPUUID,
-) -> None:
+    uuid = event.subject
     logger.info("Received LDAP AMQP event", uuid=uuid)
 
     if uuid in settings.ldap_uuids_to_ignore:
@@ -81,17 +73,7 @@ async def http_reconcile_uuid(
     graphql_client: depends.GraphQLClient,
     event: Event[LDAPUUID],
 ) -> None:
-    await handle_ldap_reconciliation(
-        settings, dataloader, graphql_client, event.subject
-    )
-
-
-async def handle_ldap_reconciliation(
-    settings: Settings,
-    dataloader: DataLoader,
-    graphql_client: depends.GraphQLClient,
-    uuid: LDAPUUID,
-) -> None:
+    uuid = event.subject
     logger.info("Received LDAP AMQP event (Reconcile)", uuid=uuid)
 
     if uuid in settings.ldap_uuids_to_ignore:

@@ -21,7 +21,6 @@ from fastramqpi.events import Listener
 from fastramqpi.events import Namespace
 from fastramqpi.main import FastRAMQPI
 from fastramqpi.ramqp.depends import handle_exclusively_decorator
-from fastramqpi.ramqp.mo import PayloadUUID
 from ldap3 import Connection
 from ldap3.core.exceptions import LDAPNoSuchObjectResult
 from ldap3.core.exceptions import LDAPObjectClassViolationResult
@@ -74,13 +73,7 @@ async def http_process_address(
     event: Event[UUID],
     graphql_client: depends.GraphQLClient,
 ) -> None:
-    await handle_address(event.subject, graphql_client)
-
-
-async def handle_address(
-    object_uuid: UUID,
-    graphql_client: depends.GraphQLClient,
-) -> None:
+    object_uuid = event.subject
     logger.info("Registered change in an address", object_uuid=object_uuid)
     result = await graphql_client.read_address_relation_uuids(object_uuid)
     person_uuids = {
@@ -117,13 +110,7 @@ async def http_process_engagement(
     event: Event[UUID],
     graphql_client: depends.GraphQLClient,
 ) -> None:
-    await handle_engagement(event.subject, graphql_client)
-
-
-async def handle_engagement(
-    object_uuid: UUID,
-    graphql_client: depends.GraphQLClient,
-) -> None:
+    object_uuid = event.subject
     logger.info("Registered change in an engagement", object_uuid=object_uuid)
     result = await graphql_client.read_engagement_employee_uuid(object_uuid)
     person_uuids = {
@@ -144,13 +131,7 @@ async def http_process_ituser(
     event: Event[UUID],
     graphql_client: depends.GraphQLClient,
 ) -> None:
-    await handle_ituser(event.subject, graphql_client)
-
-
-async def handle_ituser(
-    object_uuid: UUID,
-    graphql_client: depends.GraphQLClient,
-) -> None:
+    object_uuid = event.subject
     logger.info("Registered change in an ituser", object_uuid=object_uuid)
     result = await graphql_client.read_ituser_relation_uuids(object_uuid)
     person_uuids = {
@@ -182,18 +163,13 @@ async def handle_ituser(
 
 @mo2ldap_router.post("/person")
 @http_reject_on_failure
+@handle_exclusively_decorator(key=lambda event, *_, **__: event.subject)
 async def http_process_person(
     event: Event[EmployeeUUID],
     settings: depends.Settings,
     sync_tool: depends.SyncTool,
 ) -> dict[str, list[Any]]:
-    return await handle_person(event.subject, settings, sync_tool)  # type: ignore[no-any-return]
-
-
-@handle_exclusively_decorator(key=lambda object_uuid, *_, **__: object_uuid)
-async def handle_person(
-    object_uuid: EmployeeUUID, settings: Settings, sync_tool: SyncTool
-) -> dict[str, list[Any]]:
+    object_uuid = event.subject
     logger.info("Registered change in a person", object_uuid=object_uuid)
     if object_uuid in settings.mo_uuids_to_ignore:
         logger.warning("MO event ignored due to ignore-list", uuid=object_uuid)
@@ -210,17 +186,7 @@ async def http_reconcile_person(
     dataloader: depends.DataLoader,
     graphql_client: depends.GraphQLClient,
 ) -> None:
-    await handle_person_reconciliation(
-        event.subject, settings, dataloader, graphql_client
-    )
-
-
-async def handle_person_reconciliation(
-    object_uuid: PayloadUUID,
-    settings: depends.Settings,
-    dataloader: depends.DataLoader,
-    graphql_client: depends.GraphQLClient,
-) -> None:
+    object_uuid = event.subject
     logger.info("Registered change in a person (Reconcile)", object_uuid=object_uuid)
     if object_uuid in settings.mo_uuids_to_ignore:
         logger.warning("MO event ignored due to ignore-list")
@@ -244,13 +210,7 @@ async def http_process_org_unit(
     event: Event[UUID],
     graphql_client: depends.GraphQLClient,
 ) -> None:
-    await handle_org_unit(event.subject, graphql_client)
-
-
-async def handle_org_unit(
-    object_uuid: UUID,
-    graphql_client: GraphQLClient,
-) -> None:
+    object_uuid = event.subject
     logger.info("Registered change in an org_unit", object_uuid=object_uuid)
     # In case the name of the org-unit changed, we need to publish an
     # "engagement" message for each of its employees. Because org-unit
