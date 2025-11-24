@@ -76,7 +76,6 @@ def settings(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("LDAP_SEARCH_BASE", "DC=ad,DC=addev")
     monkeypatch.setenv("LDAP_OBJECT_CLASS", "inetOrgPerson")
     monkeypatch.setenv("LDAP_CPR_ATTRIBUTE", "employeeNumber")
-    monkeypatch.setenv("FASTRAMQPI__AMQP__URL", "amqp://guest:guest@msg_broker:5672/")
 
     return Settings()
 
@@ -140,7 +139,6 @@ def settings_overrides() -> Iterator[dict[str, str]]:
         "LDAP_SEARCH_BASE": "DC=ad,DC=addev",
         "LDAP_OBJECT_CLASS": "inetOrgPerson",
         "LDAP_CPR_ATTRIBUTE": "employeeNumber",
-        "FASTRAMQPI__AMQP__URL": "amqp://guest:guest@msg_broker:5672/",
     }
     yield overrides
 

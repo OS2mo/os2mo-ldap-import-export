@@ -12,7 +12,6 @@ from uuid import UUID
 import structlog
 import yaml
 from fastramqpi.config import Settings as FastRAMQPISettings
-from fastramqpi.ramqp.config import AMQPConnectionSettings
 from fastramqpi.ramqp.mo import MORoutingKey
 from jinja2 import Environment
 from jinja2 import TemplateSyntaxError
@@ -97,22 +96,6 @@ class ServerList(ConstrainedList):
 
     item_type = ServerConfig
     __args__ = (ServerConfig,)
-
-
-class ExternalAMQPConnectionSettings(AMQPConnectionSettings):
-    queue_prefix = "ldap_ie"
-    upstream_exchange = "os2mo"
-    prefetch_count: int = 10  # MO cannot handle too many requests
-
-    @root_validator
-    def set_exchange_by_queue_prefix(cls, values: dict[str, Any]) -> dict[str, Any]:
-        """Ensure that exchange is set based on queue_prefix."""
-        values["exchange"] = "os2mo_" + values["queue_prefix"]
-        return values
-
-
-class FastFAMQPIApplicationSettings(FastRAMQPISettings):
-    amqp: ExternalAMQPConnectionSettings
 
 
 class MappingBaseModel(BaseModel):
@@ -381,7 +364,7 @@ class Settings(BaseSettings):
         description="Unique GraphQL event namespace in cases where the integration is deployed multiple times for a single OS2mo.",
     )
 
-    fastramqpi: FastFAMQPIApplicationSettings
+    fastramqpi: FastRAMQPISettings = Field(default_factory=FastRAMQPISettings)
 
     listen_to_changes_in_mo: bool = Field(
         True, description="Whether to write to AD, when changes in MO are registered"

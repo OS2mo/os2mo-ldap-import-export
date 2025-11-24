@@ -441,9 +441,6 @@ fastramqpi:
     # OS2mo
     client_id: ldap_import_export
     client_secret: "00000000-0000-0000-0000-000000000000"
-    # AMQP
-    amqp:
-        url: "amqp://msg_broker:5672/"
     # Database
     database:
         host: "db"

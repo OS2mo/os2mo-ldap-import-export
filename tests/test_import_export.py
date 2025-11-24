@@ -43,7 +43,6 @@ def context(
     settings_mock.discriminator_filter = None
     ldap_connection = AsyncMock()
     context = Context(
-        amqpsystem=AsyncMock(),
         user_context={
             "dataloader": dataloader,
             "converter": converter,
@@ -592,7 +591,7 @@ async def test_render_ldap2mo(
 ) -> None:
     sync_tool.settings.conversion_mapping.mo2ldap = template  # type: ignore
     sync_tool.converter.environment = construct_environment(
-        sync_tool.settings, sync_tool.dataloader, MagicMock()
+        sync_tool.settings, sync_tool.dataloader
     )
     uuid = EmployeeUUID(UUID("fa15edad-da1e-c0de-babe-c1a551f1ab1e"))
     if isinstance(expected, str):

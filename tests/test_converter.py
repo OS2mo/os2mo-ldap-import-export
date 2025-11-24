@@ -181,7 +181,6 @@ async def converter(context: Context) -> LdapConverter:
     template_environment = construct_environment(
         context["user_context"]["settings"],
         context["user_context"]["dataloader"],
-        MagicMock(),
     )
     converter = LdapConverter(template_environment)
     return converter
@@ -271,9 +270,7 @@ async def test_ldap_to_mo_dict_error(
     }
     settings = Settings(conversion_mapping=bad_mapping)
     template_environment = construct_environment(
-        settings=settings,
-        dataloader=MagicMock(),
-        mo_amqpsystem=MagicMock(),
+        settings=settings, dataloader=MagicMock()
     )
     converter = LdapConverter(template_environment)
 
@@ -318,7 +315,7 @@ async def test_ldap_to_mo_dict_validation_error(
     settings = Settings()
     dataloader = context["user_context"]["dataloader"]
 
-    template_environment = construct_environment(settings, dataloader, MagicMock())
+    template_environment = construct_environment(settings, dataloader)
     converter = LdapConverter(template_environment)
 
     with pytest.raises(ValidationError) as exc_info:
@@ -376,7 +373,7 @@ async def test_template_strictness(
     monkeypatch.setenv("CONVERSION_MAPPING", json.dumps(mapping))
     settings = Settings()
     template_environment = construct_environment(
-        settings, context["user_context"]["dataloader"], MagicMock()
+        settings, context["user_context"]["dataloader"]
     )
     converter = LdapConverter(template_environment)
     assert settings.conversion_mapping.ldap_to_mo is not None
@@ -726,7 +723,7 @@ async def test_ldap_to_mo_termination(
     dataloader: AsyncMock,
 ) -> None:
     settings = Settings()
-    template_environment = construct_environment(settings, dataloader, MagicMock())
+    template_environment = construct_environment(settings, dataloader)
 
     converter = LdapConverter(template_environment)
 
@@ -756,7 +753,7 @@ async def test_ldap_to_mo_termination(
     converter_mapping["ldap_to_mo"]["Email"]["uuid"] = str(address_uuid)
     monkeypatch.setenv("CONVERSION_MAPPING", json.dumps(converter_mapping))
     settings = Settings()
-    template_environment = construct_environment(settings, dataloader, MagicMock())
+    template_environment = construct_environment(settings, dataloader)
     converter = LdapConverter(template_environment)
 
     assert settings.conversion_mapping.ldap_to_mo is not None

@@ -6,7 +6,6 @@ from collections.abc import Iterable
 from typing import Any
 from unittest.mock import ANY
 from unittest.mock import AsyncMock
-from unittest.mock import MagicMock
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -471,7 +470,7 @@ async def sync_tool_and_context(
     )
     context["user_context"]["dataloader"] = dataloader
 
-    template_environment = construct_environment(settings, dataloader, MagicMock())
+    template_environment = construct_environment(settings, dataloader)
     converter = LdapConverter(template_environment)
     context["user_context"]["converter"] = converter
 
