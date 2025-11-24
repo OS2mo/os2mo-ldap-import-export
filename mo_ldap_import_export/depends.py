@@ -11,7 +11,6 @@ from fastapi import Depends
 from fastramqpi.depends import from_user_context
 from fastramqpi.ramqp.depends import Message
 from fastramqpi.ramqp.depends import from_context
-from fastramqpi.ramqp.mo import MOAMQPSystem as _MOAMQPSystem
 from ldap3 import Connection as _Connection
 from structlog.contextvars import bound_contextvars
 
@@ -31,7 +30,6 @@ Connection = Annotated[_Connection, Depends(from_user_context("ldap_connection")
 LDAPEventGenerator = Annotated[
     _LDAPEventGenerator, Depends(from_user_context("ldap_event_generator"))
 ]
-AMQPSystem = Annotated[_MOAMQPSystem, Depends(from_context("amqpsystem"))]
 
 
 async def logger_bound_message_id(message: Message) -> AsyncIterable[None]:

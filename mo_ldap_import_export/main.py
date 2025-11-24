@@ -13,7 +13,6 @@ from uuid import UUID
 
 import structlog
 from fastapi import APIRouter
-from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastramqpi.events import Event
@@ -22,7 +21,6 @@ from fastramqpi.events import Listener
 from fastramqpi.events import Namespace
 from fastramqpi.main import FastRAMQPI
 from fastramqpi.ramqp.depends import handle_exclusively_decorator
-from fastramqpi.ramqp.depends import rate_limit
 from fastramqpi.ramqp.mo import PayloadUUID
 from ldap3 import Connection
 from ldap3.core.exceptions import LDAPNoSuchObjectResult
@@ -308,10 +306,7 @@ async def lifespan(
         import_checks = ImportChecks()
 
         logger.info("Initializing jinja template environment")
-        mo_amqpsystem = fastramqpi.get_amqpsystem()
-        template_environment = construct_environment(
-            settings, dataloader, mo_amqpsystem
-        )
+        template_environment = construct_environment(settings, dataloader)
 
         logger.info("Initializing converters")
         converter = LdapConverter(template_environment)
@@ -327,9 +322,6 @@ async def lifespan(
             ldap_connection,
         )
         fastramqpi.add_context(sync_tool=sync_tool)
-
-        logger.info("Starting AMQP listener")
-        await stack.enter_async_context(mo_amqpsystem)
 
         logger.info("Initializing LDAP listener")
         ldap_event_generator = LDAPEventGenerator(
@@ -566,21 +558,6 @@ def create_fastramqpi(**kwargs: Any) -> FastRAMQPI:
         router.post(f"/{mapping.identifier}")(handler)
     app = fastramqpi.get_app()
     app.include_router(router)
-
-    logger.info("AMQP router setup")
-    amqpsystem = fastramqpi.get_amqpsystem()
-    # Retry messages after a short period of time
-    rate_limit_delay = 10
-    amqpsystem.dependencies = [
-        Depends(rate_limit(rate_limit_delay)),
-        Depends(depends.logger_bound_message_id),
-        Depends(depends.request_id),
-    ]
-
-    # We delay AMQPSystem start, to detect it from client startup
-    # TODO: This separation should probably be in FastRAMQPI
-    priority_set = fastramqpi._context["lifespan_managers"][1000]
-    priority_set.remove(amqpsystem)
 
     fastramqpi.add_lifespan_manager(lifespan(fastramqpi, settings), 2000)
 
