@@ -195,6 +195,8 @@ from .read_engagements_by_employee_uuid import ReadEngagementsByEmployeeUuid
 from .read_engagements_by_employee_uuid import ReadEngagementsByEmployeeUuidEngagements
 from .read_engagements_is_primary import ReadEngagementsIsPrimary
 from .read_engagements_is_primary import ReadEngagementsIsPrimaryEngagements
+from .read_event_listeners import ReadEventListeners
+from .read_event_listeners import ReadEventListenersEventListeners
 from .read_facet_uuid import ReadFacetUuid
 from .read_facet_uuid import ReadFacetUuidFacets
 from .read_filtered_addresses import ReadFilteredAddresses
@@ -353,6 +355,25 @@ class GraphQLClient(AsyncBaseClient):
         response = await self.execute(query=query, variables=variables)
         data = self.get_data(response)
         return AcknowledgeEvent.parse_obj(data).event_acknowledge
+
+    async def read_event_listeners(self) -> ReadEventListenersEventListeners:
+        query = gql(
+            """
+            query read_event_listeners {
+              event_listeners {
+                objects {
+                  uuid
+                  user_key
+                  routing_key
+                }
+              }
+            }
+            """
+        )
+        variables: dict[str, object] = {}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return ReadEventListeners.parse_obj(data).event_listeners
 
     async def address_create(
         self, input: AddressCreateInput
