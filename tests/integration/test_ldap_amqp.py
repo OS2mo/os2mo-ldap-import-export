@@ -55,7 +55,7 @@ async def test_process_uuid_bad_sync(
     assert result.status_code == 500
 
     assert {
-        "event": "Exception during HTTP processing",
         "exc_info": True,
+        "event": "Exception in application",
         "log_level": "error",
     } in cap_logs
