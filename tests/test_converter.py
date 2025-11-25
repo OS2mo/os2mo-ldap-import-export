@@ -13,7 +13,6 @@ from uuid import uuid4
 
 import pytest
 from fastramqpi.context import Context
-from fastramqpi.ramqp.utils import RequeueMessage
 from mergedeep import Strategy  # type: ignore
 from mergedeep import merge
 from pydantic import ValidationError
@@ -35,6 +34,7 @@ from mo_ldap_import_export.environments.main import get_org_unit_name
 from mo_ldap_import_export.environments.main import get_visibility_uuid
 from mo_ldap_import_export.exceptions import IncorrectMapping
 from mo_ldap_import_export.exceptions import NoObjectsReturnedException
+from mo_ldap_import_export.exceptions import RequeueException
 from mo_ldap_import_export.exceptions import UUIDNotFoundException
 from mo_ldap_import_export.ldap_classes import LdapObject
 from mo_ldap_import_export.main import GRAPHQL_VERSION
@@ -239,7 +239,7 @@ async def test_ldap_to_mo(converter: LdapConverter) -> None:
     # Note: Date is always at midnight in MO
     assert start == datetime.datetime(2019, 1, 1, 0, 0, 0)
 
-    with pytest.raises(RequeueMessage) as exc_info:
+    with pytest.raises(RequeueException) as exc_info:
         assert settings.conversion_mapping.ldap_to_mo is not None
         await converter.from_ldap(
             LdapObject(

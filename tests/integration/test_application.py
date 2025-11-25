@@ -264,7 +264,7 @@ async def test_create_ldap_person_blocked_by_itsystem_check(
     result = await test_client.post(
         "/mo2ldap/person", json={"subject": str(person_uuid), "priority": 1}
     )
-    assert result.status_code == 451, result.text
+    assert result.status_code == 200, result.text
     assert result.json() == {
         "detail": f"employee with uuid = {person_uuid} does not have an it-user with user_key = SynchronizeToLDAP"
     }
@@ -280,7 +280,7 @@ async def test_ldap2mo(test_client: AsyncClient) -> None:
     result = await test_client.post(
         "/ldap2mo/uuid", json={"subject": str(uuid4()), "priority": 1}
     )
-    assert result.status_code == 451
+    assert result.status_code == 200
     assert result.json() == {"detail": "LDAP UUID could not be found"}
 
 
@@ -289,7 +289,7 @@ async def test_ldap2mo_reconciliation(test_client: AsyncClient) -> None:
     result = await test_client.post(
         "/ldap2mo/reconcile", json={"subject": str(uuid4()), "priority": 1}
     )
-    assert result.status_code == 451
+    assert result.status_code == 200
     assert result.json() == {"detail": "LDAP UUID could not be found"}
 
 

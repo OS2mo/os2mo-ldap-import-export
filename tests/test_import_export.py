@@ -13,13 +13,13 @@ from uuid import uuid4
 
 import pytest
 from fastramqpi.context import Context
-from fastramqpi.ramqp.utils import RequeueMessage
 from structlog.testing import capture_logs
 
 from mo_ldap_import_export.config import Settings
 from mo_ldap_import_export.dataloaders import DataLoader
 from mo_ldap_import_export.depends import GraphQLClient
 from mo_ldap_import_export.environments.main import construct_environment
+from mo_ldap_import_export.exceptions import RequeueException
 from mo_ldap_import_export.import_export import SyncTool
 from mo_ldap_import_export.main import GRAPHQL_VERSION
 from mo_ldap_import_export.moapi import Verb
@@ -77,7 +77,7 @@ async def test_listen_to_changes_in_employees_no_dn(
 ) -> None:
     employee_uuid = uuid4()
     dataloader.find_mo_employee_dn.return_value = set()
-    dataloader.make_mo_employee_dn.side_effect = RequeueMessage("Not found")
+    dataloader.make_mo_employee_dn.side_effect = RequeueException("Not found")
 
     template = AsyncMock()
     template.render_async.return_value = '{"key": "value"}'
@@ -86,7 +86,7 @@ async def test_listen_to_changes_in_employees_no_dn(
     dataloader._find_best_dn = partial(DataLoader._find_best_dn, dataloader)
 
     with capture_logs() as cap_logs:
-        with pytest.raises(RequeueMessage) as exc_info:
+        with pytest.raises(RequeueException) as exc_info:
             await sync_tool.listen_to_changes_in_employees(employee_uuid)
         assert "Not found" in str(exc_info.value)
 
@@ -511,7 +511,7 @@ async def test_get_primary_engagement(
     route.result = {"engagements": {"objects": objects}}
 
     if isinstance(expected, str):
-        with pytest.raises(RequeueMessage) as exc_info:
+        with pytest.raises(RequeueException) as exc_info:
             await get_primary_engagement(graphql_client, employee_uuid)
         assert expected in str(exc_info.value)
     else:

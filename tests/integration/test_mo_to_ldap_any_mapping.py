@@ -353,7 +353,7 @@ async def test_endpoint_handler_read_only(test_client: AsyncClient) -> None:
     uuid = uuid4()
     payload = jsonable_encoder(Event(subject=uuid, priority=10))
     result = await test_client.post("/mo_to_ldap/known", json=payload)
-    assert result.status_code == 451
+    assert result.status_code == 200
     assert result.json() == {
         "detail": {
             "message": "LDAP connection is read-only",

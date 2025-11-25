@@ -44,7 +44,6 @@ from .environments.main import construct_environment
 from .exceptions import NoObjectsReturnedException
 from .exceptions import ReadOnlyException
 from .exceptions import SkipObject
-from .exceptions import http_reject_on_failure
 from .import_export import SyncTool
 from .ldap import check_ou_in_list_of_ous
 from .ldap import configure_ldap_connection
@@ -68,7 +67,6 @@ mo2ldap_router = APIRouter(prefix="/mo2ldap")
 
 
 @mo2ldap_router.post("/address")
-@http_reject_on_failure
 async def http_process_address(
     event: Event[UUID],
     graphql_client: depends.GraphQLClient,
@@ -105,7 +103,6 @@ async def http_process_address(
 
 
 @mo2ldap_router.post("/engagement")
-@http_reject_on_failure
 async def http_process_engagement(
     event: Event[UUID],
     graphql_client: depends.GraphQLClient,
@@ -126,7 +123,6 @@ async def http_process_engagement(
 
 
 @mo2ldap_router.post("/ituser")
-@http_reject_on_failure
 async def http_process_ituser(
     event: Event[UUID],
     graphql_client: depends.GraphQLClient,
@@ -162,7 +158,6 @@ async def http_process_ituser(
 
 
 @mo2ldap_router.post("/person")
-@http_reject_on_failure
 @handle_exclusively_decorator(key=lambda event, *_, **__: event.subject)
 async def http_process_person(
     event: Event[EmployeeUUID],
@@ -179,7 +174,6 @@ async def http_process_person(
 
 
 @mo2ldap_router.post("/reconcile")
-@http_reject_on_failure
 async def http_reconcile_person(
     event: Event[UUID],
     settings: depends.Settings,
@@ -205,7 +199,6 @@ async def http_reconcile_person(
 
 
 @mo2ldap_router.post("/org_unit")
-@http_reject_on_failure
 async def http_process_org_unit(
     event: Event[UUID],
     graphql_client: depends.GraphQLClient,
