@@ -25,7 +25,7 @@ async def test_process_uuid_missing_uuid(test_client: AsyncClient) -> None:
             },
         )
 
-    assert result.status_code == 451
+    assert result.status_code == 200
     assert "LDAP UUID could not be found" in str(cap_logs)
 
 

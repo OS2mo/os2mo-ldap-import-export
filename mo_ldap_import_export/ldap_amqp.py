@@ -7,13 +7,12 @@ from fastapi import APIRouter
 from fastapi import Depends
 from fastramqpi.events import Event
 from fastramqpi.ramqp.depends import get_payload_as_type
-from fastramqpi.ramqp.utils import RejectMessage
 
 from . import depends
 from .depends import DataLoader
 from .depends import Settings
 from .depends import SyncTool
-from .exceptions import http_reject_on_failure
+from .exceptions import AcknowledgeException
 from .types import LDAPUUID
 
 logger = structlog.stdlib.get_logger()
@@ -25,7 +24,6 @@ PayloadUUID = Annotated[LDAPUUID, Depends(get_payload_as_type(LDAPUUID))]
 
 
 @ldap2mo_router.post("/uuid")
-@http_reject_on_failure
 async def http_process_uuid(
     settings: Settings,
     sync_tool: SyncTool,
@@ -42,7 +40,7 @@ async def http_process_uuid(
     dn = await dataloader.ldapapi.get_ldap_dn(uuid)
     if dn is None:
         logger.error("LDAP UUID could not be found", uuid=uuid)
-        raise RejectMessage("LDAP UUID could not be found")
+        raise AcknowledgeException("LDAP UUID could not be found")
 
     # Ignore changes to non-employee objects
     ldap_object_classes = await dataloader.ldapapi.get_attribute_by_dn(
@@ -66,7 +64,6 @@ async def http_process_uuid(
 
 
 @ldap2mo_router.post("/reconcile")
-@http_reject_on_failure
 async def http_reconcile_uuid(
     settings: Settings,
     dataloader: DataLoader,
@@ -83,7 +80,7 @@ async def http_reconcile_uuid(
     dn = await dataloader.ldapapi.get_ldap_dn(uuid)
     if dn is None:
         logger.error("LDAP UUID could not be found", uuid=uuid)
-        raise RejectMessage("LDAP UUID could not be found")
+        raise AcknowledgeException("LDAP UUID could not be found")
 
     person_uuid = await dataloader.find_mo_employee_uuid(dn)
     if person_uuid is None:
