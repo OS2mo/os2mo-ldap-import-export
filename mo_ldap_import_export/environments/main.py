@@ -882,6 +882,7 @@ class Refresher(Protocol):
         self,
         uuids: list[UUID],
         exchange: str | None | UnsetType = UNSET,
+        listener: UUID | None | UnsetType = UNSET,
         owner: UUID | None | UnsetType = UNSET,
     ) -> Awaitable[Any]: ...
 
