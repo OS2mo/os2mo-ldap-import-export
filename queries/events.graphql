@@ -46,8 +46,8 @@ mutation acknowledge_event($token: EventToken!) {
   event_acknowledge(input: { token: $token })
 }
 
-query read_event_listeners {
-  event_listeners {
+query read_event_listeners($filter: ListenerFilter) {
+  event_listeners(filter: $filter) {
     objects {
       uuid
       user_key

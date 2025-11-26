@@ -91,6 +91,7 @@ from .input_types import ITUserFilter
 from .input_types import ITUserTerminateInput
 from .input_types import ITUserUpdateInput
 from .input_types import ListenerCreateInput
+from .input_types import ListenerFilter
 from .input_types import ManagerCreateInput
 from .input_types import ManagerFilter
 from .input_types import NamespaceFilter
@@ -253,6 +254,7 @@ def gql(q: str) -> str:
 
 
 class GraphQLClient(AsyncBaseClient):
+
     async def get_event_namespaces(
         self, filter: NamespaceFilter | None | UnsetType = UNSET
     ) -> GetEventNamespacesEventNamespaces:
@@ -356,11 +358,13 @@ class GraphQLClient(AsyncBaseClient):
         data = self.get_data(response)
         return AcknowledgeEvent.parse_obj(data).event_acknowledge
 
-    async def read_event_listeners(self) -> ReadEventListenersEventListeners:
+    async def read_event_listeners(
+        self, filter: ListenerFilter | None | UnsetType = UNSET
+    ) -> ReadEventListenersEventListeners:
         query = gql(
             """
-            query read_event_listeners {
-              event_listeners {
+            query read_event_listeners($filter: ListenerFilter) {
+              event_listeners(filter: $filter) {
                 objects {
                   uuid
                   user_key
@@ -370,7 +374,7 @@ class GraphQLClient(AsyncBaseClient):
             }
             """
         )
-        variables: dict[str, object] = {}
+        variables: dict[str, object] = {"filter": filter}
         response = await self.execute(query=query, variables=variables)
         data = self.get_data(response)
         return ReadEventListeners.parse_obj(data).event_listeners
@@ -1806,12 +1810,18 @@ class GraphQLClient(AsyncBaseClient):
         self,
         uuids: list[UUID],
         exchange: str | None | UnsetType = UNSET,
+        listener: UUID | None | UnsetType = UNSET,
         owner: UUID | None | UnsetType = UNSET,
     ) -> AddressRefreshAddressRefresh:
         query = gql(
             """
-            mutation address_refresh($exchange: String, $owner: UUID, $uuids: [UUID!]!) {
-              address_refresh(exchange: $exchange, owner: $owner, filter: {uuids: $uuids}) {
+            mutation address_refresh($exchange: String, $listener: UUID, $owner: UUID, $uuids: [UUID!]!) {
+              address_refresh(
+                exchange: $exchange
+                listener: $listener
+                owner: $owner
+                filter: {uuids: $uuids}
+              ) {
                 objects
               }
             }
@@ -1819,6 +1829,7 @@ class GraphQLClient(AsyncBaseClient):
         )
         variables: dict[str, object] = {
             "exchange": exchange,
+            "listener": listener,
             "owner": owner,
             "uuids": uuids,
         }
@@ -1830,12 +1841,18 @@ class GraphQLClient(AsyncBaseClient):
         self,
         uuids: list[UUID],
         exchange: str | None | UnsetType = UNSET,
+        listener: UUID | None | UnsetType = UNSET,
         owner: UUID | None | UnsetType = UNSET,
     ) -> AssociationRefreshAssociationRefresh:
         query = gql(
             """
-            mutation association_refresh($exchange: String, $owner: UUID, $uuids: [UUID!]!) {
-              association_refresh(exchange: $exchange, owner: $owner, filter: {uuids: $uuids}) {
+            mutation association_refresh($exchange: String, $listener: UUID, $owner: UUID, $uuids: [UUID!]!) {
+              association_refresh(
+                exchange: $exchange
+                listener: $listener
+                owner: $owner
+                filter: {uuids: $uuids}
+              ) {
                 objects
               }
             }
@@ -1843,6 +1860,7 @@ class GraphQLClient(AsyncBaseClient):
         )
         variables: dict[str, object] = {
             "exchange": exchange,
+            "listener": listener,
             "owner": owner,
             "uuids": uuids,
         }
@@ -1854,12 +1872,18 @@ class GraphQLClient(AsyncBaseClient):
         self,
         uuids: list[UUID],
         exchange: str | None | UnsetType = UNSET,
+        listener: UUID | None | UnsetType = UNSET,
         owner: UUID | None | UnsetType = UNSET,
     ) -> ClassRefreshClassRefresh:
         query = gql(
             """
-            mutation class_refresh($exchange: String, $owner: UUID, $uuids: [UUID!]!) {
-              class_refresh(exchange: $exchange, owner: $owner, filter: {uuids: $uuids}) {
+            mutation class_refresh($exchange: String, $listener: UUID, $owner: UUID, $uuids: [UUID!]!) {
+              class_refresh(
+                exchange: $exchange
+                listener: $listener
+                owner: $owner
+                filter: {uuids: $uuids}
+              ) {
                 objects
               }
             }
@@ -1867,6 +1891,7 @@ class GraphQLClient(AsyncBaseClient):
         )
         variables: dict[str, object] = {
             "exchange": exchange,
+            "listener": listener,
             "owner": owner,
             "uuids": uuids,
         }
@@ -1878,12 +1903,18 @@ class GraphQLClient(AsyncBaseClient):
         self,
         uuids: list[UUID],
         exchange: str | None | UnsetType = UNSET,
+        listener: UUID | None | UnsetType = UNSET,
         owner: UUID | None | UnsetType = UNSET,
     ) -> EngagementRefreshEngagementRefresh:
         query = gql(
             """
-            mutation engagement_refresh($exchange: String, $owner: UUID, $uuids: [UUID!]!) {
-              engagement_refresh(exchange: $exchange, owner: $owner, filter: {uuids: $uuids}) {
+            mutation engagement_refresh($exchange: String, $listener: UUID, $owner: UUID, $uuids: [UUID!]!) {
+              engagement_refresh(
+                exchange: $exchange
+                listener: listener
+                owner: $owner
+                filter: {uuids: $uuids}
+              ) {
                 objects
               }
             }
@@ -1891,6 +1922,7 @@ class GraphQLClient(AsyncBaseClient):
         )
         variables: dict[str, object] = {
             "exchange": exchange,
+            "listener": listener,
             "owner": owner,
             "uuids": uuids,
         }
@@ -1902,12 +1934,18 @@ class GraphQLClient(AsyncBaseClient):
         self,
         uuids: list[UUID],
         exchange: str | None | UnsetType = UNSET,
+        listener: UUID | None | UnsetType = UNSET,
         owner: UUID | None | UnsetType = UNSET,
     ) -> FacetRefreshFacetRefresh:
         query = gql(
             """
-            mutation facet_refresh($exchange: String, $owner: UUID, $uuids: [UUID!]!) {
-              facet_refresh(exchange: $exchange, owner: $owner, filter: {uuids: $uuids}) {
+            mutation facet_refresh($exchange: String, $listener: UUID, $owner: UUID, $uuids: [UUID!]!) {
+              facet_refresh(
+                exchange: $exchange
+                listener: $listener
+                owner: $owner
+                filter: {uuids: $uuids}
+              ) {
                 objects
               }
             }
@@ -1915,6 +1953,7 @@ class GraphQLClient(AsyncBaseClient):
         )
         variables: dict[str, object] = {
             "exchange": exchange,
+            "listener": listener,
             "owner": owner,
             "uuids": uuids,
         }
@@ -1926,12 +1965,18 @@ class GraphQLClient(AsyncBaseClient):
         self,
         uuids: list[UUID],
         exchange: str | None | UnsetType = UNSET,
+        listener: UUID | None | UnsetType = UNSET,
         owner: UUID | None | UnsetType = UNSET,
     ) -> ItsystemRefreshItsystemRefresh:
         query = gql(
             """
-            mutation itsystem_refresh($exchange: String, $owner: UUID, $uuids: [UUID!]!) {
-              itsystem_refresh(exchange: $exchange, owner: $owner, filter: {uuids: $uuids}) {
+            mutation itsystem_refresh($exchange: String, $listener: UUID, $owner: UUID, $uuids: [UUID!]!) {
+              itsystem_refresh(
+                exchange: $exchange
+                listener: listener
+                owner: $owner
+                filter: {uuids: $uuids}
+              ) {
                 objects
               }
             }
@@ -1939,6 +1984,7 @@ class GraphQLClient(AsyncBaseClient):
         )
         variables: dict[str, object] = {
             "exchange": exchange,
+            "listener": listener,
             "owner": owner,
             "uuids": uuids,
         }
@@ -1950,12 +1996,18 @@ class GraphQLClient(AsyncBaseClient):
         self,
         uuids: list[UUID],
         exchange: str | None | UnsetType = UNSET,
+        listener: UUID | None | UnsetType = UNSET,
         owner: UUID | None | UnsetType = UNSET,
     ) -> ItuserRefreshItuserRefresh:
         query = gql(
             """
-            mutation ituser_refresh($exchange: String, $owner: UUID, $uuids: [UUID!]!) {
-              ituser_refresh(exchange: $exchange, owner: $owner, filter: {uuids: $uuids}) {
+            mutation ituser_refresh($exchange: String, $listener: UUID, $owner: UUID, $uuids: [UUID!]!) {
+              ituser_refresh(
+                exchange: $exchange
+                listener: listener
+                owner: $owner
+                filter: {uuids: $uuids}
+              ) {
                 objects
               }
             }
@@ -1963,6 +2015,7 @@ class GraphQLClient(AsyncBaseClient):
         )
         variables: dict[str, object] = {
             "exchange": exchange,
+            "listener": listener,
             "owner": owner,
             "uuids": uuids,
         }
@@ -1974,12 +2027,18 @@ class GraphQLClient(AsyncBaseClient):
         self,
         uuids: list[UUID],
         exchange: str | None | UnsetType = UNSET,
+        listener: UUID | None | UnsetType = UNSET,
         owner: UUID | None | UnsetType = UNSET,
     ) -> KleRefreshKleRefresh:
         query = gql(
             """
-            mutation kle_refresh($exchange: String, $owner: UUID, $uuids: [UUID!]!) {
-              kle_refresh(exchange: $exchange, owner: $owner, filter: {uuids: $uuids}) {
+            mutation kle_refresh($exchange: String, $listener: UUID, $owner: UUID, $uuids: [UUID!]!) {
+              kle_refresh(
+                exchange: $exchange
+                listener: $listener
+                owner: $owner
+                filter: {uuids: $uuids}
+              ) {
                 objects
               }
             }
@@ -1987,6 +2046,7 @@ class GraphQLClient(AsyncBaseClient):
         )
         variables: dict[str, object] = {
             "exchange": exchange,
+            "listener": listener,
             "owner": owner,
             "uuids": uuids,
         }
@@ -1998,12 +2058,18 @@ class GraphQLClient(AsyncBaseClient):
         self,
         uuids: list[UUID],
         exchange: str | None | UnsetType = UNSET,
+        listener: UUID | None | UnsetType = UNSET,
         owner: UUID | None | UnsetType = UNSET,
     ) -> LeaveRefreshLeaveRefresh:
         query = gql(
             """
-            mutation leave_refresh($exchange: String, $owner: UUID, $uuids: [UUID!]!) {
-              leave_refresh(exchange: $exchange, owner: $owner, filter: {uuids: $uuids}) {
+            mutation leave_refresh($exchange: String, $listener: UUID, $owner: UUID, $uuids: [UUID!]!) {
+              leave_refresh(
+                exchange: $exchange
+                listener: $listener
+                owner: $owner
+                filter: {uuids: $uuids}
+              ) {
                 objects
               }
             }
@@ -2011,6 +2077,7 @@ class GraphQLClient(AsyncBaseClient):
         )
         variables: dict[str, object] = {
             "exchange": exchange,
+            "listener": listener,
             "owner": owner,
             "uuids": uuids,
         }
@@ -2022,12 +2089,18 @@ class GraphQLClient(AsyncBaseClient):
         self,
         uuids: list[UUID],
         exchange: str | None | UnsetType = UNSET,
+        listener: UUID | None | UnsetType = UNSET,
         owner: UUID | None | UnsetType = UNSET,
     ) -> ManagerRefreshManagerRefresh:
         query = gql(
             """
-            mutation manager_refresh($exchange: String, $owner: UUID, $uuids: [UUID!]!) {
-              manager_refresh(exchange: $exchange, owner: $owner, filter: {uuids: $uuids}) {
+            mutation manager_refresh($exchange: String, $listener: UUID, $owner: UUID, $uuids: [UUID!]!) {
+              manager_refresh(
+                exchange: $exchange
+                listener: listener
+                owner: $owner
+                filter: {uuids: $uuids}
+              ) {
                 objects
               }
             }
@@ -2035,6 +2108,7 @@ class GraphQLClient(AsyncBaseClient):
         )
         variables: dict[str, object] = {
             "exchange": exchange,
+            "listener": listener,
             "owner": owner,
             "uuids": uuids,
         }
@@ -2046,12 +2120,18 @@ class GraphQLClient(AsyncBaseClient):
         self,
         uuids: list[UUID],
         exchange: str | None | UnsetType = UNSET,
+        listener: UUID | None | UnsetType = UNSET,
         owner: UUID | None | UnsetType = UNSET,
     ) -> OrgUnitRefreshOrgUnitRefresh:
         query = gql(
             """
-            mutation org_unit_refresh($exchange: String, $owner: UUID, $uuids: [UUID!]!) {
-              org_unit_refresh(exchange: $exchange, owner: $owner, filter: {uuids: $uuids}) {
+            mutation org_unit_refresh($exchange: String, $listener: UUID, $owner: UUID, $uuids: [UUID!]!) {
+              org_unit_refresh(
+                exchange: $exchange
+                listener: listener
+                owner: $owner
+                filter: {uuids: $uuids}
+              ) {
                 objects
               }
             }
@@ -2059,6 +2139,7 @@ class GraphQLClient(AsyncBaseClient):
         )
         variables: dict[str, object] = {
             "exchange": exchange,
+            "listener": listener,
             "owner": owner,
             "uuids": uuids,
         }
@@ -2070,12 +2151,18 @@ class GraphQLClient(AsyncBaseClient):
         self,
         uuids: list[UUID],
         exchange: str | None | UnsetType = UNSET,
+        listener: UUID | None | UnsetType = UNSET,
         owner: UUID | None | UnsetType = UNSET,
     ) -> OwnerRefreshOwnerRefresh:
         query = gql(
             """
-            mutation owner_refresh($exchange: String, $owner: UUID, $uuids: [UUID!]!) {
-              owner_refresh(exchange: $exchange, owner: $owner, filter: {uuids: $uuids}) {
+            mutation owner_refresh($exchange: String, $listener: UUID, $owner: UUID, $uuids: [UUID!]!) {
+              owner_refresh(
+                exchange: $exchange
+                listener: $listener
+                owner: $owner
+                filter: {uuids: $uuids}
+              ) {
                 objects
               }
             }
@@ -2083,6 +2170,7 @@ class GraphQLClient(AsyncBaseClient):
         )
         variables: dict[str, object] = {
             "exchange": exchange,
+            "listener": listener,
             "owner": owner,
             "uuids": uuids,
         }
@@ -2094,12 +2182,18 @@ class GraphQLClient(AsyncBaseClient):
         self,
         uuids: list[UUID],
         exchange: str | None | UnsetType = UNSET,
+        listener: UUID | None | UnsetType = UNSET,
         owner: UUID | None | UnsetType = UNSET,
     ) -> PersonRefreshEmployeeRefresh:
         query = gql(
             """
-            mutation person_refresh($exchange: String, $owner: UUID, $uuids: [UUID!]!) {
-              employee_refresh(exchange: $exchange, owner: $owner, filter: {uuids: $uuids}) {
+            mutation person_refresh($exchange: String, $listener: UUID, $owner: UUID, $uuids: [UUID!]!) {
+              employee_refresh(
+                exchange: $exchange
+                listener: $listener
+                owner: $owner
+                filter: {uuids: $uuids}
+              ) {
                 objects
               }
             }
@@ -2107,6 +2201,7 @@ class GraphQLClient(AsyncBaseClient):
         )
         variables: dict[str, object] = {
             "exchange": exchange,
+            "listener": listener,
             "owner": owner,
             "uuids": uuids,
         }
@@ -2118,13 +2213,15 @@ class GraphQLClient(AsyncBaseClient):
         self,
         uuids: list[UUID],
         exchange: str | None | UnsetType = UNSET,
+        listener: UUID | None | UnsetType = UNSET,
         owner: UUID | None | UnsetType = UNSET,
     ) -> RelatedUnitRefreshRelatedUnitRefresh:
         query = gql(
             """
-            mutation related_unit_refresh($exchange: String, $owner: UUID, $uuids: [UUID!]!) {
+            mutation related_unit_refresh($exchange: String, $listener: UUID, $owner: UUID, $uuids: [UUID!]!) {
               related_unit_refresh(
                 exchange: $exchange
+                listener: listener
                 owner: $owner
                 filter: {uuids: $uuids}
               ) {
@@ -2135,6 +2232,7 @@ class GraphQLClient(AsyncBaseClient):
         )
         variables: dict[str, object] = {
             "exchange": exchange,
+            "listener": listener,
             "owner": owner,
             "uuids": uuids,
         }
@@ -2146,12 +2244,18 @@ class GraphQLClient(AsyncBaseClient):
         self,
         uuids: list[UUID],
         exchange: str | None | UnsetType = UNSET,
+        listener: UUID | None | UnsetType = UNSET,
         owner: UUID | None | UnsetType = UNSET,
     ) -> RolebindingRefreshRolebindingRefresh:
         query = gql(
             """
-            mutation rolebinding_refresh($exchange: String, $owner: UUID, $uuids: [UUID!]!) {
-              rolebinding_refresh(exchange: $exchange, owner: $owner, filter: {uuids: $uuids}) {
+            mutation rolebinding_refresh($exchange: String, $listener: UUID, $owner: UUID, $uuids: [UUID!]!) {
+              rolebinding_refresh(
+                exchange: $exchange
+                listener: listener
+                owner: $owner
+                filter: {uuids: $uuids}
+              ) {
                 objects
               }
             }
@@ -2159,6 +2263,7 @@ class GraphQLClient(AsyncBaseClient):
         )
         variables: dict[str, object] = {
             "exchange": exchange,
+            "listener": listener,
             "owner": owner,
             "uuids": uuids,
         }
@@ -2170,13 +2275,15 @@ class GraphQLClient(AsyncBaseClient):
         self,
         org_unit_uuid: UUID,
         exchange: str | None | UnsetType = UNSET,
+        listener: UUID | None | UnsetType = UNSET,
         owner: UUID | None | UnsetType = UNSET,
     ) -> OrgUnitEngagementsRefreshEngagementRefresh:
         query = gql(
             """
-            mutation org_unit_engagements_refresh($exchange: String, $owner: UUID, $org_unit_uuid: UUID!) {
+            mutation org_unit_engagements_refresh($exchange: String, $listener: UUID, $owner: UUID, $org_unit_uuid: UUID!) {
               engagement_refresh(
                 exchange: $exchange
+                listener: listener
                 owner: $owner
                 filter: {org_unit: {uuids: [$org_unit_uuid]}, from_date: null, to_date: null}
               ) {
@@ -2187,6 +2294,7 @@ class GraphQLClient(AsyncBaseClient):
         )
         variables: dict[str, object] = {
             "exchange": exchange,
+            "listener": listener,
             "owner": owner,
             "org_unit_uuid": org_unit_uuid,
         }
