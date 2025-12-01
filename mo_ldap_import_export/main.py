@@ -495,7 +495,7 @@ def create_fastramqpi(**kwargs: Any) -> FastRAMQPI:
         database_metadata=Base.metadata,
         graphql_events=GraphQLEvents(
             declare_namespaces=[
-                Namespace(name="ldap"),
+                Namespace(name=settings.event_namespace),
             ],
             declare_listeners=listeners,
         ),
