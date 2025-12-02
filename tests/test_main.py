@@ -5,7 +5,6 @@
 # pylint: disable=protected-access
 import os
 from collections.abc import Iterator
-from contextlib import contextmanager
 from functools import partial
 from typing import Any
 from unittest.mock import AsyncMock
@@ -32,7 +31,6 @@ from mo_ldap_import_export.exceptions import ReadOnlyException
 from mo_ldap_import_export.main import amqp_reject_on_failure
 from mo_ldap_import_export.main import create_app
 from mo_ldap_import_export.main import create_fastramqpi
-from mo_ldap_import_export.main import open_ldap_connection
 from mo_ldap_import_export.main import process_address
 from mo_ldap_import_export.main import process_engagement
 from mo_ldap_import_export.main import process_ituser
@@ -253,24 +251,6 @@ def test_create_app() -> None:
     """Test that we can construct our FastAPI application."""
     app = create_app()
     assert isinstance(app, FastAPI)
-
-
-async def test_open_ldap_connection() -> None:
-    """Test the open_ldap_connection."""
-    state = []
-
-    @contextmanager
-    def manager() -> Iterator[None]:
-        state.append(1)
-        yield
-        state.append(2)
-
-    ldap_connection = manager()
-
-    assert not state
-    async with open_ldap_connection(ldap_connection):  # type: ignore
-        assert state == [1]
-    assert state == [1, 2]
 
 
 async def test_listen_to_changes(sync_tool: AsyncMock) -> None:
