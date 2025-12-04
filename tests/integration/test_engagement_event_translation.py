@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
 from datetime import datetime
+from unittest.mock import ANY
 from uuid import UUID
 
 import pytest
@@ -64,17 +65,13 @@ async def test_engagement2person(
     route.result = {"employee_refresh": {"objects": [mo_person]}}
 
     result = await test_client.post(
-        "/mo2ldap/engagement",
-        headers={"Content-Type": "text/plain"},
-        content=str(engagement.uuid),
+        "/mo2ldap/engagement", json={"subject": str(engagement.uuid), "priority": 1}
     )
     result.raise_for_status()
 
     # Check that we send the event to MO
     assert route.called
-    assert route.request_variables == [
-        {"exchange": "os2mo_ldap_ie", "uuids": [str(mo_person)]}
-    ]
+    assert route.request_variables == [{"owner": ANY, "uuids": [str(mo_person)]}]
 
 
 @pytest.mark.integration_test
@@ -117,17 +114,13 @@ async def test_engagement2person_between(
     route.result = {"employee_refresh": {"objects": [mo_person]}}
 
     result = await test_client.post(
-        "/mo2ldap/engagement",
-        headers={"Content-Type": "text/plain"},
-        content=str(engagement.uuid),
+        "/mo2ldap/engagement", json={"subject": str(engagement.uuid), "priority": 1}
     )
     result.raise_for_status()
 
     # Check that we send the event to MO
     assert route.called
-    assert route.request_variables == [
-        {"exchange": "os2mo_ldap_ie", "uuids": [str(mo_person)]}
-    ]
+    assert route.request_variables == [{"owner": ANY, "uuids": [str(mo_person)]}]
 
 
 @pytest.mark.integration_test
@@ -188,14 +181,12 @@ async def test_engagement2person_change_person(
     route.result = {"employee_refresh": {"objects": [person1, person2]}}
 
     result = await test_client.post(
-        "/mo2ldap/engagement",
-        headers={"Content-Type": "text/plain"},
-        content=str(engagement.uuid),
+        "/mo2ldap/engagement", json={"subject": str(engagement.uuid), "priority": 1}
     )
     result.raise_for_status()
 
     # Check that we send the event to MO
     assert route.called
     assert route.request_variables == [
-        {"exchange": "os2mo_ldap_ie", "uuids": [str(person1.uuid), str(person2.uuid)]}
+        {"owner": ANY, "uuids": [str(person1.uuid), str(person2.uuid)]}
     ]

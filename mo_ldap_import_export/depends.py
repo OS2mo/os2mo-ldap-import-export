@@ -9,10 +9,8 @@ from uuid import uuid4
 
 from fastapi import Depends
 from fastramqpi.depends import from_user_context
-from fastramqpi.ramqp.amqp import AMQPSystem as _AMQPSystem
 from fastramqpi.ramqp.depends import Message
 from fastramqpi.ramqp.depends import from_context
-from fastramqpi.ramqp.mo import MOAMQPSystem as _MOAMQPSystem
 from ldap3 import Connection as _Connection
 from structlog.contextvars import bound_contextvars
 
@@ -21,6 +19,7 @@ from .config import Settings as _Settings
 from .converters import LdapConverter as _LdapConverter
 from .dataloaders import DataLoader as _DataLoader
 from .import_export import SyncTool as _SyncTool
+from .ldap_event_generator import LDAPEventGenerator as _LDAPEventGenerator
 
 GraphQLClient = Annotated[_GraphQLClient, Depends(from_context("graphql_client"))]
 SyncTool = Annotated[_SyncTool, Depends(from_user_context("sync_tool"))]
@@ -28,8 +27,9 @@ DataLoader = Annotated[_DataLoader, Depends(from_user_context("dataloader"))]
 Settings = Annotated[_Settings, Depends(from_user_context("settings"))]
 LdapConverter = Annotated[_LdapConverter, Depends(from_user_context("converter"))]
 Connection = Annotated[_Connection, Depends(from_user_context("ldap_connection"))]
-LDAPAMQPSystem = Annotated[_AMQPSystem, Depends(from_user_context("ldap_amqpsystem"))]
-AMQPSystem = Annotated[_MOAMQPSystem, Depends(from_context("amqpsystem"))]
+LDAPEventGenerator = Annotated[
+    _LDAPEventGenerator, Depends(from_user_context("ldap_event_generator"))
+]
 
 
 async def logger_bound_message_id(message: Message) -> AsyncIterable[None]:
