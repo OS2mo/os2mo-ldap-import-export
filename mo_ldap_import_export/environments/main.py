@@ -304,7 +304,7 @@ async def load_primary_engagement(
     return_terminated: bool = False,
 ) -> Engagement | None:
     primary_engagement_uuid = await get_primary_engagement(
-        moapi.graphql_client, EmployeeUUID(employee_uuid)
+        moapi.graphql_client, EmployeeUUID(employee_uuid), moapi.settings
     )
     if primary_engagement_uuid is None:
         logger.info(
@@ -459,7 +459,7 @@ async def load_org_unit_address(
     moapi: MOAPI, employee_uuid: UUID, address_type_user_key: str
 ) -> Address | None:
     primary_engagement_uuid = await get_primary_engagement(
-        moapi.graphql_client, EmployeeUUID(employee_uuid)
+        moapi.graphql_client, EmployeeUUID(employee_uuid), moapi.settings
     )
     if primary_engagement_uuid is None:
         logger.info(

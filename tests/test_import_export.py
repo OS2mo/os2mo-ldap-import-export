@@ -515,6 +515,7 @@ async def test_get_primary_engagement(
     graphql_mock: GraphQLMocker,
     objects: list[dict[str, Any]],
     expected: UUID | str | None,
+    minimal_valid_settings: Settings,
 ) -> None:
     graphql_client = GraphQLClient(f"http://example.com/graphql/v{GRAPHQL_VERSION}")
 
@@ -525,10 +526,14 @@ async def test_get_primary_engagement(
 
     if isinstance(expected, str):
         with pytest.raises(RequeueMessage) as exc_info:
-            await get_primary_engagement(graphql_client, employee_uuid)
+            await get_primary_engagement(
+                graphql_client, employee_uuid, minimal_valid_settings
+            )
         assert expected in str(exc_info.value)
     else:
-        result = await get_primary_engagement(graphql_client, employee_uuid)
+        result = await get_primary_engagement(
+            graphql_client, employee_uuid, minimal_valid_settings
+        )
         assert result == expected
 
     assert route.called

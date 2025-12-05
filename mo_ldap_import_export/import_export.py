@@ -246,7 +246,7 @@ class SyncTool:
             return True
 
         primary_engagement_uuid = await get_primary_engagement(
-            self.dataloader.moapi.graphql_client, uuid
+            self.dataloader.moapi.graphql_client, uuid, self.settings
         )
         if primary_engagement_uuid is None:
             logger.info(

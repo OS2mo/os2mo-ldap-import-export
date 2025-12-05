@@ -391,15 +391,19 @@ query read_filtered_itusers($filter: ITUserFilter!) {
   }
 }
 
-query read_engagements_is_primary($filter: EngagementFilter!) {
+query read_engagements_for_primary_calculation($filter: EngagementFilter!) {
   engagements(filter: $filter) {
     objects {
       validities {
-        is_primary
+        fraction
+        user_key
         uuid
         validity {
           from
           to
+        }
+        engagement_type {
+          uuid
         }
       }
     }

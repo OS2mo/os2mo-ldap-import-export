@@ -193,8 +193,12 @@ from .read_engagements import ReadEngagements
 from .read_engagements import ReadEngagementsEngagements
 from .read_engagements_by_employee_uuid import ReadEngagementsByEmployeeUuid
 from .read_engagements_by_employee_uuid import ReadEngagementsByEmployeeUuidEngagements
-from .read_engagements_is_primary import ReadEngagementsIsPrimary
-from .read_engagements_is_primary import ReadEngagementsIsPrimaryEngagements
+from .read_engagements_for_primary_calculation import (
+    ReadEngagementsForPrimaryCalculation,
+)
+from .read_engagements_for_primary_calculation import (
+    ReadEngagementsForPrimaryCalculationEngagements,
+)
 from .read_facet_uuid import ReadFacetUuid
 from .read_facet_uuid import ReadFacetUuidFacets
 from .read_filtered_addresses import ReadFilteredAddresses
@@ -1307,20 +1311,24 @@ class GraphQLClient(AsyncBaseClient):
         data = self.get_data(response)
         return ReadFilteredItusers.parse_obj(data).itusers
 
-    async def read_engagements_is_primary(
+    async def read_engagements_for_primary_calculation(
         self, filter: EngagementFilter
-    ) -> ReadEngagementsIsPrimaryEngagements:
+    ) -> ReadEngagementsForPrimaryCalculationEngagements:
         query = gql(
             """
-            query read_engagements_is_primary($filter: EngagementFilter!) {
+            query read_engagements_for_primary_calculation($filter: EngagementFilter!) {
               engagements(filter: $filter) {
                 objects {
                   validities {
-                    is_primary
+                    fraction
+                    user_key
                     uuid
                     validity {
                       from
                       to
+                    }
+                    engagement_type {
+                      uuid
                     }
                   }
                 }
@@ -1331,7 +1339,7 @@ class GraphQLClient(AsyncBaseClient):
         variables: dict[str, object] = {"filter": filter}
         response = await self.execute(query=query, variables=variables)
         data = self.get_data(response)
-        return ReadEngagementsIsPrimary.parse_obj(data).engagements
+        return ReadEngagementsForPrimaryCalculation.parse_obj(data).engagements
 
     async def read_ituser_relation_uuids(
         self, ituser_uuid: UUID

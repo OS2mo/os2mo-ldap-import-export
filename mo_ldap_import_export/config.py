@@ -642,3 +642,8 @@ class Settings(BaseSettings):
             "units or their subtrees, the empty list allows creating all MO users"
         ),
     )
+
+    calculate_primary_locally: bool = Field(
+        False,
+        description="If True, calculate primary engagement locally instead of relying on is_primary",
+    )

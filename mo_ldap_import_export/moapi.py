@@ -15,7 +15,6 @@ from uuid import UUID
 
 import structlog
 from fastapi.encoders import jsonable_encoder
-from fastramqpi.ramqp.utils import RequeueMessage
 from more_itertools import bucket
 from more_itertools import one
 from more_itertools import only
@@ -172,22 +171,25 @@ def flatten_validities(
 
 
 async def get_primary_engagement(
-    graphql_client: GraphQLClient, uuid: EmployeeUUID
+    graphql_client: GraphQLClient,
+    uuid: EmployeeUUID,
+    settings: Settings,
+    exclude_engagement_types: set[UUID] | None = None,
 ) -> UUID | None:
     """Decide the best primary engagement for the provided user.
-
     Args:
+        graphql_client: The GraphQLClient instance to use for communication with MO.
         uuid: UUID of the user to find the primary engagement for.
-
-    Raises:
-        RequeueMessage: If the method wants to wait for calculate_primary to run.
-
+        settings: The application settings object.
+        exclude_engagement_types:
+            An optional set of engagement_type uuids to exclude from
+            primary calculation.
     Returns:
         The UUID of an engagement if found, otherwise None.
     """
-    # TODO: Implement suppport for selecting primary engagements directly from MO
+
     # Get engagements from MO
-    result = await graphql_client.read_engagements_is_primary(
+    result = await graphql_client.read_engagements_for_primary_calculation(
         EngagementFilter(
             employee=EmployeeFilter(uuids=[uuid]), from_date=None, to_date=None
         )
@@ -199,64 +201,36 @@ async def get_primary_engagement(
         logger.info("No engagement validities found")
         return None
 
-    # Remove all non-primary validities
-    # This should contain a list of non-overlapping primary engagement validities,
-    # assuming that primary calculation has run succesfully, overlaps indicate that
-    # calculate_primary has not done its job correctly.
-    # TODO: Check this invariant and throw RequeueMessage whenever it is broken?
-    primary_validities = [val for val in validities if val.is_primary]
+    # Filter out excluded engagement types
+    if exclude_engagement_types:
+        validities = [
+            validity
+            for validity in validities
+            if validity.engagement_type.uuid not in exclude_engagement_types
+        ]
 
-    # If there is validities, but none of them are primary, we need to wait for
-    # calculate_primary to determine which validities are supposed to be primary.
-    # TODO: Consider if we actually care to wait, we could just return `None` and
-    #       notify that there is no primary while waiting for another AMQP message
-    #       to come in, whenever calculate_primary has made changes.
-    #       This however requires the engagement listener to actually trigger all
-    #       code-paths that may end up calling this function.
-    #       So for now we play it safe and keep this AMQP event around by requeuing.
-    if validities and not primary_validities:
-        logger.info(
-            "Waiting for primary engagement to be decided",
-            validities=validities,
-            primary_validities=[],
-        )
-        raise RequeueMessage("Waiting for primary engagement to be decided")
+    # Filter for current and future engagements
+    now = datetime.now(UTC)
+    current_and_future_validities = [
+        v for v in validities if v.validity.to is None or v.validity.to > now
+    ]
 
-    try:
-        primary_engagement_validity = extract_current_or_latest_validity(
-            primary_validities
-        )
-    except ValueError as e:
-        # Multiple current primary engagements found, we cannot handle this
-        # situation gracefully, so we requeue until calculate_primary resolves it.
-        # NOTE: There may in fact still be multiple primary engagements in the past
-        #       or future, but these are resolved by simply picking the latest one.
-        # TODO: This should probably be fixed so we detect all overlaps
-        logger.warning(
-            "Waiting for multiple primary engagements to be resolved",
-            validities=validities,
-            primary_validities=primary_validities,
-        )
-        raise RequeueMessage(
-            "Waiting for multiple primary engagements to be resolved"
-        ) from e
+    if not current_and_future_validities:
+        logger.info("No current or future engagement validities found")
+        return None
 
-    # No primary engagement identified, not even a delete/past ones
-    # This should never occur since we check for primary_validities before calling
-    # the extract_current_or_latest_object function. See the TODO for this check.
-    # TODO: If we end up removing that check, then we should probably log and
-    #       return None here instead of asserting it never happens.
-    assert primary_engagement_validity is not None
-
-    primary_engagement_uuid = primary_engagement_validity.uuid
-
-    logger.info(
-        "Found primary engagement",
-        validities=validities,
-        primary_validities=primary_validities,
-        primary_engagement_uuid=primary_engagement_uuid,
+    # The primary engagement is the engagement with the highest occupation rate.
+    # - The occupation rate is found as 'fraction' on the engagement.
+    #
+    # If two engagements have the same occupation rate, the tie is broken by
+    # picking by user-key.
+    primary_engagement = max(
+        current_and_future_validities,
+        # Sort first by fraction, then by user_key
+        key=lambda eng: (eng.fraction or 0, eng.user_key),
     )
-    return primary_engagement_uuid
+
+    return primary_engagement.uuid
 
 
 class MOAPI:
