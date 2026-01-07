@@ -5,6 +5,7 @@ import json
 from collections.abc import Awaitable
 from collections.abc import Callable
 from contextlib import ExitStack
+from contextlib import suppress
 from functools import wraps
 from typing import Any
 from typing import TypeVar
@@ -630,43 +631,53 @@ class SyncTool:
             loaded_object=loaded_object,
         )
 
-        try:
-            converted_object = await self.converter.from_ldap(
-                ldap_object=loaded_object,
-                mapping=mapping,
-                template_context=template_context,
-            )
-        except SkipObject:
-            logger.info("Skipping object", dn=dn)
-            return
+        async def do_it(allow_terminate):
+            try:
+                converted_object = await self.converter.from_ldap(
+                    ldap_object=loaded_object,
+                    mapping=mapping,
+                    template_context=template_context,
+                    allow_terminate=allow_terminate,
+                )
+            except SkipObject:
+                logger.info("Skipping object", dn=dn)
+                return
 
-        logger.info(
-            "Converted 'n' objects ",
-            n=1,
-            dn=dn,
-        )
-
-        mo_attributes = set(mapping.get_fields().keys())
-        operation = await self.format_converted_object(converted_object, mo_attributes)
-
-        if operation is None:  # pragma: no cover
-            logger.info("No converted objects after formatting", dn=dn)
-            return
-
-        logger.info(
-            "Importing object",
-            operation=operation,
-            dn=dn,
-        )
-        if dry_run:
-            obj, verb = operation
-            raise DryRunException(
-                "Would have uploaded changes to MO",
-                dn,
-                details={
-                    "verb": str(verb),
-                    "obj": jsonable_encoder(obj, exclude={"mo_class"}),
-                },
+            logger.info(
+                "Converted 'n' objects ",
+                n=1,
+                dn=dn,
             )
 
-        await self.dataloader.moapi.create_or_edit_mo_objects([operation])
+            mo_attributes = set(mapping.get_fields().keys())
+            operation = await self.format_converted_object(
+                converted_object, mo_attributes
+            )
+
+            if operation is None:  # pragma: no cover
+                logger.info("No converted objects after formatting", dn=dn)
+                return
+
+            logger.info(
+                "Importing object",
+                operation=operation,
+                dn=dn,
+            )
+            if dry_run:
+                obj, verb = operation
+                raise DryRunException(
+                    "Would have uploaded changes to MO",
+                    dn,
+                    details={
+                        "verb": str(verb),
+                        "obj": jsonable_encoder(obj, exclude={"mo_class"}),
+                    },
+                )
+
+            await self.dataloader.moapi.create_or_edit_mo_objects([operation])
+
+        with suppress(Exception):
+            logger.info("allow_terminate=False")
+            await do_it(allow_terminate=False)
+        logger.info("allow_terminate=True")
+        await do_it(False)
