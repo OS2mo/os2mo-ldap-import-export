@@ -66,6 +66,7 @@ class LdapConverter:
         ldap_object: LdapObject,
         mapping: LDAP2MOMapping,
         template_context: dict[str, Any],
+        allow_terminate: bool = True,
     ) -> MOBase | Termination:
         def convert_value(value: Any) -> Any:
             if not is_list(value):
@@ -84,7 +85,7 @@ class LdapConverter:
         mo_class = mapping.as_mo_class()
 
         # Handle termination
-        if mapping.terminate:
+        if allow_terminate and mapping.terminate:
             terminate_template = mapping.terminate
             terminate = await self.render_template(
                 "_terminate_", terminate_template, context
