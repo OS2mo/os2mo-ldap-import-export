@@ -168,13 +168,22 @@ class LDAPEventGenerator(AbstractAsyncContextManager):
         logger.debug(
             "Searching for changes since last search", last_search_time=last_search_time
         )
+
+        # To improve performance and reduce noise, we only listen for changes to
+        # objects with object classes that we are configured to consume.
+        relevant_object_classes = {
+            self.settings.ldap_object_class,
+            *self.settings.conversion_mapping.ldap_to_mo_any,
+        }
+        object_class_filter = "".join(
+            f"(objectClass={cls})" for cls in relevant_object_classes
+        )
+
         # NOTE: I am not convinced that using modifyTimestamp actually works, since it is
         #       a non-replicable attribute, and thus every single domain controller may have
         #       a different value for the same entry, thus if we hit different domain
         #       controllers we may get duplicate (fine) and missed (not fine) events.
-        search_filter = (
-            f"(modifyTimestamp>={datetime_to_ldap_timestamp(last_search_time)})"
-        )
+        search_filter = f"(&(modifyTimestamp>={datetime_to_ldap_timestamp(last_search_time)})(|{object_class_filter}))"
 
         response = await _paged_search(
             self.ldap_connection,
