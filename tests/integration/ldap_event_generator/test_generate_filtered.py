@@ -16,7 +16,6 @@ from mo_ldap_import_export.utils import combine_dn_strings
         "LISTEN_TO_CHANGES_IN_MO": "False",
     }
 )
-@pytest.mark.xfail(reason="Filtering logic not yet implemented", strict=True)
 async def test_generate_filtered(
     test_client: AsyncClient,
     ldap_person_uuid: LDAPUUID,
