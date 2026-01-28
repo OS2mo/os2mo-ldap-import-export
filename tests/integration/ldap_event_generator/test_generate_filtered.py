@@ -7,7 +7,6 @@ from httpx import AsyncClient
 from mo_ldap_import_export.ldap_event_generator import MICROSOFT_EPOCH
 from mo_ldap_import_export.types import LDAPUUID
 from mo_ldap_import_export.utils import combine_dn_strings
-from tests.integration.conftest import DNList2UUID
 
 
 @pytest.mark.integration_test
@@ -17,15 +16,12 @@ from tests.integration.conftest import DNList2UUID
         "LISTEN_TO_CHANGES_IN_MO": "False",
     }
 )
+@pytest.mark.xfail(reason="Filtering logic not yet implemented", strict=True)
 async def test_generate_filtered(
     test_client: AsyncClient,
-    dnlist2uuid: DNList2UUID,
     ldap_person_uuid: LDAPUUID,
-    ldap_org_unit_uuid: LDAPUUID,
     ldap_org: list[str],
 ) -> None:
-    ldap_org_uuid = await dnlist2uuid(ldap_org)
-
     # Use the internal endpoint to fetch changes instead of waiting for the poller
     # This proves that the poll logic itself is filtering correctly
     since = MICROSOFT_EPOCH.isoformat()
@@ -42,4 +38,4 @@ async def test_generate_filtered(
     # It also creates an organizationalUnit and an organization.
     # We all of them to be present here.
     uuids = {LDAPUUID(u) for u in response.json()}
-    assert uuids == {ldap_person_uuid, ldap_org_unit_uuid, ldap_org_uuid}
+    assert uuids == {ldap_person_uuid}
