@@ -69,11 +69,11 @@ class LdapConverter:
         def convert_value(value: Any) -> Any:
             if not is_list(value):
                 return value
-            if not value:
-                return value
-            # We can only handle single element lists
-            too_long = RequeueException("Unable to handle list attributes")
-            return one(value, too_long=too_long)
+            # If the value is a single element list, return the contents
+            if len(value) == 1:
+                return one(value)
+            # Otherwise simply return the list
+            return value
 
         ldap_dict = {
             key: convert_value(value) for key, value in ldap_object.dict().items()
