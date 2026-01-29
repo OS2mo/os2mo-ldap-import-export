@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
+import json
 from asyncio import sleep
 from datetime import timedelta
 from uuid import UUID
@@ -32,6 +33,15 @@ def search_base() -> str:
     {
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
         "LDAP_OUS_TO_SEARCH_IN": '["ou=os2mo,o=magenta"]',
+        # Ensure that the LDAPEventGenerator emits events for:
+        # * organization
+        # * organizationalUnit
+        # * inetOrgPerson (via ldap_user_objectclass)
+        "CONVERSION_MAPPING": json.dumps(
+            {
+                "ldap_to_mo_any": {"organizationalUnit": [], "organization": []},
+            }
+        ),
     }
 )
 @pytest.mark.parametrize(
