@@ -20,7 +20,6 @@ from .models import Employee
 from .models import Engagement
 from .models import ITSystem
 from .models import ITUser
-from .models import JobTitleFromADToMO
 from .models import MOBase
 from .models import OrganisationUnit
 from .types import DN
@@ -42,7 +41,6 @@ def mo_today() -> datetime:
 
 def import_class(name: str) -> type[MOBase]:
     import_map: dict[str, type[MOBase]] = {
-        "Custom.JobTitleFromADToMO": JobTitleFromADToMO,
         "Address": Address,
         "Engagement": Engagement,
         "ITUser": ITUser,

@@ -4,7 +4,6 @@ import json
 from json.decoder import JSONDecodeError
 from typing import Any
 
-import pydantic
 import structlog
 from jinja2 import Environment
 from more_itertools import one
@@ -151,8 +150,4 @@ class LdapConverter:
             )
             raise RequeueException("Missing values in LDAP to synchronize")
 
-        try:
-            return mo_class(**mo_dict)
-        except pydantic.ValidationError:
-            logger.info("Exception during object parsing", exc_info=True)
-            raise
+        return mo_class(**mo_dict)

@@ -136,30 +136,7 @@ class Class(StrictBaseModel):
     validity: Validity
 
 
-# NOTE: This model solely exists to allow us to call sync_JobTitleFromADToMO
-# NOTE: This model is scheduled for removal, see #62802
-class JobTitleFromADToMO(StrictBaseModel):
-    # NOTE: These fields can be removed once removed from the configuration
-    uuid: UUID = Field(default_factory=uuid4)  # unused
-    user_key: str | None  # unused
-
-    user: UUID | None  # unused
-    job_function: UUID | None  # unused
-
-    class Config(StrictBaseModel.Config):
-        extra = Extra.allow
-
-
-MOBase = (
-    Address
-    | Employee
-    | Engagement
-    | ITUser
-    | JobTitleFromADToMO
-    | OrganisationUnit
-    | ITSystem
-    | Class
-)
+MOBase = Address | Employee | Engagement | ITUser | OrganisationUnit | ITSystem | Class
 
 
 class Termination(StrictBaseModel):
