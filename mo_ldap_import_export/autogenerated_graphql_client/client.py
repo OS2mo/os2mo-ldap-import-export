@@ -190,8 +190,6 @@ from .read_engagement_manager import ReadEngagementManager
 from .read_engagement_manager import ReadEngagementManagerEngagements
 from .read_engagement_uuid import ReadEngagementUuid
 from .read_engagement_uuid import ReadEngagementUuidEngagements
-from .read_engagement_uuids import ReadEngagementUuids
-from .read_engagement_uuids import ReadEngagementUuidsEngagements
 from .read_engagements import ReadEngagements
 from .read_engagements import ReadEngagementsEngagements
 from .read_engagements_is_primary import ReadEngagementsIsPrimary
@@ -243,8 +241,6 @@ from .resolve_dar_address import ResolveDarAddressAddresses
 from .rolebinding_refresh import RolebindingRefresh
 from .rolebinding_refresh import RolebindingRefreshRolebindingRefresh
 from .send_event import SendEvent
-from .set_job_title import SetJobTitle
-from .set_job_title import SetJobTitleEngagementUpdate
 from .who_am_i import WhoAmI
 from .who_am_i import WhoAmIMe
 
@@ -786,59 +782,6 @@ class GraphQLClient(AsyncBaseClient):
         response = await self.execute(query=query, variables=variables)
         data = self.get_data(response)
         return ReadEngagements.parse_obj(data).engagements
-
-    async def read_engagement_uuids(
-        self, engagement_filter: EngagementFilter
-    ) -> ReadEngagementUuidsEngagements:
-        query = gql(
-            """
-            query read_engagement_uuids($engagement_filter: EngagementFilter!) {
-              engagements(filter: $engagement_filter) {
-                objects {
-                  uuid
-                  validities {
-                    validity {
-                      from
-                      to
-                    }
-                  }
-                }
-              }
-            }
-            """
-        )
-        variables: dict[str, object] = {"engagement_filter": engagement_filter}
-        response = await self.execute(query=query, variables=variables)
-        data = self.get_data(response)
-        return ReadEngagementUuids.parse_obj(data).engagements
-
-    async def set_job_title(
-        self,
-        uuid: UUID,
-        from_: datetime,
-        to: datetime | None | UnsetType = UNSET,
-        job_function: UUID | None | UnsetType = UNSET,
-    ) -> SetJobTitleEngagementUpdate:
-        query = gql(
-            """
-            mutation set_job_title($uuid: UUID!, $from: DateTime!, $to: DateTime, $job_function: UUID) {
-              engagement_update(
-                input: {uuid: $uuid, validity: {from: $from, to: $to}, job_function: $job_function}
-              ) {
-                uuid
-              }
-            }
-            """
-        )
-        variables: dict[str, object] = {
-            "uuid": uuid,
-            "from": from_,
-            "to": to,
-            "job_function": job_function,
-        }
-        response = await self.execute(query=query, variables=variables)
-        data = self.get_data(response)
-        return SetJobTitle.parse_obj(data).engagement_update
 
     async def read_employee_uuid_by_cpr_number(
         self, cpr_number: CPRNumber

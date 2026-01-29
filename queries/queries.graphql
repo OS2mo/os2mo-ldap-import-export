@@ -57,37 +57,6 @@ query read_engagements($filter: EngagementFilter!) {
   }
 }
 
-query read_engagement_uuids($engagement_filter: EngagementFilter!) {
-  engagements(filter: $engagement_filter) {
-    objects {
-      uuid
-      validities {
-        validity {
-          from
-          to
-        }
-      }
-    }
-  }
-}
-
-mutation set_job_title(
-  $uuid: UUID!
-  $from: DateTime!
-  $to: DateTime
-  $job_function: UUID
-) {
-  engagement_update(
-    input: {
-      uuid: $uuid
-      validity: { from: $from, to: $to }
-      job_function: $job_function
-    }
-  ) {
-    uuid
-  }
-}
-
 query read_employee_uuid_by_cpr_number($cpr_number: CPR!) {
   employees(filter: { cpr_numbers: [$cpr_number] }) {
     objects {

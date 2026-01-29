@@ -40,15 +40,6 @@ def import_checks() -> ImportChecks:
     return ImportChecks()
 
 
-async def test_check_holstebro_ou_is_externals_custom_succeeds(
-    import_checks: ImportChecks,
-):
-    result = await import_checks.check_holstebro_ou_is_externals_issue_57426(
-        ["doesn't matter"], "neither does this", "Custom"
-    )
-    assert result is True
-
-
 async def test_check_holstebro_ou_is_externals_no_error(import_checks: ImportChecks):
     result = await import_checks.check_holstebro_ou_is_externals_issue_57426(
         ["OU=External consultants,OU=HK"],
