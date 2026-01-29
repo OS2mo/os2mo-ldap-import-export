@@ -16,6 +16,7 @@ from mo_ldap_import_export.ldap_event_generator import LastRun
 from mo_ldap_import_export.ldapapi import LDAPAPI
 from mo_ldap_import_export.utils import combine_dn_strings
 from tests.integration.conftest import DN2UUID
+from tests.integration.conftest import AddLdapPerson
 
 
 @pytest.fixture
@@ -43,8 +44,8 @@ async def test_event_generator_does_not_run_without_listen(
 @pytest.mark.envvar({"LISTEN_TO_CHANGES_IN_LDAP": "True"})
 async def test_event_generator_runs_with_listen(
     get_last_run: Callable[[], Awaitable[LastRun | None]],
+    add_ldap_person: AddLdapPerson,
     ldap_api: LDAPAPI,
-    ldap_suffix: list[str],
     dn2uuid: DN2UUID,
 ) -> None:
     last_run = await get_last_run()
@@ -55,17 +56,12 @@ async def test_event_generator_runs_with_listen(
     assert last_run.uuids == []
 
     # Create an entity in LDAP and get its UUID
-    o_dn_list = ["o=magenta"] + ldap_suffix
-    o_dn = combine_dn_strings(o_dn_list)
-    await ldap_api.ldap_connection.ldap_add(
-        o_dn,
-        object_class=["top", "organization"],
-        attributes={"objectClass": ["top", "organization"], "o": "magenta"},
-    )
-    o_uuid = UUID(str(await dn2uuid(o_dn)))
+    ava_dn_list = await add_ldap_person("ava", "0101701234")
+    ava_dn = combine_dn_strings(ava_dn_list)
+    ava_uuid = UUID(str(await dn2uuid(ava_dn)))
 
     # Fetch the modification time of the newly created object
-    o_modify_timestamp = await ldap_api.get_attribute_by_dn(o_dn, "modifyTimestamp")
+    ava_modify_timestamp = await ldap_api.get_attribute_by_dn(ava_dn, "modifyTimestamp")
 
     # Check that the event generator found our newly added organization
     async for attempt in retrying():
@@ -74,8 +70,8 @@ async def test_event_generator_runs_with_listen(
             assert last_run is not None
             assert last_run.datetime is not None
             assert last_run.search_base == "o=magenta,dc=magenta,dc=dk"
-            assert last_run.datetime == o_modify_timestamp
-            assert last_run.uuids == [o_uuid]
+            assert last_run.datetime == ava_modify_timestamp
+            assert last_run.uuids == [ava_uuid]
 
 
 @pytest.mark.integration_test

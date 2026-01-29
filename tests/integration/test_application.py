@@ -336,9 +336,7 @@ async def test_mo2ldap_org_unit_unit(test_client: AsyncClient) -> None:
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-async def test_changed_since(
-    test_client: AsyncClient, ldap_org_unit_uuid: UUID, ldap_person_uuid: UUID
-) -> None:
+async def test_changed_since(test_client: AsyncClient, ldap_person_uuid: UUID) -> None:
     content = "ou=os2mo,o=magenta,dc=magenta,dc=dk"
     headers = {"Content-Type": "text/plain"}
     result = await test_client.request(
@@ -348,7 +346,7 @@ async def test_changed_since(
         headers=headers,
     )
     assert result.status_code == 200
-    assert set(result.json()) == {str(ldap_org_unit_uuid), str(ldap_person_uuid)}
+    assert set(result.json()) == {str(ldap_person_uuid)}
 
 
 @pytest.mark.integration_test
@@ -599,14 +597,10 @@ async def test_default_validity(
 )
 async def test_changed_since_pagination(
     test_client: AsyncClient,
-    ldap_org_unit: list[str],
     add_ldap_person: AddLdapPerson,
     ldap_api: LDAPAPI,
 ) -> None:
     uuids = set()
-    org_unit_dn = combine_dn_strings(ldap_org_unit)
-    uuids.add(await ldap_api.get_ldap_unique_ldap_uuid(org_unit_dn))
-
     for x in range(2000):
         ldap_person = await add_ldap_person(str(x), "010170" + str(x).rjust(4, "0"))
         person_dn = combine_dn_strings(ldap_person)

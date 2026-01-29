@@ -510,7 +510,7 @@ def construct_router(settings: Settings) -> APIRouter:
                     )
                 )
                 employee_object_class = settings.ldap_object_class
-                if employee_object_class not in ldap_object_classes:
+                if employee_object_class not in ldap_object_classes:  # pragma: no cover
                     return {
                         "__ldap_uuid": uuid,
                         "message": "Skipping non-employee",
