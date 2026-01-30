@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
+import base64
 import string
 from collections.abc import AsyncIterator
 from collections.abc import Awaitable
@@ -126,6 +127,78 @@ def filter_strip_non_digits(input_string):
 def filter_remove_curly_brackets(text: str) -> str:
     # TODO: Should this remove everything or just a single set?
     return text.replace("{", "").replace("}", "")
+
+
+def filter_extract_mitid_uuid(
+    identities: list[Any] | Any | None,
+) -> UUID | None:
+    """Extracts the MitID UUID from a list of identity strings.
+
+    Args:
+        identities: A list of identity strings, a single string, or None.
+
+    Returns:
+        The extracted MitID UUID if a matching identity is found, otherwise None.
+
+    Raises:
+        ValueError: If multiple matching identities are found, if splitting
+            components fails, or if UUID parsing fails.
+        AssertionError: If format assertions fail (e.g. prefix or digit checks).
+        binascii.Error: If the signature is not valid base64.
+    """
+    # No identities, no matches
+    if not identities:
+        return None
+
+    identities_list = ensure_list(identities)
+
+    # We ignore non-string identities as they cannot be our target identity string.
+    string_identities = [
+        identity for identity in identities_list if isinstance(identity, str)
+    ]
+
+    # We ignore all strings, but the ones with our specific prefix
+    mitid_identities = [
+        identity for identity in string_identities if identity.startswith("NL3UUID")
+    ]
+
+    # We expect at most one MitID identity to be present.
+    identity = only(mitid_identities)
+    if identity is None:
+        return None
+
+    # The format of the identity value is:
+    # * NL3UUID-<Status>-NSIS:<CVR>.<SessionUUID>.<MitIDUUID>.<Integer>.<B64Signature>
+    # Example:
+    # * NL3UUID-ACTIVE-NSIS:29189846.ba55410c-66e1-4e8a-9440-4bb19619dde3.9d25ff09-bba4-4080-8077-a7420fc1471c.12345678.M2U2YjY2OT
+    # Where:
+    # - Status: Either 'ACTIVE' or 'SUSPENDED'
+    # - CVR: The CVR number of the organization
+    # - SessionUUID: The UUID of the currently 'ACTIVE' or 'SUSPENDED' session
+    # - MitID-UUID: The UUID of the MitID identity
+    # - Integer: Nonce (Usually 8 digits, but observed up to 10)
+    # - B64Signature: Signature on the previous data to detect tampering
+
+    # Verify that the format is upheld
+    prefix, value = identity.split(":")
+
+    # Ensure that prefix is well-formed
+    nl3uuid, status, nsis = prefix.split("-")
+    assert nl3uuid == "NL3UUID", f"Expected NL3UUID prefix, got {nl3uuid}"
+    assert status in (
+        "ACTIVE",
+        "SUSPENDED",
+    ), f"Status must be ACTIVE or SUSPENDED, got {status}"
+    assert nsis == "NSIS", f"Expected NSIS suffix, got {nsis}"
+
+    # Ensure that value is well-formed
+    cvr, session_uuid, mitid_uuid, nonce, signature = value.split(".")
+    assert cvr.isdigit(), f"CVR must be numeric, got {cvr}"
+    UUID(session_uuid)
+    assert nonce.isdigit(), f"Nonce must be numeric, got {nonce}"
+    base64.b64decode(signature, validate=True)
+
+    return UUID(mitid_uuid)
 
 
 def bitwise_and(input: int, bitmask: int) -> int:
@@ -1196,6 +1269,7 @@ def construct_default_environment() -> Environment:
     environment.filters["strptime"] = filter_strptime
     environment.filters["strip_non_digits"] = filter_strip_non_digits
     environment.filters["remove_curly_brackets"] = filter_remove_curly_brackets
+    environment.filters["extract_mitid_uuid"] = filter_extract_mitid_uuid
     environment.filters["set"] = set
     environment.filters["uuid"] = UUID
 

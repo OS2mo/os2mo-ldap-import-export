@@ -9,6 +9,7 @@ from contextlib import suppress
 from typing import Any
 from unittest.mock import AsyncMock
 from unittest.mock import MagicMock
+from uuid import UUID
 from uuid import uuid4
 
 import pytest
@@ -420,3 +421,41 @@ async def purge_ldap(write_ldap_api: LDAPAPI) -> AsyncIterator[None]:
     await delete_all_dns()
     yield
     await delete_all_dns()
+
+
+def construct_mitid_nl3uuid_str(
+    status: str,
+    cvr: int,
+    session_uuid: UUID,
+    mitid_uuid: UUID,
+    nonce: int,
+    signature: str,
+) -> str:
+    # The format of the identity value is described in the `filter_extract_mitid_uuid`
+    # function in `mo_ldap_import_export/environments/main.py`
+    return (
+        f"NL3UUID-{status}-NSIS:{cvr}.{session_uuid}.{mitid_uuid}.{nonce}.{signature}"
+    )
+
+
+def construct_mitid_nl3uuid(mitid_uuid: UUID) -> str:
+    return construct_mitid_nl3uuid_str(
+        status="ACTIVE",
+        # Viborg Kommune's CVR
+        cvr=29189846,
+        # Randomly chosen UUID
+        session_uuid=UUID("6b6831fc-00cf-49f3-91b7-23217d77072b"),
+        mitid_uuid=mitid_uuid,
+        # Randomly generated nonce
+        nonce=70768320,
+        # Randomly generated signature
+        signature=(
+            "gbBoo2JHmKzCtlmfk9usB18qOOvYKIR+LyCHS4ltvJVAIZLMzFJtdAt90eLCapTxfdSYOI18a6/BZ0uQ"
+            "HRCt7fhuXIsfeuAE9IhazWSv4qE1Jz2EGmZWMQRsl/9MDAnCAvUFkiFPM0oBExWDo8GYD9CjgJ5brim"
+            "hutZElDS0ZVVNbWhZ6NNdxL31dP59Tna5yqfza43Lbd6jGpHf679zzVRl045ouo4hBZgQUpGfUkLcLZ"
+            "6e5yceik4uKvvwIZgW3lAqNyfG+UUV02mM55ZpXQoYKu2FodMth6E4UEmDYEeGD59BhQLJ/Kg5WUMzK"
+            "oee4Gw7v95CW+QfKnVH0R4fCgEMeSO/FA1nEDyrG7HE6FKumI+VMRlPOqNo3hAYX+c1JWj5IeSzqoYu"
+            "bMEuvaABLO6RU+i2P3XmIOwxYXru5HVExcNy87aUKytvkzGlpQDpdn+gH6oPLQgraxd7+E+jIONc/kD"
+            "KQGJslhR8UrAR5LaIc/cIzfK4"
+        ),
+    )
