@@ -40,15 +40,16 @@ async def http_process_uuid(
         logger.warning("LDAP event ignored due to ignore-list", ldap_uuid=uuid)
         return
 
-    dn = await dataloader.ldapapi.get_ldap_dn(uuid)
-    if dn is None:
+    ldap_object = await dataloader.ldapapi.get_object_by_uuid(
+        uuid, attributes={"objectClass"}
+    )
+    if ldap_object is None:
         logger.error("LDAP UUID could not be found", uuid=uuid)
         raise AcknowledgeException("LDAP UUID could not be found")
 
+    dn = ldap_object.dn
     # Ignore changes to non-employee objects
-    ldap_object_classes = await dataloader.ldapapi.get_attribute_by_dn(
-        dn, "objectClass"
-    )
+    ldap_object_classes = ldap_object.objectClass
 
     # TODO: Eliminate this branch by handling employees as any other object
     employee_object_class = settings.ldap_object_class
