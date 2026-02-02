@@ -4,6 +4,7 @@
 
 import asyncio
 from contextlib import suppress
+from typing import Any
 from typing import cast
 from uuid import UUID
 
@@ -73,14 +74,20 @@ class DataLoader:
         self.moapi = moapi
         self.username_generator = username_generator
 
-    async def find_mo_employee_uuid_via_cpr_number(self, dn: DN) -> set[EmployeeUUID]:
-        cpr_number = await self.ldapapi.dn2cpr(dn)
+    async def find_mo_employee_uuid_via_cpr_number(
+        self, dn: DN, ldap_object: Any | None = None
+    ) -> set[EmployeeUUID]:
+        cpr_number = await self.ldapapi.dn2cpr(dn, ldap_object=ldap_object)
         if cpr_number is None:
             return set()
         return await self.moapi.cpr2uuids(cpr_number)
 
-    async def find_mo_employee_uuid(self, dn: DN) -> EmployeeUUID | None:
-        cpr_results = await self.find_mo_employee_uuid_via_cpr_number(dn)
+    async def find_mo_employee_uuid(
+        self, dn: DN, ldap_object: Any | None = None
+    ) -> EmployeeUUID | None:
+        cpr_results = await self.find_mo_employee_uuid_via_cpr_number(
+            dn, ldap_object=ldap_object
+        )
         if len(cpr_results) == 1:
             uuid = one(cpr_results)
             logger.info("Found employee via CPR matching", dn=dn, uuid=uuid)

@@ -40,9 +40,7 @@ async def http_process_uuid(
         logger.warning("LDAP event ignored due to ignore-list", ldap_uuid=uuid)
         return
 
-    ldap_object = await dataloader.ldapapi.get_object_by_uuid(
-        uuid, attributes={"objectClass"}
-    )
+    ldap_object = await dataloader.ldapapi.get_object_by_uuid(uuid, attributes={"*"})
     if ldap_object is None:
         logger.error("LDAP UUID could not be found", uuid=uuid)
         raise AcknowledgeException("LDAP UUID could not be found")
@@ -55,7 +53,7 @@ async def http_process_uuid(
     employee_object_class = settings.ldap_object_class
     if employee_object_class in ldap_object_classes:
         logger.info("Handling employee", ldap_object_classes=ldap_object_classes)
-        await sync_tool.import_single_user(dn)
+        await sync_tool.import_single_user(dn, ldap_object=ldap_object)
 
     for object_class in settings.conversion_mapping.ldap_to_mo_any:
         if object_class in ldap_object_classes:
@@ -64,7 +62,9 @@ async def http_process_uuid(
                 object_class=object_class,
                 ldap_object_classes=ldap_object_classes,
             )
-            await sync_tool.import_single_object_class(object_class, dn)
+            await sync_tool.import_single_object_class(
+                object_class, dn, ldap_object=ldap_object
+            )
 
 
 @ldap2mo_router.post("/reconcile")

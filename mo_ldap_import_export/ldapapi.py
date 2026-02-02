@@ -298,16 +298,24 @@ class LDAPAPI:
 
         return {uuid: task.result() for uuid, task in tasks.items()}
 
-    async def dn2cpr(self, dn: DN) -> CPRNumber | None:
+    async def dn2cpr(self, dn: DN, ldap_object: LdapObject | None = None) -> CPRNumber | None:
         if self.settings.ldap_cpr_attribute is None:
             return None
 
-        ldap_object = await self.get_object_by_dn(
-            dn, {self.settings.ldap_cpr_attribute}
-        )
+        if ldap_object and ldap_object.dn == dn:
+            # If we already have the object, we can save a lookup
+            pass
+        else:
+            ldap_object = await self.get_object_by_dn(
+                dn, {self.settings.ldap_cpr_attribute}
+            )
+
         # Try to get the cpr number from LDAP and use that.
-        raw_cpr_number = getattr(ldap_object, self.settings.ldap_cpr_attribute)
-        assert raw_cpr_number is not None
+        raw_cpr_number = getattr(ldap_object, self.settings.ldap_cpr_attribute, None)
+        # assert raw_cpr_number is not None # It can be None if the attribute is missing
+        if raw_cpr_number is None:
+            return None
+
         # TODO: Figure out when this is a list
         if isinstance(raw_cpr_number, list):
             raw_cpr_number = only(raw_cpr_number)

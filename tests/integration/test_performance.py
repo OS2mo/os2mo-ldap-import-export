@@ -45,4 +45,4 @@ async def test_ldap_sync_performance(
         
         # We want to eventually bring this down to 1 or 2.
         # For now let's assert strictly to see the current count.
-        assert mock_search.call_count == 3
+        assert mock_search.call_count == 2

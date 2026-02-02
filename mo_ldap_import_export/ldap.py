@@ -1015,3 +1015,41 @@ def construct_assertion_control(search_filter: str) -> tuple[str, bool, bytes]:
     # Construct and return our 3-tuple, setting criticality to True
     LDAP_ASSERTION_CONTROL_OID = "1.3.6.1.1.12"
     return (LDAP_ASSERTION_CONTROL_OID, True, ber_encoded_filter)
+
+
+async def hydrate_ldap_object(
+    ldap_object: LdapObject,
+    attributes_to_ensure: set[str],
+    ldap_connection: Connection,
+) -> LdapObject:
+    """
+    Ensure that the given attributes in ldap_object are fully hydrated (nested objects are fetched).
+    """
+    new_data = ldap_object.dict()
+    # We only care about attributes that are requested and present
+    for attribute in attributes_to_ensure:
+        if attribute not in new_data:
+            continue
+
+        value = new_data[attribute]
+
+        # Helper to hydrate a single value
+        async def hydrate_value(v):
+            if is_dn(v) and v != ldap_object.dn:
+                # It's a DN, fetch it!
+                # We fetch nested objects with nest=False to avoid infinite recursion
+                # consistent with make_ldap_object logic
+                return await get_ldap_object(ldap_connection, v, nest=False)
+            return v
+
+        if is_list(value):
+            # Hydrate list
+            # We need to preserve list structure
+            new_list = []
+            for v in value:
+                new_list.append(await hydrate_value(v))
+            new_data[attribute] = new_list
+        else:
+            new_data[attribute] = await hydrate_value(value)
+
+    return LdapObject(**new_data)

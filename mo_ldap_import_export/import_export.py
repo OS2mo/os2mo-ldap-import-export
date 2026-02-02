@@ -36,6 +36,8 @@ from .exceptions import SkipObject
 from .ldap import apply_discriminator
 from .ldap import filter_dns
 from .ldap import get_ldap_object
+from .ldap import hydrate_ldap_object
+from .ldap_classes import LdapObject
 from .moapi import Verb
 from .moapi import get_primary_engagement
 from .models import Address
@@ -419,7 +421,11 @@ class SyncTool:
 
     @with_exitstack
     async def import_single_user(
-        self, dn: DN, exit_stack: ExitStack, dry_run: bool = False
+        self,
+        dn: DN,
+        exit_stack: ExitStack,
+        dry_run: bool = False,
+        ldap_object: LdapObject | None = None,
     ) -> None:
         """Imports a single user from LDAP into MO.
 
@@ -436,7 +442,9 @@ class SyncTool:
 
         # Get the employee's UUID (if they exists)
         try:
-            employee_uuid = await self.dataloader.find_mo_employee_uuid(dn)
+            employee_uuid = await self.dataloader.find_mo_employee_uuid(
+                dn, ldap_object=ldap_object
+            )
         except InvalidCPR:  # pragma: no cover
             if self.settings.ldap_to_mo_legacy_skip_invalid_cpr_accounts:
                 return
@@ -541,12 +549,20 @@ class SyncTool:
         # dependencies exist before their dependent objects.
         for json_key in json_keys:
             await self.import_single_entity(
-                self.get_mapping(json_key), dn, template_context, dry_run=dry_run
+                self.get_mapping(json_key),
+                dn,
+                template_context,
+                dry_run=dry_run,
+                ldap_object=ldap_object,
             )
 
     @with_exitstack
     async def import_single_object_class(
-        self, object_class: str, dn: DN, exit_stack: ExitStack
+        self,
+        object_class: str,
+        dn: DN,
+        exit_stack: ExitStack,
+        ldap_object: LdapObject | None = None,
     ) -> None:
         """Imports a single object class from LDAP into MO."""
         exit_stack.enter_context(bound_contextvars(object_class=object_class, dn=dn))
@@ -554,11 +570,15 @@ class SyncTool:
         mappings = self.settings.conversion_mapping.ldap_to_mo_any[object_class]
         for mapping in mappings:
             await self.import_single_entity(
-                mapping, dn, template_context={}, dry_run=False
+                mapping,
+                dn,
+                template_context={},
+                dry_run=False,
+                ldap_object=ldap_object,
             )
 
     @handle_exclusively_decorator(
-        key=lambda self, mapping, dn, template_context, dry_run: dn
+        key=lambda self, mapping, dn, template_context, dry_run, ldap_object=None: dn
     )
     async def import_single_entity(
         self,
@@ -566,13 +586,21 @@ class SyncTool:
         dn: DN,
         template_context: dict[str, Any],
         dry_run: bool,
+        ldap_object: LdapObject | None = None,
     ) -> None:
         logger.info("Loading object", mo_class=mapping.as_mo_class(), dn=dn)
-        loaded_object = await get_ldap_object(
-            ldap_connection=self.ldap_connection,
-            dn=dn,
-            attributes=set(mapping.ldap_attributes) - {"dn"},
-        )
+        if ldap_object:
+            loaded_object = await hydrate_ldap_object(
+                ldap_object,
+                mapping.ldap_attributes,
+                self.ldap_connection.connection,
+            )
+        else:
+            loaded_object = await get_ldap_object(
+                ldap_connection=self.ldap_connection,
+                dn=dn,
+                attributes=set(mapping.ldap_attributes) - {"dn"},
+            )
         logger.info(
             "Loaded object",
             mo_class=mapping.as_mo_class(),
