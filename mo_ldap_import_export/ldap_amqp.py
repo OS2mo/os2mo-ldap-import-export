@@ -40,7 +40,9 @@ async def http_process_uuid(
         logger.warning("LDAP event ignored due to ignore-list", ldap_uuid=uuid)
         return
 
-    ldap_object = await dataloader.ldapapi.get_object_by_uuid(uuid, attributes={"*"})
+    ldap_object = await dataloader.ldapapi.get_object_by_uuid(
+        uuid, attributes={"*", settings.ldap_unique_id_field}
+    )
     if ldap_object is None:
         logger.error("LDAP UUID could not be found", uuid=uuid)
         raise AcknowledgeException("LDAP UUID could not be found")

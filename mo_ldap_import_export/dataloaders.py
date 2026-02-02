@@ -9,6 +9,7 @@ from typing import cast
 from uuid import UUID
 
 import structlog
+from ldap3.core.exceptions import LDAPNoSuchObjectResult
 from more_itertools import duplicates_everseen
 from more_itertools import one
 
@@ -19,6 +20,8 @@ from .exceptions import RequeueException
 from .ldap import apply_discriminator
 from .ldap import filter_dns
 from .ldap import is_uuid
+from .ldap import make_ldap_object
+from .ldap import object_search
 from .ldap_classes import LdapObject
 from .ldapapi import LDAPAPI
 from .moapi import MOAPI
@@ -27,6 +30,7 @@ from .types import DN
 from .types import LDAPUUID
 from .types import CPRNumber
 from .types import EmployeeUUID
+from .utils import combine_dn_strings
 from .utils import mo_today
 
 logger = structlog.stdlib.get_logger()
@@ -116,94 +120,90 @@ class DataLoader:
         logger.info("No matching employee", dn=dn)
         return None
 
-    async def find_mo_employee_ldap_objects_by_itsystem(
-        self, uuid: UUID
-    ) -> dict[DN, LdapObject]:
-        """Tries to find the LDAP Objects belonging to a MO employee via ITUsers."""
+    async def find_mo_employee_ldap_objects(self, uuid: UUID) -> dict[DN, LdapObject]:
+        # 1. Get Search Criteria
         raw_it_system_uuid = await self.moapi.get_ldap_it_system_uuid()
-        if raw_it_system_uuid is None:
-            return {}
+        it_system_uuid = UUID(raw_it_system_uuid) if raw_it_system_uuid else None
 
-        it_system_uuid = UUID(raw_it_system_uuid)
-        it_users = await self.moapi.load_mo_employee_it_users(uuid, it_system_uuid)
+        it_users = []
+        if it_system_uuid:
+            it_users = await self.moapi.load_mo_employee_it_users(uuid, it_system_uuid)
+
         ldap_uuid_ituser_map = extract_unique_ldap_uuids(it_users)
         ldap_uuids = set(ldap_uuid_ituser_map.keys())
-        
-        uuid_object_map = await self.ldapapi.convert_ldap_uuids_to_objects(ldap_uuids)
 
-        # Find the LDAP UUIDs that could not be mapped to objects
-        missing_dn_uuids = {
-            ldap_uuid for ldap_uuid, obj in uuid_object_map.items() if obj is None
+        employee = await self.moapi.load_mo_employee(uuid)
+        cpr_number = (
+            CPRNumber(employee.cpr_number) if employee and employee.cpr_number else None
+        )
+
+        if not ldap_uuids and not cpr_number:
+            return {}
+
+        # 2. Build Filter
+        filters = []
+        unique_id_field = self.settings.ldap_unique_id_field
+        for ldap_uuid in ldap_uuids:
+            filters.append(f"({unique_id_field}={ldap_uuid})")
+
+        if cpr_number and self.settings.ldap_cpr_attribute:
+            filters.append(f"({self.settings.ldap_cpr_attribute}={cpr_number})")
+
+        combined_filter = f"(&(objectclass=*)(|{''.join(filters)}))"
+
+        # 3. Search
+        attributes = {"*", unique_id_field}
+
+        search_base = self.settings.ldap_search_base
+        ous_to_search_in = self.settings.ldap_ous_to_search_in
+        search_bases = [
+            combine_dn_strings([ou, search_base]) for ou in ous_to_search_in
+        ]
+
+        searchParameters = {
+            "search_base": search_bases,
+            "search_filter": combined_filter,
+            "attributes": list(attributes),
         }
+
+        try:
+            search_results = await object_search(
+                searchParameters, self.ldapapi.connection
+            )
+            found_objects = [
+                await make_ldap_object(res, self.ldapapi.connection, nest=False)
+                for res in search_results
+            ]
+        except LDAPNoSuchObjectResult:
+            found_objects = []
+
+        # 4. Map results and Cleanup
+        # Map objects by DN
+        dn_object_map = {obj.dn: obj for obj in found_objects}
+
+        # Map objects by UUID (for ITUser cleanup)
+        uuid_object_map = {}
+        for obj in found_objects:
+            val = getattr(obj, unique_id_field, None)
+            if val:
+                uuid_object_map[LDAPUUID(str(val))] = obj
+
+        # ITUser Cleanup
+        missing_dn_uuids = ldap_uuids - set(uuid_object_map.keys())
         missing_dn_mo_uuid = {
             ldap_uuid_ituser_map[ldap_uuid].uuid for ldap_uuid in missing_dn_uuids
         }
-        
-        async with asyncio.TaskGroup() as tg:
-            for mo_uuid in missing_dn_mo_uuid:
-                logger.info("Terminating correlation link it-user", uuid=mo_uuid)
-                tg.create_task(self.moapi.terminate_ituser(mo_uuid, mo_today()))
 
-        objects = {
-            obj.dn: obj for obj in uuid_object_map.values() if obj is not None
-        }
-        if not objects:
-            return {}
+        if missing_dn_mo_uuid:
+            async with asyncio.TaskGroup() as tg:
+                for mo_uuid in missing_dn_mo_uuid:
+                    logger.info("Terminating correlation link it-user", uuid=mo_uuid)
+                    tg.create_task(self.moapi.terminate_ituser(mo_uuid, mo_today()))
 
-        logger.info(
-            "Found objects using ITUser lookup",
-            dns=set(objects.keys()),
-            employee_uuid=uuid,
-        )
-        return objects
+        if dn_object_map:
+            logger.info("Found objects", dns=set(dn_object_map.keys()))
 
-    async def find_mo_employee_dn_by_itsystem(self, uuid: UUID) -> set[DN]:
-        objects = await self.find_mo_employee_ldap_objects_by_itsystem(uuid)
-        return set(objects.keys())
-
-    async def find_mo_employee_ldap_objects_by_cpr_number(
-        self, uuid: UUID
-    ) -> dict[DN, LdapObject]:
-        """Tries to find the LDAP Objects belonging to a MO employee via CPR numbers."""
-        employee = await self.moapi.load_mo_employee(uuid)
-        if employee is None:
-            raise NoObjectsReturnedException(f"Unable to lookup employee: {uuid}")
-        cpr_number = CPRNumber(employee.cpr_number) if employee.cpr_number else None
-        if not cpr_number:
-            return {}
-
-        logger.info("Attempting CPR number lookup", employee_uuid=uuid)
-        ldap_objects = await self.ldapapi.cpr2objects(cpr_number)
-        
-        objects = {obj.dn: obj for obj in ldap_objects}
-        if not objects:
-            return {}
-            
-        logger.info(
-            "Found objects using CPR number lookup",
-            dns=set(objects.keys()),
-            employee_uuid=uuid,
-        )
-        return objects
-
-    async def find_mo_employee_dn_by_cpr_number(self, uuid: UUID) -> set[DN]:
-        objects = await self.find_mo_employee_ldap_objects_by_cpr_number(uuid)
-        return set(objects.keys())
-
-    async def find_mo_employee_ldap_objects(self, uuid: UUID) -> dict[DN, LdapObject]:
-        ituser_objects, cpr_objects = await asyncio.gather(
-            self.find_mo_employee_ldap_objects_by_itsystem(uuid),
-            self.find_mo_employee_ldap_objects_by_cpr_number(uuid),
-        )
-        combined = ituser_objects.copy()
-        combined.update(cpr_objects)
-        
-        if combined:
-            logger.info("Found DNs/Objects for MO employee", employee_uuid=uuid, dns=set(combined.keys()))
-            return combined
-            
-        logger.warning("Unable to find DNs for MO employee", employee_uuid=uuid)
-        return {}
+        return dn_object_map
 
     async def find_mo_employee_dn(self, uuid: UUID) -> set[DN]:
         """Tries to find the LDAP DNs belonging to a MO employee.
