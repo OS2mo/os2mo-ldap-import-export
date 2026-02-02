@@ -3,9 +3,7 @@
 """Dataloaders to bulk requests."""
 
 import asyncio
-from contextlib import suppress
 from typing import Any
-from typing import cast
 from uuid import UUID
 
 import structlog
@@ -119,6 +117,39 @@ class DataLoader:
 
         logger.info("No matching employee", dn=dn)
         return None
+
+    async def find_mo_employee_dn_by_itsystem(self, uuid: EmployeeUUID) -> set[DN]:
+        """Tries to find the LDAP DNs belonging to a MO employee using ITUser lookup."""
+        raw_it_system_uuid = await self.moapi.get_ldap_it_system_uuid()
+        if raw_it_system_uuid is None:
+            return set()
+        it_system_uuid = UUID(raw_it_system_uuid)
+        it_users = await self.moapi.load_mo_employee_it_users(uuid, it_system_uuid)
+        ldap_uuid_ituser_map = extract_unique_ldap_uuids(it_users)
+        ldap_uuids = set(ldap_uuid_ituser_map.keys())
+        if not ldap_uuids:
+            return set()
+
+        # Batch fetch for performance
+        dns_map = await self.ldapapi.convert_ldap_uuids_to_dns(ldap_uuids)
+
+        # Cleanup IT-users that point to non-existing LDAP accounts
+        missing_dn_uuids = {u for u, dn in dns_map.items() if not dn}
+        if missing_dn_uuids:
+            async with asyncio.TaskGroup() as tg:
+                for luuid in missing_dn_uuids:
+                    ituser = ldap_uuid_ituser_map[luuid]
+                    logger.info("Terminating correlation link it-user", uuid=ituser.uuid)
+                    tg.create_task(self.moapi.terminate_ituser(ituser.uuid, mo_today()))
+
+        # Log results for existing tests
+        found_dns = {dn for dn in dns_map.values() if dn}
+        if found_dns:
+            logger.info(
+                "Found DN(s) using ITUser lookup", dns=found_dns, employee_uuid=uuid
+            )
+
+        return found_dns
 
     async def find_mo_employee_ldap_objects(self, uuid: UUID) -> dict[DN, LdapObject]:
         # 1. Get Search Criteria

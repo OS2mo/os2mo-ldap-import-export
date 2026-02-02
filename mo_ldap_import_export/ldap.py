@@ -560,17 +560,19 @@ async def apply_discriminator(
 
             async def dn2sam(dn: DN) -> str:
                 # Optimized to use the provided ldap_object if available
-                if ldap_object and ldap_object.dn == dn:
-                    # Check if sAMAccountName is already present
-                    if hasattr(ldap_object, "sAMAccountName"):
-                        val = getattr(ldap_object, "sAMAccountName")
-                        assert isinstance(val, str)
-                        return val
-                
+                if (
+                    ldap_object
+                    and ldap_object.dn == dn
+                    and hasattr(ldap_object, "sAMAccountName")
+                ):
+                    val = ldap_object.sAMAccountName
+                    assert isinstance(val, str)
+                    return val
+
                 if objects_cache and dn in objects_cache:
                     obj = objects_cache[dn]
                     if hasattr(obj, "sAMAccountName"):
-                        val = getattr(obj, "sAMAccountName")
+                        val = obj.sAMAccountName
                         assert isinstance(val, str)
                         return val
 
@@ -1085,10 +1087,19 @@ async def hydrate_ldap_object(
     Ensure that the given attributes in ldap_object are fully hydrated (nested objects are fetched).
     """
     current_data = ldap_object.dict()
+    # Normalize existing keys for case-insensitive comparison
+    existing_keys = {k.casefold() for k in current_data}
+
     # Check for missing attributes
     missing_attributes = {
-        attr for attr in attributes_to_ensure if attr not in current_data and attr != "dn"
+        attr
+        for attr in attributes_to_ensure
+        if attr.casefold() not in existing_keys and attr != "dn"
     }
+
+
+
+
 
     if missing_attributes:
         logger.info(

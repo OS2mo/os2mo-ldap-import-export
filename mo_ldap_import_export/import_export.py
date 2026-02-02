@@ -120,14 +120,18 @@ class SyncTool:
         return True
 
     async def render_ldap2mo(
-        self, uuid: EmployeeUUID, dn: DN | None
+        self, uuid: EmployeeUUID, dn: DN | None, ldap_object: LdapObject | None = None
     ) -> dict[str, list[Any]]:
         await self.perform_export_checks(uuid)
 
         mo2ldap_template = self.settings.conversion_mapping.mo2ldap
         assert mo2ldap_template is not None
         template = self.converter.environment.from_string(mo2ldap_template)
-        result = await template.render_async({"uuid": uuid, "dn": dn})
+
+        if ldap_object is None and dn:
+            ldap_object = await self.dataloader.ldapapi.get_object_by_dn(dn)
+
+        result = await template.render_async({"uuid": uuid, "dn": dn, "ldap": ldap_object})
         logger.debug("Rendered jinja template", uuid=uuid, dn=dn, result=result)
         parsed = json.loads(result)
         logger.debug(
@@ -277,7 +281,9 @@ class SyncTool:
 
         exit_stack.enter_context(bound_contextvars(dn=best_dn))
         try:
-            ldap_desired_state = await self.render_ldap2mo(uuid, best_dn)
+            ldap_desired_state = await self.render_ldap2mo(
+                uuid, best_dn, ldap_object=best_object
+            )
         except SkipObject:
             logger.info("Not writing to LDAP as skip was requested")
             return {}
@@ -496,13 +502,14 @@ class SyncTool:
             # By default, we will use the account that was provided to us in the event.
             dns = {dn}
 
-            # However we may be able to find other accounts using the CPR number on the
-            # event triggered account, by searching for the CPR number in all of LDAP.
-            # Note however, that this will only succeed if there is a CPR number field.
-            cpr_number = await self.dataloader.ldapapi.dn2cpr(dn)
-            # Only attempt to load accounts if we have a CPR number to do so with
-            if cpr_number:
-                dns = await self.dataloader.ldapapi.cpr2dns(cpr_number)
+            # If a discriminator is set, we search for other accounts to find the best one.
+            if self.settings.discriminator_fields:
+                cpr_number = await self.dataloader.ldapapi.dn2cpr(
+                    dn, ldap_object=ldap_object
+                )
+                # Only attempt to load accounts if we have a CPR number to do so with
+                if cpr_number:
+                    dns = await self.dataloader.ldapapi.cpr2dns(cpr_number)
 
         # At this point 'employee_uuid' is an UUID that may or may not be in MO
         # At this point 'dns' is a list of LDAP account DNs
