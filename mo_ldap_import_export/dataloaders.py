@@ -19,6 +19,7 @@ from .exceptions import RequeueException
 from .ldap import apply_discriminator
 from .ldap import filter_dns
 from .ldap import is_uuid
+from .ldap_classes import LdapObject
 from .ldapapi import LDAPAPI
 from .moapi import MOAPI
 from .models import ITUser
@@ -261,7 +262,9 @@ class DataLoader:
         assert isinstance(dn, str)
         return dn
 
-    async def _find_best_dn(self, uuid: EmployeeUUID) -> DN | None:
+    async def _find_best_dn(
+        self, uuid: EmployeeUUID, ldap_object: LdapObject | None = None
+    ) -> DN | None:
         """Find the best possible DN for the given user.
 
         Args:
@@ -281,13 +284,20 @@ class DataLoader:
             synchronization should not take place.
         """
         dns = await self.find_mo_employee_dn(uuid)
-        dns = await filter_dns(self.settings, self.ldapapi.connection, dns)
+        dns = await filter_dns(
+            self.settings, self.ldapapi.connection, dns, ldap_object=ldap_object
+        )
         # If we found DNs, we want to synchronize to the best of them
         if not dns:
             return None
         logger.info("Found DNs for user", dns=dns, uuid=uuid)
         best_dn = await apply_discriminator(
-            self.settings, self.ldapapi.connection, self.moapi, uuid, dns
+            self.settings,
+            self.ldapapi.connection,
+            self.moapi,
+            uuid,
+            dns,
+            ldap_object=ldap_object,
         )
         # If no good LDAP account was found, we do not want to synchronize at all
         if not best_dn:

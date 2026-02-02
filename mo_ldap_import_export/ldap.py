@@ -336,7 +336,10 @@ class LDAPConnection:
 
 
 async def fetch_field_mapping(
-    ldap_connection: Connection, discriminator_fields: list[str], dn: DN
+    ldap_connection: Connection,
+    discriminator_fields: list[str],
+    dn: DN,
+    ldap_object: LdapObject | None = None,
 ) -> dict[str, str | int | None]:
     # Fetch the discriminator attributes for all the given DN
     # NOTE: While it is possible to fetch multiple DNs in a single operation
@@ -344,9 +347,15 @@ async def fetch_field_mapping(
     #       that it is better to lookup DNs individually using the READ operation.
     #       See: https://stackoverflow.com/a/58834059
     try:
-        ldap_object = await get_ldap_object(
-            ldap_connection, dn, attributes=set(discriminator_fields)
-        )
+        if ldap_object and ldap_object.dn == dn:
+            # Check if we need to hydrate the object
+            ldap_object = await hydrate_ldap_object(
+                ldap_object, set(discriminator_fields), ldap_connection
+            )
+        else:
+            ldap_object = await get_ldap_object(
+                ldap_connection, dn, attributes=set(discriminator_fields)
+            )
     except NoObjectsReturnedException as exc:
         # There could be multiple reasons why our DNs cannot be read.
         # * The DNs could have been found by CPR number and changed since then.
@@ -391,12 +400,20 @@ async def fetch_field_mapping(
 
 
 async def fetch_dn_mapping(
-    ldap_connection: Connection, discriminator_fields: list[str], dns: set[DN]
+    ldap_connection: Connection,
+    discriminator_fields: list[str],
+    dns: set[DN],
+    ldap_object: LdapObject | None = None,
 ) -> dict[DN, dict[str, str | int | None]]:
     dn_list = list(dns)
     mappings = await asyncio.gather(
         *(
-            fetch_field_mapping(ldap_connection, discriminator_fields, dn)
+            fetch_field_mapping(
+                ldap_connection,
+                discriminator_fields,
+                dn,
+                ldap_object if ldap_object and dn == ldap_object.dn else None,
+            )
             for dn in dn_list
         )
     )
@@ -429,7 +446,10 @@ async def evaluate_template(
 
 
 async def filter_dns(
-    settings: Settings, ldap_connection: Connection, dns: set[DN]
+    settings: Settings,
+    ldap_connection: Connection,
+    dns: set[DN],
+    ldap_object: LdapObject | None = None,
 ) -> set[DN]:
     assert isinstance(dns, set)
 
@@ -444,7 +464,9 @@ async def filter_dns(
     discriminator_fields = settings.discriminator_fields
     assert discriminator_fields, "discriminator_fields must be set"
 
-    mapping = await fetch_dn_mapping(ldap_connection, discriminator_fields, dns)
+    mapping = await fetch_dn_mapping(
+        ldap_connection, discriminator_fields, dns, ldap_object=ldap_object
+    )
     dns_passing_template = {
         dn
         for dn in dns
@@ -460,6 +482,7 @@ async def apply_discriminator(
     moapi: MOAPI,
     uuid: EmployeeUUID,
     dns: set[DN],
+    ldap_object: LdapObject | None = None,
 ) -> DN | None:
     """Find the account to synchronize from a set of DNs.
 
@@ -521,6 +544,17 @@ async def apply_discriminator(
         if len(itusers) == 1:
 
             async def dn2sam(dn: DN) -> str:
+                # Optimized to use the provided ldap_object if available
+                if ldap_object and ldap_object.dn == dn:
+                    # Check if sAMAccountName is already present
+                    if hasattr(ldap_object, "sAMAccountName"):
+                        val = getattr(ldap_object, "sAMAccountName")
+                        assert isinstance(val, str)
+                        return val
+                    # If not, we might need to hydrate it, but this function
+                    # is called deep inside bypass logic which is rarely used.
+                    # For safety, let's just fetch it if missing.
+
                 obj = await get_ldap_object(
                     ldap_connection, dn, attributes={"sAMAccountName"}
                 )
@@ -546,7 +580,9 @@ async def apply_discriminator(
     # But no guarantees are given as pydantic is lenient with run validators
     assert settings.discriminator_values != []
 
-    mapping = await fetch_dn_mapping(ldap_connection, discriminator_fields, dns)
+    mapping = await fetch_dn_mapping(
+        ldap_connection, discriminator_fields, dns, ldap_object=ldap_object
+    )
 
     # If the discriminator_function is template, discriminator values will be a
     # prioritized list of jinja templates (first meaning most important), and we will
