@@ -79,12 +79,14 @@ async def test_listen_to_changes_in_employees_no_dn(
     employee_uuid = uuid4()
     dataloader.find_mo_employee_dn.return_value = set()
     dataloader.make_mo_employee_dn.side_effect = RequeueException("Not found")
+    dataloader.moapi.get_ldap_it_system_uuid.return_value = None
 
     template = AsyncMock()
     template.render_async.return_value = '{"key": "value"}'
     sync_tool.converter.environment.from_string.return_value = template  # type: ignore
 
-    dataloader._find_best_dn = partial(DataLoader._find_best_dn, dataloader)
+    dataloader._find_best_ldap_object = partial(DataLoader._find_best_ldap_object, dataloader)
+    dataloader.find_mo_employee_ldap_objects.return_value = {}
 
     with capture_logs() as cap_logs:
         with pytest.raises(RequeueException) as exc_info:
@@ -523,7 +525,11 @@ async def test_get_primary_engagement(
 
 
 async def test_find_best_dn(sync_tool: SyncTool) -> None:
+    sync_tool.dataloader.find_mo_employee_ldap_objects.return_value = {}  # type: ignore
     sync_tool.dataloader.find_mo_employee_dn.return_value = set()  # type: ignore
+    sync_tool.dataloader._find_best_ldap_object = partial(  # type: ignore
+        DataLoader._find_best_ldap_object, sync_tool.dataloader
+    )
     sync_tool.dataloader._find_best_dn = partial(  # type: ignore
         DataLoader._find_best_dn, sync_tool.dataloader
     )
