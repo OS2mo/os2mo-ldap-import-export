@@ -299,6 +299,17 @@ async def email_unit(graphql_client: GraphQLClient) -> UUID:
 
 
 @pytest.fixture
+async def string_employee_address_type(graphql_client: GraphQLClient) -> UUID:
+    return one(
+        (
+            await graphql_client.read_class_uuid_by_facet_and_class_user_key(
+                "employee_address_type", "StringEmployee"
+            )
+        ).objects
+    ).uuid
+
+
+@pytest.fixture
 async def public(graphql_client: GraphQLClient) -> UUID:
     return one(
         (

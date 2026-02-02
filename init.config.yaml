@@ -23,6 +23,9 @@ facets:
     EmailEmployee:
       title: "Email"
       scope: "EMAIL"
+    StringEmployee:
+      title: "String Address"
+      scope: "TEXT"
   leave_type:
     Orlov:
       title: "Orlov"
