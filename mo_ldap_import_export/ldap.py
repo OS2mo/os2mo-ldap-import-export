@@ -1061,13 +1061,33 @@ async def hydrate_ldap_object(
     """
     Ensure that the given attributes in ldap_object are fully hydrated (nested objects are fetched).
     """
-    new_data = ldap_object.dict()
+    current_data = ldap_object.dict()
+    # Check for missing attributes
+    missing_attributes = {
+        attr for attr in attributes_to_ensure if attr not in current_data and attr != "dn"
+    }
+
+    if missing_attributes:
+        logger.info(
+            "Fetching missing attributes",
+            attributes=missing_attributes,
+            dn=ldap_object.dn,
+        )
+        fresh_object = await get_ldap_object(
+            ldap_connection, ldap_object.dn, attributes=missing_attributes, nest=False
+        )
+        current_data.update(fresh_object.dict())
+
     # We only care about attributes that are requested and present
+    # Note: We iterate over current_data keys that are in attributes_to_ensure
+    # or all of them?
+    # The original logic iterated attributes_to_ensure.
     for attribute in attributes_to_ensure:
-        if attribute not in new_data:
+        if attribute not in current_data:
+            # Should not happen now unless fetch failed
             continue
 
-        value = new_data[attribute]
+        value = current_data[attribute]
 
         # Helper to hydrate a single value
         async def hydrate_value(v):
@@ -1084,8 +1104,8 @@ async def hydrate_ldap_object(
             new_list = []
             for v in value:
                 new_list.append(await hydrate_value(v))
-            new_data[attribute] = new_list
+            current_data[attribute] = new_list
         else:
-            new_data[attribute] = await hydrate_value(value)
+            current_data[attribute] = await hydrate_value(value)
 
-    return LdapObject(**new_data)
+    return LdapObject(**current_data)
