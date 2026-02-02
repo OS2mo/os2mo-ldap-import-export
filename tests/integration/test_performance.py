@@ -41,8 +41,6 @@ async def test_ldap_sync_performance(
         # Let's fail if it's too high.
         # I suspect it is around 4-5.
         
-        print(f"LDAP Search called {mock_search.call_count} times")
-        
         # We want to eventually bring this down to 1 or 2.
         # For now let's assert strictly to see the current count.
         assert mock_search.call_count == 2
