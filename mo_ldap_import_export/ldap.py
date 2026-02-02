@@ -404,15 +404,24 @@ async def fetch_dn_mapping(
     discriminator_fields: list[str],
     dns: set[DN],
     ldap_object: LdapObject | None = None,
+    objects_cache: dict[DN, LdapObject] | None = None,
 ) -> dict[DN, dict[str, str | int | None]]:
     dn_list = list(dns)
+
+    def get_object(dn: DN) -> LdapObject | None:
+        if ldap_object and ldap_object.dn == dn:
+            return ldap_object
+        if objects_cache and dn in objects_cache:
+            return objects_cache[dn]
+        return None
+
     mappings = await asyncio.gather(
         *(
             fetch_field_mapping(
                 ldap_connection,
                 discriminator_fields,
                 dn,
-                ldap_object if ldap_object and dn == ldap_object.dn else None,
+                get_object(dn),
             )
             for dn in dn_list
         )
@@ -450,6 +459,7 @@ async def filter_dns(
     ldap_connection: Connection,
     dns: set[DN],
     ldap_object: LdapObject | None = None,
+    objects_cache: dict[DN, LdapObject] | None = None,
 ) -> set[DN]:
     assert isinstance(dns, set)
 
@@ -465,7 +475,11 @@ async def filter_dns(
     assert discriminator_fields, "discriminator_fields must be set"
 
     mapping = await fetch_dn_mapping(
-        ldap_connection, discriminator_fields, dns, ldap_object=ldap_object
+        ldap_connection,
+        discriminator_fields,
+        dns,
+        ldap_object=ldap_object,
+        objects_cache=objects_cache,
     )
     dns_passing_template = {
         dn
@@ -483,6 +497,7 @@ async def apply_discriminator(
     uuid: EmployeeUUID,
     dns: set[DN],
     ldap_object: LdapObject | None = None,
+    objects_cache: dict[DN, LdapObject] | None = None,
 ) -> DN | None:
     """Find the account to synchronize from a set of DNs.
 
@@ -551,9 +566,13 @@ async def apply_discriminator(
                         val = getattr(ldap_object, "sAMAccountName")
                         assert isinstance(val, str)
                         return val
-                    # If not, we might need to hydrate it, but this function
-                    # is called deep inside bypass logic which is rarely used.
-                    # For safety, let's just fetch it if missing.
+                
+                if objects_cache and dn in objects_cache:
+                    obj = objects_cache[dn]
+                    if hasattr(obj, "sAMAccountName"):
+                        val = getattr(obj, "sAMAccountName")
+                        assert isinstance(val, str)
+                        return val
 
                 obj = await get_ldap_object(
                     ldap_connection, dn, attributes={"sAMAccountName"}
@@ -581,7 +600,11 @@ async def apply_discriminator(
     assert settings.discriminator_values != []
 
     mapping = await fetch_dn_mapping(
-        ldap_connection, discriminator_fields, dns, ldap_object=ldap_object
+        ldap_connection,
+        discriminator_fields,
+        dns,
+        ldap_object=ldap_object,
+        objects_cache=objects_cache,
     )
 
     # If the discriminator_function is template, discriminator values will be a

@@ -143,7 +143,9 @@ class SyncTool:
         # assert all(isinstance(value, list) for value in parsed.values())
         return {key: ensure_list(value) for key, value in parsed.items()}
 
-    async def ensure_ituser_link(self, uuid: EmployeeUUID, dn: DN) -> None:
+    async def ensure_ituser_link(
+        self, uuid: EmployeeUUID, dn: DN, ldap_object: LdapObject | None = None
+    ) -> None:
         # Check if we even dare create a DN
         raw_it_system_uuid = await self.dataloader.moapi.get_ldap_it_system_uuid()
         if raw_it_system_uuid is None:
@@ -171,7 +173,9 @@ class SyncTool:
         logger.info("No ITUser found, ensuring one exists to correlate with DN")
         # Get its unique ldap uuid
         # TODO: Get rid of this code and operate on EntityUUIDs thoughout
-        unique_uuid = await self.dataloader.ldapapi.get_ldap_unique_ldap_uuid(dn)
+        unique_uuid = await self.dataloader.ldapapi.get_ldap_unique_ldap_uuid(
+            dn, ldap_object=ldap_object
+        )
         logger.info("LDAP UUID found for DN", dn=dn, ldap_uuid=unique_uuid)
         result = await self.dataloader.moapi.graphql_client.read_ituser_uuid(
             ITUserFilter(
@@ -252,7 +256,8 @@ class SyncTool:
             return {}
 
         try:
-            best_dn = await self.dataloader._find_best_dn(uuid)
+            best_object = await self.dataloader._find_best_ldap_object(uuid)
+            best_dn = best_object.dn if best_object else None
         except NoGoodLDAPAccountFound:
             return {}
         except NoObjectsReturnedException:
@@ -305,10 +310,15 @@ class SyncTool:
             self.settings.ldap_object_class,
             create,
             dry_run,
+            ldap_object=best_object,
         )
         if dry_run:
             raise DryRunException("No changes", best_dn, details={})
-        await self.ensure_ituser_link(uuid, current_dn)
+        
+        if best_object and current_dn:
+            best_object.dn = current_dn
+            
+        await self.ensure_ituser_link(uuid, current_dn, ldap_object=best_object)
         return ldap_desired_state
 
     async def fetch_uuid_object(
