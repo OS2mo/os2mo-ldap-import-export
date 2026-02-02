@@ -36,6 +36,7 @@ from .exceptions import SkipObject
 from .ldap import apply_discriminator
 from .ldap import filter_dns
 from .ldap import get_ldap_object
+from .ldap_classes import LdapObject
 from .moapi import Verb
 from .moapi import get_primary_engagement
 from .models import Address
@@ -48,6 +49,8 @@ from .models import MOBase
 from .models import OrganisationUnit
 from .models import Termination
 from .models import Validity
+from .types import LDAPUUID
+from .types import CPRNumber
 from .types import EmployeeUUID
 from .types import OrgUnitUUID
 from .utils import ensure_list
@@ -419,13 +422,14 @@ class SyncTool:
 
     @with_exitstack
     async def import_single_user(
-        self, dn: DN, exit_stack: ExitStack, dry_run: bool = False
+        self, ldap_object: LdapObject, exit_stack: ExitStack, dry_run: bool = False
     ) -> None:
         """Imports a single user from LDAP into MO.
 
         Args:
-            dn: The DN that triggered our event changed in LDAP.
+            ldap_object: The LDAP object that triggered our event changed in LDAP.
         """
+        dn = ldap_object.dn
         exit_stack.enter_context(bound_contextvars(dn=dn))
 
         logger.info("Importing user")
@@ -434,9 +438,23 @@ class SyncTool:
             logger.info("import_single_user called without mapping")
             return
 
+        raw_unique_ldap_uuid = getattr(ldap_object, self.settings.ldap_unique_id_field)
+        if isinstance(raw_unique_ldap_uuid, list):
+            raw_unique_ldap_uuid = only(raw_unique_ldap_uuid)
+        unique_ldap_uuid = LDAPUUID(raw_unique_ldap_uuid)
+        cpr_number: CPRNumber | None = None
+        if self.settings.ldap_cpr_attribute:
+            raw_cpr = getattr(ldap_object, self.settings.ldap_cpr_attribute)
+            if isinstance(raw_cpr, list):
+                raw_cpr = only(raw_cpr)
+            if raw_cpr:
+                cpr_number = CPRNumber(str(raw_cpr))
+
         # Get the employee's UUID (if they exists)
         try:
-            employee_uuid = await self.dataloader.find_mo_employee_uuid(dn)
+            employee_uuid = await self.dataloader.find_mo_employee_uuid(
+                cpr_number, unique_ldap_uuid
+            )
         except InvalidCPR:  # pragma: no cover
             if self.settings.ldap_to_mo_legacy_skip_invalid_cpr_accounts:
                 return
@@ -478,7 +496,6 @@ class SyncTool:
             # However we may be able to find other accounts using the CPR number on the
             # event triggered account, by searching for the CPR number in all of LDAP.
             # Note however, that this will only succeed if there is a CPR number field.
-            cpr_number = await self.dataloader.ldapapi.dn2cpr(dn)
             # Only attempt to load accounts if we have a CPR number to do so with
             if cpr_number:
                 dns = await self.dataloader.ldapapi.cpr2dns(cpr_number)

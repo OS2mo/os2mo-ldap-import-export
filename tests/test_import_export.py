@@ -22,6 +22,7 @@ from mo_ldap_import_export.environments.main import construct_environment
 from mo_ldap_import_export.exceptions import AcknowledgeException
 from mo_ldap_import_export.exceptions import RequeueException
 from mo_ldap_import_export.import_export import SyncTool
+from mo_ldap_import_export.ldap_classes import LdapObject
 from mo_ldap_import_export.main import GRAPHQL_VERSION
 from mo_ldap_import_export.moapi import Verb
 from mo_ldap_import_export.moapi import get_primary_engagement
@@ -211,8 +212,11 @@ async def test_import_single_object_no_employee_no_sync(
     # Ignore typing since it is actually a mock
     sync_tool.dataloader.find_mo_employee_uuid.return_value = None  # type: ignore
 
+    ldap_object = LdapObject(
+        dn="CN=foo", objectGUID=str(uuid4()), employeeID="1234567890"
+    )
     with capture_logs() as cap_logs:
-        await sync_tool.import_single_user("CN=foo")
+        await sync_tool.import_single_user(ldap_object)
 
     messages = [w["event"] for w in cap_logs]
     assert messages == [
@@ -245,8 +249,11 @@ async def test_import_single_object_from_LDAP_but_import_equals_false(
     # Note that converter.settings and dataloader.settings are still mocked
     sync_tool.settings = Settings()
 
+    ldap_object = LdapObject(
+        dn="CN=foo", objectGUID=str(uuid4()), employeeID="1234567890"
+    )
     with capture_logs() as cap_logs:
-        await sync_tool.import_single_user("CN=foo")
+        await sync_tool.import_single_user(ldap_object)
         messages = [w["event"] for w in cap_logs if w["log_level"] == "info"]
         assert "Import to MO filtered" in messages
         assert "Loading object" not in messages
@@ -261,6 +268,11 @@ async def test_perform_import_checks_noop(sync_tool: SyncTool) -> None:
 
 @pytest.mark.usefixtures("fake_find_mo_employee_dn")
 async def test_holstebro_import_checks(sync_tool: SyncTool, fake_dn: DN) -> None:
+    sync_tool.settings.ldap_unique_id_field = "objectGUID"  # type: ignore
+    sync_tool.settings.ldap_cpr_attribute = "employeeID"  # type: ignore
+    ldap_object = LdapObject(
+        dn=fake_dn, objectGUID=str(uuid4()), employeeID="1234567890"
+    )
     with (
         patch(
             "mo_ldap_import_export.import_export.SyncTool.perform_import_checks",
@@ -268,7 +280,7 @@ async def test_holstebro_import_checks(sync_tool: SyncTool, fake_dn: DN) -> None
         ),
         capture_logs() as cap_logs,
     ):
-        await sync_tool.import_single_user(fake_dn)
+        await sync_tool.import_single_user(ldap_object)
         assert "Import checks executed" in str(cap_logs)
 
 
@@ -621,8 +633,9 @@ async def test_noop_listen_to_changes(sync_tool: SyncTool) -> None:
 async def test_noop_import_single_user(sync_tool: SyncTool) -> None:
     sync_tool.settings.conversion_mapping.ldap_to_mo = None  # type: ignore
 
+    ldap_object = LdapObject(dn="CN=foo", objectGUID=str(uuid4()))
     with capture_logs() as cap_logs:
-        await sync_tool.import_single_user(uuid4())
+        await sync_tool.import_single_user(ldap_object)
 
     messages = [w["event"] for w in cap_logs]
     assert messages == [

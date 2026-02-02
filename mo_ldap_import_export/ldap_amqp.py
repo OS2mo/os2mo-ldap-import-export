@@ -17,6 +17,7 @@ from .depends import Settings
 from .depends import SyncTool
 from .exceptions import AcknowledgeException
 from .types import LDAPUUID
+from .types import CPRNumber
 
 logger = structlog.stdlib.get_logger()
 
@@ -40,8 +41,12 @@ async def http_process_uuid(
         logger.warning("LDAP event ignored due to ignore-list", ldap_uuid=uuid)
         return
 
+    attributes = {"objectClass", settings.ldap_unique_id_field}
+    if settings.ldap_cpr_attribute:
+        attributes.add(settings.ldap_cpr_attribute)
+
     ldap_object = await dataloader.ldapapi.get_object_by_uuid(
-        uuid, attributes={"objectClass"}
+        uuid, attributes=attributes
     )
     if ldap_object is None:
         logger.error("LDAP UUID could not be found", uuid=uuid)
@@ -56,7 +61,7 @@ async def http_process_uuid(
     employee_object_class = settings.ldap_object_class
     if employee_object_class in ldap_object_classes:
         logger.info("Handling employee", ldap_object_classes=ldap_object_classes)
-        await sync_tool.import_single_user(dn)
+        await sync_tool.import_single_user(ldap_object)
 
     for object_class in settings.conversion_mapping.ldap_to_mo_any:
         if object_class in ldap_object_classes:
@@ -82,12 +87,27 @@ async def http_reconcile_uuid(
         logger.warning("LDAP event ignored due to ignore-list", ldap_uuid=uuid)
         return
 
-    dn = await dataloader.ldapapi.get_ldap_dn(uuid)
-    if dn is None:
+    attributes = set()
+    if settings.ldap_cpr_attribute:
+        attributes.add(settings.ldap_cpr_attribute)
+
+    ldap_object = await dataloader.ldapapi.get_object_by_uuid(
+        uuid, attributes=attributes
+    )
+
+    if ldap_object is None:
         logger.error("LDAP UUID could not be found", uuid=uuid)
         raise AcknowledgeException("LDAP UUID could not be found")
 
-    person_uuid = await dataloader.find_mo_employee_uuid(dn)
+    cpr: CPRNumber | None = None
+    if settings.ldap_cpr_attribute:
+        raw_cpr = getattr(ldap_object, settings.ldap_cpr_attribute, None)
+        if isinstance(raw_cpr, list):
+            raw_cpr = only(raw_cpr)
+        if raw_cpr:
+            cpr = CPRNumber(str(raw_cpr))
+
+    person_uuid = await dataloader.find_mo_employee_uuid(cpr, uuid)
     if person_uuid is None:
         return
     # We handle reconciliation by seeding events into the normal processing queue

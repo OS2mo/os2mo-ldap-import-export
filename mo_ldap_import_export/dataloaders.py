@@ -73,37 +73,45 @@ class DataLoader:
         self.moapi = moapi
         self.username_generator = username_generator
 
-    async def find_mo_employee_uuid_via_cpr_number(self, dn: DN) -> set[EmployeeUUID]:
-        cpr_number = await self.ldapapi.dn2cpr(dn)
+    async def find_mo_employee_uuid_via_cpr_number(
+        self, cpr_number: CPRNumber | None
+    ) -> set[EmployeeUUID]:
         if cpr_number is None:
             return set()
         return await self.moapi.cpr2uuids(cpr_number)
 
-    async def find_mo_employee_uuid(self, dn: DN) -> EmployeeUUID | None:
-        cpr_results = await self.find_mo_employee_uuid_via_cpr_number(dn)
+    async def find_mo_employee_uuid(
+        self, cpr: CPRNumber | None, unique_uuid: LDAPUUID
+    ) -> EmployeeUUID | None:
+        cpr_results = await self.find_mo_employee_uuid_via_cpr_number(cpr)
         if len(cpr_results) == 1:
             uuid = one(cpr_results)
-            logger.info("Found employee via CPR matching", dn=dn, uuid=uuid)
+            logger.info(
+                "Found employee via CPR matching", uuid=uuid, ldap_uuid=unique_uuid
+            )
             return uuid
 
-        unique_uuid = await self.ldapapi.get_ldap_unique_ldap_uuid(dn)
         ituser_results = await self.moapi.find_mo_employee_uuid_via_ituser(unique_uuid)
         if len(ituser_results) == 1:
             uuid = one(ituser_results)
-            logger.info("Found employee via ITUser matching", dn=dn, uuid=uuid)
+            logger.info(
+                "Found employee via ITUser matching", uuid=uuid, ldap_uuid=unique_uuid
+            )
             return uuid
 
         # TODO: Return an ExceptionGroup with both
         # NOTE: This may break a lot of things, because we explicitly match against MultipleObjectsReturnedException
         if len(cpr_results) > 1:
-            raise MultipleObjectsReturnedException(f"Multiple CPR matches for dn={dn}")
+            raise MultipleObjectsReturnedException(
+                f"Multiple CPR matches for ldap_uuid={unique_uuid}"
+            )
 
         if len(ituser_results) > 1:
             raise MultipleObjectsReturnedException(
-                f"Multiple ITUser matches for dn={dn}"
+                f"Multiple ITUser matches for ldap_uuid={unique_uuid}"
             )
 
-        logger.info("No matching employee", dn=dn)
+        logger.info("No matching employee", ldap_uuid=unique_uuid)
         return None
 
     async def find_mo_employee_dn_by_itsystem(self, uuid: UUID) -> set[DN]:

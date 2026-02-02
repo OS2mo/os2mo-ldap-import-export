@@ -65,6 +65,7 @@ from mo_ldap_import_export.models import Employee
 from mo_ldap_import_export.models import Termination
 from mo_ldap_import_export.routes import load_all_current_it_users
 from mo_ldap_import_export.types import LDAPUUID
+from mo_ldap_import_export.types import CPRNumber
 from tests.graphql_mocker import GraphQLMocker
 
 
@@ -299,31 +300,28 @@ def mock_read_employee_uuid_by_ituser(
 
 async def test_find_mo_employee_uuid_by_cpr_number(dataloader: DataLoader):
     uuid = uuid4()
+    ldap_uuid = uuid4()
+    cpr = "0101011221"
 
-    ldap_object = LdapObject(
-        dn="CN=foo", employeeID="0101011221", objectGUID=str(uuid4())
+    mock_read_employee_uuid_by_cpr_number(dataloader, [uuid])
+    mock_read_employee_uuid_by_ituser(dataloader, [])
+    output = await dataloader.find_mo_employee_uuid(
+        CPRNumber(cpr), LDAPUUID(str(ldap_uuid))
     )
-
-    with patch(
-        "mo_ldap_import_export.ldapapi.get_ldap_object", return_value=ldap_object
-    ):
-        mock_read_employee_uuid_by_cpr_number(dataloader, [uuid])
-        mock_read_employee_uuid_by_ituser(dataloader, [])
-        output = await dataloader.find_mo_employee_uuid("CN=foo")
-        assert output == uuid
+    assert output == uuid
 
 
 async def test_find_mo_employee_uuid_by_ituser(dataloader: DataLoader):
     uuid = uuid4()
+    ldap_uuid = uuid4()
+    cpr = "Ja"
 
-    ldap_object = LdapObject(dn="CN=foo", employeeID="Ja", objectGUID=str(uuid4()))
-    with patch(
-        "mo_ldap_import_export.ldapapi.get_ldap_object", return_value=ldap_object
-    ):
-        mock_read_employee_uuid_by_cpr_number(dataloader, [])
-        mock_read_employee_uuid_by_ituser(dataloader, [uuid])
-        output = await dataloader.find_mo_employee_uuid("CN=foo")
-        assert output == uuid
+    mock_read_employee_uuid_by_cpr_number(dataloader, [])
+    mock_read_employee_uuid_by_ituser(dataloader, [uuid])
+    output = await dataloader.find_mo_employee_uuid(
+        CPRNumber(cpr), LDAPUUID(str(ldap_uuid))
+    )
+    assert output == uuid
 
 
 async def test_find_mo_employee_uuid_fallback_ituser(
@@ -334,78 +332,61 @@ async def test_find_mo_employee_uuid_fallback_ituser(
     dataloader.settings = Settings()
     dataloader.ldapapi.settings = Settings()
 
-    uuid1 = uuid4()
     uuid2 = uuid4()
+    ldap_uuid = uuid4()
 
-    with patch(
-        "mo_ldap_import_export.ldapapi.get_ldap_object",
-        return_value=LdapObject(
-            dn="CN=foo", employeeID="0101011221", objectGUID=str(uuid4())
-        ),
-    ):
-        # There is a CPR match, but it is not configured, so we get the ITUser match
-        mock_read_employee_uuid_by_cpr_number(dataloader, [uuid1])
-        mock_read_employee_uuid_by_ituser(dataloader, [uuid2])
-        output = await dataloader.find_mo_employee_uuid("CN=foo")
-        assert output == uuid2
+    mock_read_employee_uuid_by_ituser(dataloader, [uuid2])
+    output = await dataloader.find_mo_employee_uuid(None, LDAPUUID(str(ldap_uuid)))
+    assert output == uuid2
 
 
 async def test_find_mo_employee_uuid_not_found(dataloader: DataLoader):
-    ldap_object = LdapObject(
-        dn="CN=foo", employeeID="0101011221", objectGUID=str(uuid4())
+    ldap_uuid = uuid4()
+    cpr = "0101011221"
+
+    mock_read_employee_uuid_by_cpr_number(dataloader, [])
+    mock_read_employee_uuid_by_ituser(dataloader, [])
+    output = await dataloader.find_mo_employee_uuid(
+        CPRNumber(cpr), LDAPUUID(str(ldap_uuid))
     )
-    with patch(
-        "mo_ldap_import_export.ldapapi.get_ldap_object", return_value=ldap_object
-    ):
-        mock_read_employee_uuid_by_cpr_number(dataloader, [])
-        mock_read_employee_uuid_by_ituser(dataloader, [])
-        output = await dataloader.find_mo_employee_uuid("CN=foo")
-        assert output is None
+    assert output is None
 
 
 async def test_find_mo_employee_uuid_cpr_number_multiple_matches(
     dataloader: DataLoader,
 ):
-    ldap_object = LdapObject(
-        dn="CN=foo", employeeID="0101011221", objectGUID=str(uuid4())
-    )
-    with patch(
-        "mo_ldap_import_export.ldapapi.get_ldap_object", return_value=ldap_object
-    ):
-        mock_read_employee_uuid_by_cpr_number(dataloader, [uuid4(), uuid4()])
-        mock_read_employee_uuid_by_ituser(dataloader, [])
-        with pytest.raises(MultipleObjectsReturnedException):
-            await dataloader.find_mo_employee_uuid("CN=foo")
+    ldap_uuid = uuid4()
+    cpr = "0101011221"
+
+    mock_read_employee_uuid_by_cpr_number(dataloader, [uuid4(), uuid4()])
+    mock_read_employee_uuid_by_ituser(dataloader, [])
+    with pytest.raises(MultipleObjectsReturnedException):
+        await dataloader.find_mo_employee_uuid(CPRNumber(cpr), LDAPUUID(str(ldap_uuid)))
 
 
 async def test_find_mo_employee_uuid_ituser_multiple_matches(dataloader: DataLoader):
-    ldap_object = LdapObject(
-        dn="CN=foo", employeeID="0101011221", objectGUID=str(uuid4())
-    )
-    with patch(
-        "mo_ldap_import_export.ldapapi.get_ldap_object", return_value=ldap_object
-    ):
-        mock_read_employee_uuid_by_cpr_number(dataloader, [])
-        mock_read_employee_uuid_by_ituser(dataloader, [uuid4(), uuid4()])
-        with pytest.raises(MultipleObjectsReturnedException):
-            await dataloader.find_mo_employee_uuid("CN=foo")
+    ldap_uuid = uuid4()
+    cpr = "0101011221"
+
+    mock_read_employee_uuid_by_cpr_number(dataloader, [])
+    mock_read_employee_uuid_by_ituser(dataloader, [uuid4(), uuid4()])
+    with pytest.raises(MultipleObjectsReturnedException):
+        await dataloader.find_mo_employee_uuid(CPRNumber(cpr), LDAPUUID(str(ldap_uuid)))
 
 
 async def test_find_mo_employee_uuid_multiple_matches(dataloader: DataLoader):
     uuid1 = uuid4()
     uuid2 = uuid4()
+    ldap_uuid = uuid4()
+    cpr = "0101011221"
 
-    ldap_object = LdapObject(
-        dn="CN=foo", employeeID="0101011221", objectGUID=str(uuid4())
+    # We never actually check ituser, due to early return
+    mock_read_employee_uuid_by_cpr_number(dataloader, [uuid1])
+    mock_read_employee_uuid_by_ituser(dataloader, [uuid2])
+    output = await dataloader.find_mo_employee_uuid(
+        CPRNumber(cpr), LDAPUUID(str(ldap_uuid))
     )
-    with patch(
-        "mo_ldap_import_export.ldapapi.get_ldap_object", return_value=ldap_object
-    ):
-        # We never actually check ituser, due to early return
-        mock_read_employee_uuid_by_cpr_number(dataloader, [uuid1])
-        mock_read_employee_uuid_by_ituser(dataloader, [uuid2])
-        output = await dataloader.find_mo_employee_uuid("CN=foo")
-        assert output == uuid1
+    assert output == uuid1
 
 
 async def test_load_mo_employee_not_found(
