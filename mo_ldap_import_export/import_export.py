@@ -36,6 +36,7 @@ from .exceptions import SkipObject
 from .ldap import apply_discriminator
 from .ldap import filter_dns
 from .ldap import get_ldap_object
+from .ldap_classes import LdapObject
 from .moapi import Verb
 from .moapi import get_primary_engagement
 from .models import Address
@@ -419,13 +420,14 @@ class SyncTool:
 
     @with_exitstack
     async def import_single_user(
-        self, dn: DN, exit_stack: ExitStack, dry_run: bool = False
+        self, ldap_object: LdapObject, exit_stack: ExitStack, dry_run: bool = False
     ) -> None:
         """Imports a single user from LDAP into MO.
 
         Args:
-            dn: The DN that triggered our event changed in LDAP.
+            ldap_object: The LDAP object that triggered our event.
         """
+        dn = ldap_object.dn
         exit_stack.enter_context(bound_contextvars(dn=dn))
 
         logger.info("Importing user")

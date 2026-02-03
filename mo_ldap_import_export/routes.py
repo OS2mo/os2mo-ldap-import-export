@@ -515,7 +515,8 @@ def construct_router(settings: Settings) -> APIRouter:
                         "__ldap_uuid": uuid,
                         "message": "Skipping non-employee",
                     }
-                await sync_tool.import_single_user(dn, dry_run=True)
+                ldap_object = await sync_tool.dataloader.ldapapi.get_object_by_dn(dn)
+                await sync_tool.import_single_user(ldap_object, dry_run=True)
                 return {
                     "__ldap_uuid": uuid,
                     "message": "No changes",
@@ -546,7 +547,8 @@ def construct_router(settings: Settings) -> APIRouter:
         dn = await sync_tool.dataloader.ldapapi.get_ldap_dn(uuid)
         if dn is None:
             return
-        await sync_tool.import_single_user(dn, dry_run=True)
+        ldap_object = await sync_tool.dataloader.ldapapi.get_object_by_dn(dn)
+        await sync_tool.import_single_user(ldap_object, dry_run=True)
 
     @router.get("/Inspect/mo/uuid2dn/{uuid}", status_code=200, tags=["LDAP"])
     async def mo_uuid_to_ldap_dn(dataloader: depends.DataLoader, uuid: UUID) -> set[DN]:

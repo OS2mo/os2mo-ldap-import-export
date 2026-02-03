@@ -22,6 +22,7 @@ from mo_ldap_import_export.environments.main import construct_environment
 from mo_ldap_import_export.exceptions import AcknowledgeException
 from mo_ldap_import_export.exceptions import RequeueException
 from mo_ldap_import_export.import_export import SyncTool
+from mo_ldap_import_export.ldap_classes import LdapObject
 from mo_ldap_import_export.main import GRAPHQL_VERSION
 from mo_ldap_import_export.moapi import Verb
 from mo_ldap_import_export.moapi import get_primary_engagement
@@ -212,7 +213,7 @@ async def test_import_single_object_no_employee_no_sync(
     sync_tool.dataloader.find_mo_employee_uuid.return_value = None  # type: ignore
 
     with capture_logs() as cap_logs:
-        await sync_tool.import_single_user("CN=foo")
+        await sync_tool.import_single_user(LdapObject(dn="CN=foo"))
 
     messages = [w["event"] for w in cap_logs]
     assert messages == [
@@ -246,7 +247,7 @@ async def test_import_single_object_from_LDAP_but_import_equals_false(
     sync_tool.settings = Settings()
 
     with capture_logs() as cap_logs:
-        await sync_tool.import_single_user("CN=foo")
+        await sync_tool.import_single_user(LdapObject(dn="CN=foo"))
         messages = [w["event"] for w in cap_logs if w["log_level"] == "info"]
         assert "Import to MO filtered" in messages
         assert "Loading object" not in messages
@@ -268,7 +269,7 @@ async def test_holstebro_import_checks(sync_tool: SyncTool, fake_dn: DN) -> None
         ),
         capture_logs() as cap_logs,
     ):
-        await sync_tool.import_single_user(fake_dn)
+        await sync_tool.import_single_user(LdapObject(dn=fake_dn))
         assert "Import checks executed" in str(cap_logs)
 
 
@@ -622,7 +623,7 @@ async def test_noop_import_single_user(sync_tool: SyncTool) -> None:
     sync_tool.settings.conversion_mapping.ldap_to_mo = None  # type: ignore
 
     with capture_logs() as cap_logs:
-        await sync_tool.import_single_user(uuid4())
+        await sync_tool.import_single_user(LdapObject(dn=str(uuid4())))
 
     messages = [w["event"] for w in cap_logs]
     assert messages == [
