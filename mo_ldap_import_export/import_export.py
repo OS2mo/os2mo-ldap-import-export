@@ -516,9 +516,9 @@ class SyncTool:
                 dns=dns,
                 employee_uuid=employee_uuid,
             )
-        dn = best_dn
-        ldap_object = await self.dataloader.ldapapi.get_object_by_dn(dn)
-        exit_stack.enter_context(bound_contextvars(dn=dn))
+            dn = best_dn
+            ldap_object = await self.dataloader.ldapapi.get_object_by_dn(dn)
+            exit_stack.enter_context(bound_contextvars(dn=dn))
 
         json_keys = list(self.settings.conversion_mapping.ldap_to_mo.keys())
         json_keys = [
