@@ -272,7 +272,8 @@ async def http_reconcile_person(
         return
 
     try:
-        dns = await dataloader.find_mo_employee_dn(object_uuid)
+        ldap_objects = await dataloader.find_mo_employee_ldap_objects(object_uuid)
+        dns = {obj.dn for obj in ldap_objects}
     except NoObjectsReturnedException:
         # TODO: Distinguish invalid events and deleted using registration history
         logger.exception("Could not find MO employee, likely deleted or invalid event")

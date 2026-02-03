@@ -298,6 +298,19 @@ class LDAPAPI:
 
         return {uuid: task.result() for uuid, task in tasks.items()}
 
+    async def convert_ldap_uuids_to_objects(
+        self, ldap_uuids: set[LDAPUUID]
+    ) -> list[LdapObject]:
+        try:
+            async with asyncio.TaskGroup() as tg:
+                tasks = [
+                    tg.create_task(self.get_object_by_uuid(uuid)) for uuid in ldap_uuids
+                ]
+        except Exception as e:
+            raise ValueError("Exceptions during UUID2Object translation") from e
+
+        return [task.result() for task in tasks if task.result() is not None]
+
     async def dn2cpr(self, dn: DN) -> CPRNumber | None:
         if self.settings.ldap_cpr_attribute is None:
             return None
@@ -321,7 +334,7 @@ class LDAPAPI:
         cpr_number = str(raw_cpr_number)
         return CPRNumber(cpr_number)
 
-    async def cpr2dns(self, cpr_number: CPRNumber) -> set[DN]:
+    async def cpr2ldap_objects(self, cpr_number: CPRNumber) -> list[LdapObject]:
         if not self.settings.ldap_cpr_attribute:
             raise NoObjectsReturnedException("cpr_field is not configured")
 
@@ -343,11 +356,14 @@ class LDAPAPI:
         try:
             search_results = await object_search(searchParameters, self.connection)
         except LDAPNoSuchObjectResult:
-            return set()
-        ldap_objects: list[LdapObject] = [
+            return []
+        return [
             await make_ldap_object(search_result, self.connection)
             for search_result in search_results
         ]
+
+    async def cpr2dns(self, cpr_number: CPRNumber) -> set[DN]:
+        ldap_objects = await self.cpr2ldap_objects(cpr_number)
         dns = {obj.dn for obj in ldap_objects}
         logger.info("Found LDAP(s) object", dns=dns)
         return set(dns)

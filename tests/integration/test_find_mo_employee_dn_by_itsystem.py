@@ -73,7 +73,7 @@ def sync_tool(context: Context) -> SyncTool:
         "LDAP_IT_SYSTEM": "ADUUID",
     }
 )
-async def test_find_mo_employee_dn_by_itsystem_ituser_termination(
+async def test_find_mo_employee_ldap_objects_by_itsystem_ituser_termination(
     read_mo_mapping_uuids: Callable[
         [EmployeeUUID], Awaitable[dict[LDAPUUID, datetime | None]]
     ],
@@ -89,8 +89,12 @@ async def test_find_mo_employee_dn_by_itsystem_ituser_termination(
 
     # Cannot find any DNs as the LDAP account is not attached to the mo person
     with capture_logs() as cap_logs:
-        dns = await sync_tool.dataloader.find_mo_employee_dn_by_itsystem(mo_person)
-        assert dns == set()
+        ldap_objects = (
+            await sync_tool.dataloader.find_mo_employee_ldap_objects_by_itsystem(
+                mo_person
+            )
+        )
+        assert ldap_objects == []
     assert cap_logs == []
 
     # Ensure that no link exists between the mo person and LDAP account
@@ -109,8 +113,13 @@ async def test_find_mo_employee_dn_by_itsystem_ituser_termination(
 
     # Ensure that we can find the DN now using the mo person
     with capture_logs() as cap_logs:
-        dns = await sync_tool.dataloader.find_mo_employee_dn_by_itsystem(mo_person)
-        assert dns == {dn}
+        ldap_objects = (
+            await sync_tool.dataloader.find_mo_employee_ldap_objects_by_itsystem(
+                mo_person
+            )
+        )
+        assert len(ldap_objects) == 1
+        assert ldap_objects[0].dn == dn
     assert cap_logs == [
         {
             "event": "Looking for LDAP object",
@@ -118,9 +127,14 @@ async def test_find_mo_employee_dn_by_itsystem_ituser_termination(
             "unique_ldap_uuid": ldap_uuid,
         },
         {
-            "dns": {dn},
+            "event": "Looking for LDAP object",
+            "log_level": "info",
+            "unique_ldap_uuid": ldap_uuid,
+        },
+        {
+            "objects": ANY,
             "employee_uuid": mo_person,
-            "event": "Found DN(s) using ITUser lookup",
+            "event": "Found Object(s) using ITUser lookup",
             "log_level": "info",
         },
     ]
@@ -138,8 +152,12 @@ async def test_find_mo_employee_dn_by_itsystem_ituser_termination(
 
     # Rerun the mapping code, this should delete the link and return no match
     with capture_logs() as cap_logs:
-        dns = await sync_tool.dataloader.find_mo_employee_dn_by_itsystem(mo_person)
-        assert dns == set()
+        ldap_objects = (
+            await sync_tool.dataloader.find_mo_employee_ldap_objects_by_itsystem(
+                mo_person
+            )
+        )
+        assert ldap_objects == []
     assert cap_logs == [
         {
             "event": "Looking for LDAP object",

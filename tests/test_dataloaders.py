@@ -485,32 +485,37 @@ async def test_get_ldap_it_system_uuid(
     assert route.called
 
 
-async def test_find_mo_employee_dn(dataloader: MagicMock) -> None:
+async def test_find_mo_employee_ldap_objects(dataloader: MagicMock) -> None:
     employee_uuid = uuid4()
 
-    dataloader.find_mo_employee_dn_by_itsystem = AsyncMock()
-    dataloader.find_mo_employee_dn_by_itsystem.return_value = set()
+    dataloader.find_mo_employee_ldap_objects_by_itsystem = AsyncMock()
+    dataloader.find_mo_employee_ldap_objects_by_itsystem.return_value = []
 
-    dataloader.find_mo_employee_dn_by_cpr_number = AsyncMock()
-    dataloader.find_mo_employee_dn_by_cpr_number.return_value = set()
+    dataloader.find_mo_employee_ldap_objects_by_cpr_number = AsyncMock()
+    dataloader.find_mo_employee_ldap_objects_by_cpr_number.return_value = []
 
     with capture_logs() as cap_logs:
-        result = await dataloader.find_mo_employee_dn(employee_uuid)
-        assert result == set()
+        result = await dataloader.find_mo_employee_ldap_objects(employee_uuid)
+        assert result == []
     log_events = [log["event"] for log in cap_logs]
     assert log_events == [
         "Attempting to find DNs",
         "Unable to find DNs for MO employee",
     ]
 
-    dataloader.find_mo_employee_dn_by_itsystem.return_value = {"A", "B"}
-    dataloader.find_mo_employee_dn_by_cpr_number.return_value = {"C", "D"}
+    obj_a = LdapObject(dn="A")
+    obj_b = LdapObject(dn="B")
+    obj_c = LdapObject(dn="C")
+    obj_d = LdapObject(dn="D")
+
+    dataloader.find_mo_employee_ldap_objects_by_itsystem.return_value = [obj_a, obj_b]
+    dataloader.find_mo_employee_ldap_objects_by_cpr_number.return_value = [obj_c, obj_d]
 
     with capture_logs() as cap_logs:
-        result = await dataloader.find_mo_employee_dn(employee_uuid)
-        assert result == {"A", "B", "C", "D"}
+        result = await dataloader.find_mo_employee_ldap_objects(employee_uuid)
+        assert result == [obj_a, obj_b, obj_c, obj_d]
     log_events = [log["event"] for log in cap_logs]
-    assert log_events == ["Attempting to find DNs", "Found DNs for MO employee"]
+    assert log_events == ["Attempting to find DNs", "Found Objects for MO employee"]
 
 
 async def test_make_mo_employee_dn_no_user(
@@ -1184,21 +1189,21 @@ async def test_create_or_edit_mo_objects(dataloader: DataLoader) -> None:
     "cpr_number,dns,expected",
     [
         # No CPR number -> no DNs
-        (None, None, set()),
+        (None, None, []),
         # CPR number, but no accounts -> no DNs
-        ("0101700000", [], set()),
+        ("0101700000", [], []),
         # CPR number and one account -> one DN
-        ("0101700000", ["CN=foo"], {"CN=foo"}),
+        ("0101700000", ["CN=foo"], [LdapObject(dn="CN=foo")]),
         # CPR number and two accounts -> two DN
-        ("0101700000", ["CN=foo", "CN=bar"], {"CN=foo", "CN=bar"}),
+        ("0101700000", ["CN=foo", "CN=bar"], [LdapObject(dn="CN=foo"), LdapObject(dn="CN=bar")]),
     ],
 )
-async def test_find_mo_employee_dn_by_cpr_number(
+async def test_find_mo_employee_ldap_objects_by_cpr_number(
     dataloader: DataLoader,
     graphql_mock: GraphQLMocker,
     cpr_number: str | None,
     dns: list[str] | None,
-    expected: set[str] | str,
+    expected: list[LdapObject],
 ) -> None:
     employee_uuid = uuid4()
     employee = {
@@ -1214,18 +1219,18 @@ async def test_find_mo_employee_dn_by_cpr_number(
     route = graphql_mock.query("read_employees")
     route.result = {"employees": {"objects": [{"validities": [employee]}]}}
 
-    dataloader.ldapapi.cpr2dns = AsyncMock()  # type: ignore
-    dataloader.ldapapi.cpr2dns.return_value = {dn for dn in (dns or [])}
+    dataloader.ldapapi.cpr2ldap_objects = AsyncMock()  # type: ignore
+    dataloader.ldapapi.cpr2ldap_objects.return_value = [LdapObject(dn=dn) for dn in (dns or [])]
 
-    result = await dataloader.find_mo_employee_dn_by_cpr_number(employee_uuid)
+    result = await dataloader.find_mo_employee_ldap_objects_by_cpr_number(employee_uuid)
     assert result == expected
 
     if dns is not None:
-        dataloader.ldapapi.cpr2dns.assert_called_once_with(cpr_number)
+        dataloader.ldapapi.cpr2ldap_objects.assert_called_once_with(cpr_number)
 
 
 @pytest.mark.envvar({"LDAP_IT_SYSTEM": "ADUUID"})
-async def test_find_mo_employee_dn_by_itsystem_no_itsystem(
+async def test_find_mo_employee_ldap_objects_by_itsystem_no_itsystem(
     dataloader: DataLoader,
     graphql_mock: GraphQLMocker,
 ) -> None:
@@ -1234,12 +1239,12 @@ async def test_find_mo_employee_dn_by_itsystem_no_itsystem(
     route = graphql_mock.query("read_itsystem_uuid")
     route.result = {"itsystems": {"objects": []}}
 
-    result = await dataloader.find_mo_employee_dn_by_itsystem(employee_uuid)
-    assert result == set()
+    result = await dataloader.find_mo_employee_ldap_objects_by_itsystem(employee_uuid)
+    assert result == []
 
 
 @pytest.mark.envvar({"LDAP_IT_SYSTEM": "ADUUID"})
-async def test_find_mo_employee_dn_by_itsystem_no_match(
+async def test_find_mo_employee_ldap_objects_by_itsystem_no_match(
     dataloader: DataLoader,
     graphql_mock: GraphQLMocker,
 ) -> None:
@@ -1252,12 +1257,12 @@ async def test_find_mo_employee_dn_by_itsystem_no_match(
     route2 = graphql_mock.query("read_ituser_by_employee_and_itsystem_uuid")
     route2.result = {"itusers": {"objects": []}}
 
-    result = await dataloader.find_mo_employee_dn_by_itsystem(employee_uuid)
-    assert result == set()
+    result = await dataloader.find_mo_employee_ldap_objects_by_itsystem(employee_uuid)
+    assert result == []
 
 
 @pytest.mark.envvar({"LDAP_IT_SYSTEM": "ADUUID"})
-async def test_find_mo_employee_dn_by_itsystem(
+async def test_find_mo_employee_ldap_objects_by_itsystem(
     dataloader: DataLoader,
     graphql_mock: GraphQLMocker,
 ) -> None:
@@ -1292,10 +1297,14 @@ async def test_find_mo_employee_dn_by_itsystem(
     }
 
     dn = "CN=foo"
-    dataloader.ldapapi.get_ldap_dn = AsyncMock()  # type: ignore
-    dataloader.ldapapi.get_ldap_dn.return_value = dn
+    ldap_object = LdapObject(dn=dn)
+    dataloader.ldapapi.convert_ldap_uuids_to_dns = AsyncMock()  # type: ignore
+    dataloader.ldapapi.convert_ldap_uuids_to_dns.return_value = {ituser_uuid: dn}
 
-    result = await dataloader.find_mo_employee_dn_by_itsystem(employee_uuid)
-    assert result == {dn}
+    dataloader.ldapapi.convert_ldap_uuids_to_objects = AsyncMock() # type: ignore
+    dataloader.ldapapi.convert_ldap_uuids_to_objects.return_value = [ldap_object]
 
-    dataloader.ldapapi.get_ldap_dn.assert_called_once_with(ituser_uuid)
+    result = await dataloader.find_mo_employee_ldap_objects_by_itsystem(employee_uuid)
+    assert result == [ldap_object]
+
+    dataloader.ldapapi.convert_ldap_uuids_to_objects.assert_called_once_with({ituser_uuid})
