@@ -51,6 +51,9 @@ async def http_process_uuid(
             for attr in mapping.ldap_attributes
         }
 
+    if settings.discriminator_fields:
+        attributes_to_fetch.update(settings.discriminator_fields)
+
     attributes_to_fetch |= {
         attr
         for mappings in settings.conversion_mapping.ldap_to_mo_any.values()

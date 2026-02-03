@@ -496,16 +496,45 @@ class SyncTool:
         # We always want to synchronize from the best LDAP account, instead of just
         # synchronizing from the last LDAP account that has been touched.
         # Thus we process the list of DNs found for the user to pick the best one.
-        dns = await filter_dns(self.settings, self.ldap_connection, dns)
-        best_dn = await apply_discriminator(
+
+        # Collect all attributes needed for any of the candidates
+        # This includes attributes for mapping, discriminator and CPR
+        attributes_to_fetch = {
+            self.settings.ldap_unique_id_field,
+            "objectClass",
+        }
+        if self.settings.ldap_cpr_attribute:
+            attributes_to_fetch.add(self.settings.ldap_cpr_attribute)
+        if self.settings.discriminator_fields:
+            attributes_to_fetch.update(self.settings.discriminator_fields)
+        if self.settings.conversion_mapping.ldap_to_mo:
+            attributes_to_fetch |= {
+                attr
+                for mapping in self.settings.conversion_mapping.ldap_to_mo.values()
+                for attr in mapping.ldap_attributes
+            }
+
+        # Fetch all candidate objects
+        # We already have one object (ldap_object), so we only fetch the others
+        other_dns = set(dns) - {ldap_object.dn}
+        other_objects = await self.dataloader.ldapapi.get_objects_by_dns(
+            other_dns, attributes=attributes_to_fetch
+        )
+        all_candidate_objects = [ldap_object] + other_objects
+
+        filtered_objects = await filter_dns(
+            self.settings, self.ldap_connection, all_candidate_objects
+        )
+        best_object = await apply_discriminator(
             self.settings,
             self.ldap_connection,
             self.dataloader.moapi,
             employee_uuid,
-            dns,
+            filtered_objects,
         )
+
         # If no good LDAP account was found, we do not want to synchronize at all
-        if best_dn is None:
+        if best_object is None:
             logger.info(
                 "Aborting synchronization, as no good LDAP account was found",
                 dns=dns,
@@ -513,20 +542,16 @@ class SyncTool:
             )
             return
 
-        # At this point, we have the best possible DN for the user, and their employee UUID
-        if dn != best_dn:
+        # At this point, we have the best possible object for the user
+        if ldap_object.dn != best_object.dn:
             logger.info(
                 "Found better DN for employee",
-                best_dn=best_dn,
+                best_dn=best_object.dn,
                 dns=dns,
                 employee_uuid=employee_uuid,
             )
-            dn = best_dn
-            # We refetch the ldap_object with the same attributes as the incoming one
-            ldap_object = await self.dataloader.ldapapi.get_object_by_dn(
-                dn, attributes=set(ldap_object.dict().keys()) - {"dn"}
-            )
-            exit_stack.enter_context(bound_contextvars(dn=dn))
+            ldap_object = best_object
+            exit_stack.enter_context(bound_contextvars(dn=ldap_object.dn))
 
         json_keys = list(self.settings.conversion_mapping.ldap_to_mo.keys())
         json_keys = [

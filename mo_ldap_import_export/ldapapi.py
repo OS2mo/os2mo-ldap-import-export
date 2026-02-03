@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
 import asyncio
+from collections.abc import Iterable
 from contextlib import suppress
 from typing import Any
 
@@ -489,6 +490,11 @@ class LDAPAPI:
         return await get_ldap_object(
             self.ldap_connection.connection, dn, attributes, nest=False
         )
+
+    async def get_objects_by_dns(
+        self, dns: Iterable[DN], attributes: set | None = None
+    ) -> list[LdapObject]:
+        return await asyncio.gather(*[self.get_object_by_dn(dn, attributes) for dn in dns])
 
     async def get_attribute_by_dn(self, dn: DN, attribute: str) -> Any:
         ldap_object = await self.get_object_by_dn(dn, {attribute})

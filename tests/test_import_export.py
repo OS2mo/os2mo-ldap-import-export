@@ -95,7 +95,6 @@ async def test_listen_to_changes_in_employees_no_dn(
         messages = [w["event"] for w in cap_logs]
         assert messages == [
             "Registered change in an employee",
-            "Discriminator filter run",
             "create_user_trees not configured, allowing create",
             "Rendered jinja template",
             "Parsed jinja template",

@@ -294,20 +294,38 @@ class DataLoader:
             synchronization should not take place.
         """
         dns = await self.find_mo_employee_dn(uuid)
-        dns = await filter_dns(self.settings, self.ldapapi.connection, dns)
-        # If we found DNs, we want to synchronize to the best of them
         if not dns:
             return None
-        logger.info("Found DNs for user", dns=dns, uuid=uuid)
-        best_dn = await apply_discriminator(
-            self.settings, self.ldapapi.connection, self.moapi, uuid, dns
+
+        # Fetch objects for all dns to evaluate discriminator
+        attributes = {self.settings.ldap_unique_id_field, "objectClass"}
+        if self.settings.ldap_cpr_attribute:
+            attributes.add(self.settings.ldap_cpr_attribute)
+        if self.settings.discriminator_fields:
+            attributes.update(self.settings.discriminator_fields)
+
+        ldap_objects = await self.ldapapi.get_objects_by_dns(dns, attributes=attributes)
+
+        filtered_objects = await filter_dns(
+            self.settings, self.ldapapi.connection, ldap_objects
+        )
+        # If we found objects, we want to synchronize to the best of them
+        if not filtered_objects:
+            return None
+        logger.info("Found DNs for user", dns=[obj.dn for obj in filtered_objects], uuid=uuid)
+        best_object = await apply_discriminator(
+            self.settings,
+            self.ldapapi.connection,
+            self.moapi,
+            uuid,
+            filtered_objects,
         )
         # If no good LDAP account was found, we do not want to synchronize at all
-        if not best_dn:
+        if not best_object:
             logger.warning(
                 "Aborting synchronization, as no good LDAP account was found",
                 dns=dns,
                 uuid=uuid,
             )
             raise NoGoodLDAPAccountFound("Aborting synchronization")
-        return best_dn
+        return best_object.dn

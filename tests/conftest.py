@@ -256,6 +256,9 @@ def dataloader(
     dataloader.modify_ldap_object.return_value = [{"description": "success"}]
     dataloader.get_ldap_objectGUID = sync_dataloader
 
+    dataloader.ldapapi.get_objects_by_dns.return_value = []
+    dataloader.ldapapi.get_object_by_dn = AsyncMock()
+
     dataloader.load_ldap_OUs = AsyncMock()
     dataloader.move_ldap_object = AsyncMock()
     dataloader.delete_ou = AsyncMock()

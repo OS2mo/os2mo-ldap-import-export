@@ -329,14 +329,14 @@ async def test_apply_discriminator_no_config(
     assert settings.discriminator_fields == []
 
     result = await apply_discriminator(
-        settings, ldap_connection, mo_api, EmployeeUUID(uuid4()), set()
+        settings, ldap_connection, mo_api, EmployeeUUID(uuid4()), []
     )
     assert result is None
 
     result = await apply_discriminator(
-        settings, ldap_connection, mo_api, EmployeeUUID(uuid4()), {"CN=Anzu"}
+        settings, ldap_connection, mo_api, EmployeeUUID(uuid4()), [LdapObject(dn="CN=Anzu")]
     )
-    assert result == "CN=Anzu"
+    assert result.dn == "CN=Anzu"
 
     with pytest.raises(ValueError) as exc_info:
         await apply_discriminator(
@@ -344,7 +344,7 @@ async def test_apply_discriminator_no_config(
             ldap_connection,
             mo_api,
             EmployeeUUID(uuid4()),
-            {"CN=Anzu", "CN=Arak"},
+            [LdapObject(dn="CN=Anzu"), LdapObject(dn="CN=Arak")],
         )
     assert "Expected exactly one item in iterable" in str(exc_info.value)
 
@@ -373,26 +373,12 @@ async def test_apply_discriminator_settings_invariants(
         # Need values
         new_settings = settings.copy(update=discriminator_settings)
         await apply_discriminator(
-            new_settings, ldap_connection, mo_api, EmployeeUUID(uuid4()), {ldap_dn}
-        )
-
-
-async def test_apply_discriminator_unknown_dn(
-    monkeypatch: pytest.MonkeyPatch, ldap_connection: Connection, mo_api: MOAPI
-) -> None:
-    """Test that apply_discriminator requeues on missing DNs."""
-    monkeypatch.setenv("DISCRIMINATOR_FIELDS", '["sn"]')
-    monkeypatch.setenv("DISCRIMINATOR_VALUES", '["__never_gonna_match__"]')
-    settings = Settings()
-    with pytest.raises(RequeueException) as exc_info:
-        await apply_discriminator(
-            settings,
+            new_settings,
             ldap_connection,
             mo_api,
             EmployeeUUID(uuid4()),
-            {"CN=__missing__dn__"},
+            [LdapObject(dn=ldap_dn)],
         )
-    assert "Unable to lookup DN(s)" in str(exc_info.value)
 
 
 @pytest.mark.usefixtures("minimal_valid_environmental_variables")
@@ -405,15 +391,10 @@ async def test_apply_discriminator_missing_field(
     """Test that apply_discriminator works with a single user on valid settings."""
     another_username = "bar"
     another_ldap_dn = f"CN={another_username},{ldap_container_dn}"
-    ldap_connection.strategy.add_entry(
-        another_ldap_dn,
-        {
-            "objectClass": "inetOrgPerson",
-            "userPassword": str(uuid4()),
-            "revision": 1,
-            "entryUUID": "{" + str(uuid4()) + "}",
-            "employeeID": "0101700001",
-        },
+    ldap_object = LdapObject(
+        dn=another_ldap_dn,
+        objectClass="inetOrgPerson",
+        employeeID="0101700001",
     )
 
     monkeypatch.setenv("DISCRIMINATOR_FIELDS", '["hkOS2MOSync"]')
@@ -422,9 +403,9 @@ async def test_apply_discriminator_missing_field(
     settings = Settings()
     with capture_logs() as cap_logs:
         result = await apply_discriminator(
-            settings, ldap_connection, mo_api, EmployeeUUID(uuid4()), {another_ldap_dn}
+            settings, ldap_connection, mo_api, EmployeeUUID(uuid4()), [ldap_object]
         )
-        assert "Discriminator value is None" in (x["event"] for x in cap_logs)
+        assert any("Discriminator value is None" in x["event"] for x in cap_logs)
     assert result is None
 
 
@@ -512,7 +493,6 @@ async def context(sync_tool_and_context: tuple[SyncTool, Context]) -> Context:
             True,
             [
                 "Found DN",
-                "Found DN",
                 "Aborting synchronization, as no good LDAP account was found",
             ],
             marks=pytest.mark.envvar(
@@ -526,7 +506,6 @@ async def context(sync_tool_and_context: tuple[SyncTool, Context]) -> Context:
         pytest.param(
             True,
             [
-                "Found DN",
                 "Found DN",
                 "Import to MO filtered",
                 "Import checks executed",
@@ -543,9 +522,7 @@ async def context(sync_tool_and_context: tuple[SyncTool, Context]) -> Context:
             True,
             [
                 "Found DN",
-                "Found DN",
                 "Found better DN for employee",
-                "Found DN",
                 "Import to MO filtered",
                 "Import checks executed",
             ],
@@ -630,7 +607,12 @@ async def test_import_single_user_apply_discriminator(
 
     with capture_logs() as cap_logs:
         await sync_tool.import_single_user(
-            LdapObject(dn=ldap_dn, employeeID="0101700001", entryUUID=str(uuid4()))
+            LdapObject(
+                dn=ldap_dn,
+                employeeID="0101700001",
+                entryUUID=str(uuid4()),
+                sn="foo_sn",
+            )
         )
     events = [x["event"] for x in cap_logs if x["log_level"] != "debug"]
 
@@ -656,6 +638,8 @@ async def test_import_single_user_apply_discriminator(
         pytest.param(
             False,
             [
+                "Found DN",
+                "Found DNs for user",
                 "Not writing to LDAP as changeset is empty",
             ],
             marks=pytest.mark.envvar({}),
@@ -666,6 +650,7 @@ async def test_import_single_user_apply_discriminator(
             [
                 "Found DN",
                 "Found DN",
+                "Found DNs for user",
                 "Aborting synchronization, as no good LDAP account was found",
             ],
             marks=pytest.mark.envvar(
@@ -681,6 +666,7 @@ async def test_import_single_user_apply_discriminator(
             [
                 "Found DN",
                 "Found DN",
+                "Found DNs for user",
                 "Not writing to LDAP as changeset is empty",
             ],
             marks=pytest.mark.envvar(
@@ -696,6 +682,7 @@ async def test_import_single_user_apply_discriminator(
             [
                 "Found DN",
                 "Found DN",
+                "Found DNs for user",
                 "Not writing to LDAP as changeset is empty",
             ],
             marks=pytest.mark.envvar(
@@ -773,7 +760,6 @@ async def test_listen_to_changes_in_employees(
             "Found LDAP(s) object",
             "Found DN(s) using CPR number lookup",
             "Found DNs for MO employee",
-            "Found DNs for user",
         ]
         + log_lines
     )
@@ -920,11 +906,16 @@ async def test_apply_discriminator_template(
     ) -> LdapObject:
         return parse_obj_as(LdapObject, {"dn": dn, **dn_map[dn]})
 
+    ldap_objects = [LdapObject(dn=dn, **fields) for dn, fields in dn_map.items()]
+
     with patch("mo_ldap_import_export.ldap.get_ldap_object", wraps=get_ldap_object):
         result = await apply_discriminator(
-            settings, ldap_connection, mo_api, EmployeeUUID(uuid4()), set(dn_map.keys())
+            settings, ldap_connection, mo_api, EmployeeUUID(uuid4()), ldap_objects
         )
-        assert result == expected
+        if expected is None:
+            assert result is None
+        else:
+            assert result.dn == expected
 
 
 async def test_get_existing_values(sync_tool: SyncTool, context: Context) -> None:
