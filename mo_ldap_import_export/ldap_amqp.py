@@ -40,7 +40,7 @@ async def http_process_uuid(
         logger.warning("LDAP event ignored due to ignore-list", ldap_uuid=uuid)
         return
 
-    attributes_to_fetch = {"objectClass"}
+    attributes_to_fetch = {"objectClass", settings.ldap_unique_id_field}
     if settings.ldap_cpr_attribute:
         attributes_to_fetch.add(settings.ldap_cpr_attribute)
 
@@ -99,12 +99,18 @@ async def http_reconcile_uuid(
         logger.warning("LDAP event ignored due to ignore-list", ldap_uuid=uuid)
         return
 
-    dn = await dataloader.ldapapi.get_ldap_dn(uuid)
-    if dn is None:
+    attributes_to_fetch = {settings.ldap_unique_id_field}
+    if settings.ldap_cpr_attribute:
+        attributes_to_fetch.add(settings.ldap_cpr_attribute)
+
+    ldap_object = await dataloader.ldapapi.get_object_by_uuid(
+        uuid, attributes=attributes_to_fetch
+    )
+    if ldap_object is None:
         logger.error("LDAP UUID could not be found", uuid=uuid)
         raise AcknowledgeException("LDAP UUID could not be found")
 
-    person_uuid = await dataloader.find_mo_employee_uuid(dn)
+    person_uuid = await dataloader.find_mo_employee_uuid(ldap_object)
     if person_uuid is None:
         return
     # We handle reconciliation by seeding events into the normal processing queue

@@ -18,6 +18,7 @@ from .exceptions import RequeueException
 from .ldap import apply_discriminator
 from .ldap import filter_dns
 from .ldap import is_uuid
+from .ldap_classes import LdapObject
 from .ldapapi import LDAPAPI
 from .moapi import MOAPI
 from .models import ITUser
@@ -73,20 +74,39 @@ class DataLoader:
         self.moapi = moapi
         self.username_generator = username_generator
 
-    async def find_mo_employee_uuid_via_cpr_number(self, dn: DN) -> set[EmployeeUUID]:
-        cpr_number = await self.ldapapi.dn2cpr(dn)
+    async def find_mo_employee_uuid_via_cpr_number(
+        self, ldap_object: LdapObject
+    ) -> set[EmployeeUUID]:
+        if self.settings.ldap_cpr_attribute:
+            assert hasattr(
+                ldap_object, self.settings.ldap_cpr_attribute
+            ), f"ldap_object missing cpr attribute: {self.settings.ldap_cpr_attribute}"
+        cpr_number = self.ldapapi.ldap_object2cpr(ldap_object)
+
         if cpr_number is None:
             return set()
         return await self.moapi.cpr2uuids(cpr_number)
 
-    async def find_mo_employee_uuid(self, dn: DN) -> EmployeeUUID | None:
-        cpr_results = await self.find_mo_employee_uuid_via_cpr_number(dn)
+    async def find_mo_employee_uuid(
+        self, ldap_object: LdapObject
+    ) -> EmployeeUUID | None:
+        dn = ldap_object.dn
+        cpr_results = await self.find_mo_employee_uuid_via_cpr_number(ldap_object)
         if len(cpr_results) == 1:
             uuid = one(cpr_results)
             logger.info("Found employee via CPR matching", dn=dn, uuid=uuid)
             return uuid
 
-        unique_uuid = await self.ldapapi.get_ldap_unique_ldap_uuid(dn)
+        assert hasattr(
+            ldap_object, self.settings.ldap_unique_id_field
+        ), f"ldap_object missing unique id attribute: {self.settings.ldap_unique_id_field}"
+        unique_uuid = getattr(ldap_object, self.settings.ldap_unique_id_field)
+
+        if not unique_uuid:  # pragma: no cover
+            raise NoObjectsReturnedException(
+                f"Object has no {self.settings.ldap_unique_id_field}"
+            )
+
         ituser_results = await self.moapi.find_mo_employee_uuid_via_ituser(unique_uuid)
         if len(ituser_results) == 1:
             uuid = one(ituser_results)

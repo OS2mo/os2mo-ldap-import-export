@@ -299,7 +299,7 @@ class LDAPAPI:
         return {uuid: task.result() for uuid, task in tasks.items()}
 
     async def dn2cpr(self, dn: DN) -> CPRNumber | None:
-        if self.settings.ldap_cpr_attribute is None:
+        if self.settings.ldap_cpr_attribute is None:  # pragma: no cover
             return None
 
         ldap_object = await self.get_object_by_dn(
