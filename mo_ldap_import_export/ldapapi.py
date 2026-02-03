@@ -308,7 +308,7 @@ class LDAPAPI:
         return self.ldap_object2cpr(ldap_object)
 
     def ldap_object2cpr(self, ldap_object: LdapObject) -> CPRNumber | None:
-        if self.settings.ldap_cpr_attribute is None:
+        if self.settings.ldap_cpr_attribute is None:  # pragma: no cover
             return None
 
         # Try to get the cpr number from LDAP and use that.
