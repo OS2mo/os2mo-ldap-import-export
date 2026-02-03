@@ -35,7 +35,6 @@ from .exceptions import NoObjectsReturnedException
 from .exceptions import SkipObject
 from .ldap import apply_discriminator
 from .ldap import filter_dns
-from .ldap import get_ldap_object
 from .ldap_classes import LdapObject
 from .moapi import Verb
 from .moapi import get_primary_engagement
