@@ -47,7 +47,6 @@ async def http_process_uuid(
         logger.error("LDAP UUID could not be found", uuid=uuid)
         raise AcknowledgeException("LDAP UUID could not be found")
 
-    dn = ldap_object.dn
     # Ignore changes to non-employee objects
     assert hasattr(ldap_object, "objectClass")
     ldap_object_classes = ldap_object.objectClass
@@ -65,7 +64,7 @@ async def http_process_uuid(
                 object_class=object_class,
                 ldap_object_classes=ldap_object_classes,
             )
-            await sync_tool.import_single_object_class(object_class, dn)
+            await sync_tool.import_single_object_class(object_class, ldap_object)
 
 
 @ldap2mo_router.post("/reconcile")
