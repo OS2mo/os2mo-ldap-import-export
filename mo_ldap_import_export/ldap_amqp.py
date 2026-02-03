@@ -40,8 +40,23 @@ async def http_process_uuid(
         logger.warning("LDAP event ignored due to ignore-list", ldap_uuid=uuid)
         return
 
+    attributes_to_fetch = {"objectClass"}
+    if settings.conversion_mapping.ldap_to_mo:
+        attributes_to_fetch |= {
+            attr
+            for mapping in settings.conversion_mapping.ldap_to_mo.values()
+            for attr in mapping.ldap_attributes
+        }
+
+    attributes_to_fetch |= {
+        attr
+        for mappings in settings.conversion_mapping.ldap_to_mo_any.values()
+        for mapping in mappings
+        for attr in mapping.ldap_attributes
+    }
+
     ldap_object = await dataloader.ldapapi.get_object_by_uuid(
-        uuid, attributes={"objectClass"}
+        uuid, attributes=attributes_to_fetch
     )
     if ldap_object is None:
         logger.error("LDAP UUID could not be found", uuid=uuid)

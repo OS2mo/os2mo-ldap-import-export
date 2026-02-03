@@ -35,7 +35,6 @@ from .exceptions import NoObjectsReturnedException
 from .exceptions import SkipObject
 from .ldap import apply_discriminator
 from .ldap import filter_dns
-from .ldap import get_ldap_object
 from .ldap_classes import LdapObject
 from .moapi import Verb
 from .moapi import get_primary_engagement
@@ -425,7 +424,13 @@ class SyncTool:
         """Imports a single user from LDAP into MO.
 
         Args:
-            ldap_object: The LDAP object that triggered our event.
+            ldap_object:
+                The LDAP object that triggered our event.
+
+                Must already have the required attributes specified in:
+                `settings.conversion_mapping.ldap_to_mo[ALL].ldap_attributes`.
+            exit_stack: The injected exit-stack.
+            dry_run: If True, simulates the import without making changes.
         """
         dn = ldap_object.dn
         exit_stack.enter_context(bound_contextvars(dn=dn))
@@ -517,7 +522,10 @@ class SyncTool:
                 employee_uuid=employee_uuid,
             )
             dn = best_dn
-            ldap_object = await self.dataloader.ldapapi.get_object_by_dn(dn)
+            # We refetch the ldap_object with the same attributes as the incoming one
+            ldap_object = await self.dataloader.ldapapi.get_object_by_dn(
+                dn, attributes=set(ldap_object.dict().keys()) - {"dn"}
+            )
             exit_stack.enter_context(bound_contextvars(dn=dn))
 
         json_keys = list(self.settings.conversion_mapping.ldap_to_mo.keys())
@@ -558,7 +566,11 @@ class SyncTool:
 
         Args:
             object_class: The LDAP object class we want to import.
-            ldap_object: The LDAP object that triggered our event.
+            ldap_object:
+                The LDAP object that triggered our event.
+
+                Must already have the required attributes specified in:
+                `settings.conversion_mapping.ldap_to_mo_any[ALL].ldap_attributes`.
         """
         exit_stack.enter_context(
             bound_contextvars(object_class=object_class, dn=ldap_object.dn)
@@ -580,13 +592,32 @@ class SyncTool:
         template_context: dict[str, Any],
         dry_run: bool,
     ) -> None:
+        """Import a single entity from an LDAP object.
+
+        Args:
+            mapping: The mapping configuration for this entity.
+            ldap_object:
+                The LDAP object to import.
+
+                Must already have the required attributes specified in:
+                `mapping.ldap_attributes`.
+            template_context: Context variables for Jinja2 templates.
+            dry_run: If True, simulates the import without making changes.
+        """
         dn = ldap_object.dn
         logger.info("Loading object", mo_class=mapping.as_mo_class(), dn=dn)
-        loaded_object = await get_ldap_object(
-            ldap_connection=self.ldap_connection,
-            dn=dn,
-            attributes=set(mapping.ldap_attributes) - {"dn"},
-        )
+
+        # Ensure that the object has the required attributes
+        required_attributes = set(mapping.ldap_attributes) - {"dn"}
+        # Note: We rely on Pydantic's .dict() to give us the attributes on the object.
+        # This includes fields defined on the model and extra fields.
+        available_attributes = set(ldap_object.dict().keys())
+        missing_attributes = required_attributes - available_attributes
+        assert (
+            not missing_attributes
+        ), f"ldap_object missing required attributes: {missing_attributes}"
+
+        loaded_object = ldap_object
 
         logger.info(
             "Loaded object",
