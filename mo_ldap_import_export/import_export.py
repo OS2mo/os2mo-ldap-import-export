@@ -429,6 +429,8 @@ class SyncTool:
 
                 Must already have the required attributes specified in:
                 `settings.conversion_mapping.ldap_to_mo[ALL].ldap_attributes`.
+            exit_stack: The injected exit-stack.
+            dry_run: If True, simulates the import without making changes.
         """
         dn = ldap_object.dn
         exit_stack.enter_context(bound_contextvars(dn=dn))
@@ -520,7 +522,10 @@ class SyncTool:
                 employee_uuid=employee_uuid,
             )
             dn = best_dn
-            ldap_object = await self.dataloader.ldapapi.get_object_by_dn(dn)
+            # We refetch the ldap_object with the same attributes as the incoming one
+            ldap_object = await self.dataloader.ldapapi.get_object_by_dn(
+                dn, attributes=set(ldap_object.dict().keys()) - {"dn"}
+            )
             exit_stack.enter_context(bound_contextvars(dn=dn))
 
         json_keys = list(self.settings.conversion_mapping.ldap_to_mo.keys())
