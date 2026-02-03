@@ -485,7 +485,7 @@ class SyncTool:
             # However we may be able to find other accounts using the CPR number on the
             # event triggered account, by searching for the CPR number in all of LDAP.
             # Note however, that this will only succeed if there is a CPR number field.
-            cpr_number = await self.dataloader.ldapapi.dn2cpr(dn)
+            cpr_number = self.dataloader.ldapapi.ldap_object2cpr(ldap_object)
             # Only attempt to load accounts if we have a CPR number to do so with
             if cpr_number:
                 dns = await self.dataloader.ldapapi.cpr2dns(cpr_number)
