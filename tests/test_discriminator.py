@@ -629,14 +629,15 @@ async def test_import_single_user_apply_discriminator(
     }
 
     with capture_logs() as cap_logs:
-        await sync_tool.import_single_user(LdapObject(dn=ldap_dn))
+        await sync_tool.import_single_user(
+            LdapObject(dn=ldap_dn, employeeID="0101700001", entryUUID=str(uuid4()))
+        )
     events = [x["event"] for x in cap_logs if x["log_level"] != "debug"]
 
     assert (
         events
         == [
             "Importing user",
-            "Found DN",
             "Found employee via CPR matching",
             "Attempting to find DNs",
             "Attempting CPR number lookup",
