@@ -516,9 +516,9 @@ class SyncTool:
                 dns=dns,
                 employee_uuid=employee_uuid,
             )
-        dn = best_dn
-        ldap_object = await self.dataloader.ldapapi.get_object_by_dn(dn)
-        exit_stack.enter_context(bound_contextvars(dn=dn))
+            dn = best_dn
+            ldap_object = await self.dataloader.ldapapi.get_object_by_dn(dn)
+            exit_stack.enter_context(bound_contextvars(dn=dn))
 
         json_keys = list(self.settings.conversion_mapping.ldap_to_mo.keys())
         json_keys = [
@@ -580,24 +580,28 @@ class SyncTool:
         template_context: dict[str, Any],
         dry_run: bool,
     ) -> None:
+        """Imports a single entity from LDAP into MO.
+
+        Args:
+            mapping: The mapping to use for conversion.
+            ldap_object:
+                The LDAP object to import. It is assumed that this object already
+                contains all the attributes required by the mapping.
+            template_context: Context to use for templating.
+            dry_run: Whether to dry-run or not.
+        """
         dn = ldap_object.dn
         logger.info("Loading object", mo_class=mapping.as_mo_class(), dn=dn)
-        loaded_object = await get_ldap_object(
-            ldap_connection=self.ldap_connection,
-            dn=dn,
-            attributes=set(mapping.ldap_attributes) - {"dn"},
-        )
 
-        logger.info(
-            "Loaded object",
-            mo_class=mapping.as_mo_class(),
-            dn=dn,
-            loaded_object=loaded_object,
-        )
+        required_attributes = set(mapping.ldap_attributes) - {"dn"}
+        for attr in required_attributes:
+            assert hasattr(
+                ldap_object, attr
+            ), f"Missing required attribute '{attr}' on ldap_object"
 
         try:
             converted_object = await self.converter.from_ldap(
-                ldap_object=loaded_object,
+                ldap_object=ldap_object,
                 mapping=mapping,
                 template_context=template_context,
             )
