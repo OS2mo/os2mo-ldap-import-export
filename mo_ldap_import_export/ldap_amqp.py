@@ -56,7 +56,7 @@ async def http_process_uuid(
     employee_object_class = settings.ldap_object_class
     if employee_object_class in ldap_object_classes:
         logger.info("Handling employee", ldap_object_classes=ldap_object_classes)
-        await sync_tool.import_single_user(dn)
+        await sync_tool.import_single_user(ldap_object)
 
     for object_class in settings.conversion_mapping.ldap_to_mo_any:
         if object_class in ldap_object_classes:
