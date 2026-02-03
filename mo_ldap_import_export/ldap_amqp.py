@@ -41,6 +41,9 @@ async def http_process_uuid(
         return
 
     attributes_to_fetch = {"objectClass"}
+    if settings.ldap_cpr_attribute:
+        attributes_to_fetch.add(settings.ldap_cpr_attribute)
+
     if settings.conversion_mapping.ldap_to_mo:
         attributes_to_fetch |= {
             attr

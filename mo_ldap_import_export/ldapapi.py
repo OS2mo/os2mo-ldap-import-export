@@ -305,9 +305,14 @@ class LDAPAPI:
         ldap_object = await self.get_object_by_dn(
             dn, {self.settings.ldap_cpr_attribute}
         )
+        return self.ldap_object2cpr(ldap_object)
+
+    def ldap_object2cpr(self, ldap_object: LdapObject) -> CPRNumber | None:
+        if self.settings.ldap_cpr_attribute is None:  # pragma: no cover
+            return None
+
         # Try to get the cpr number from LDAP and use that.
-        raw_cpr_number = getattr(ldap_object, self.settings.ldap_cpr_attribute)
-        assert raw_cpr_number is not None
+        raw_cpr_number = getattr(ldap_object, self.settings.ldap_cpr_attribute, None)
         # TODO: Figure out when this is a list
         if isinstance(raw_cpr_number, list):
             raw_cpr_number = only(raw_cpr_number)
