@@ -517,6 +517,7 @@ class SyncTool:
                 employee_uuid=employee_uuid,
             )
         dn = best_dn
+        ldap_object = await self.dataloader.ldapapi.get_object_by_dn(dn)
         exit_stack.enter_context(bound_contextvars(dn=dn))
 
         json_keys = list(self.settings.conversion_mapping.ldap_to_mo.keys())
@@ -543,7 +544,10 @@ class SyncTool:
         # dependencies exist before their dependent objects.
         for json_key in json_keys:
             await self.import_single_entity(
-                self.get_mapping(json_key), dn, template_context, dry_run=dry_run
+                self.get_mapping(json_key),
+                ldap_object,
+                template_context,
+                dry_run=dry_run,
             )
 
     @with_exitstack
@@ -556,31 +560,34 @@ class SyncTool:
             object_class: The LDAP object class we want to import.
             ldap_object: The LDAP object that triggered our event.
         """
-        dn = ldap_object.dn
-        exit_stack.enter_context(bound_contextvars(object_class=object_class, dn=dn))
+        exit_stack.enter_context(
+            bound_contextvars(object_class=object_class, dn=ldap_object.dn)
+        )
         logger.info("Importing object class")
         mappings = self.settings.conversion_mapping.ldap_to_mo_any[object_class]
         for mapping in mappings:
             await self.import_single_entity(
-                mapping, dn, template_context={}, dry_run=False
+                mapping, ldap_object, template_context={}, dry_run=False
             )
 
     @handle_exclusively_decorator(
-        key=lambda self, mapping, dn, template_context, dry_run: dn
+        key=lambda self, mapping, ldap_object, template_context, dry_run: ldap_object.dn
     )
     async def import_single_entity(
         self,
         mapping: LDAP2MOMapping,
-        dn: DN,
+        ldap_object: LdapObject,
         template_context: dict[str, Any],
         dry_run: bool,
     ) -> None:
+        dn = ldap_object.dn
         logger.info("Loading object", mo_class=mapping.as_mo_class(), dn=dn)
         loaded_object = await get_ldap_object(
             ldap_connection=self.ldap_connection,
             dn=dn,
             attributes=set(mapping.ldap_attributes) - {"dn"},
         )
+
         logger.info(
             "Loaded object",
             mo_class=mapping.as_mo_class(),
