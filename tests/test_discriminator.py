@@ -502,7 +502,6 @@ async def context(sync_tool_and_context: tuple[SyncTool, Context]) -> Context:
         pytest.param(
             False,
             [
-                "Found DN",
                 "Import to MO filtered",
                 "Import checks executed",
             ],
@@ -527,7 +526,6 @@ async def context(sync_tool_and_context: tuple[SyncTool, Context]) -> Context:
         pytest.param(
             True,
             [
-                "Found DN",
                 "Found DN",
                 "Found DN",
                 "Import to MO filtered",
