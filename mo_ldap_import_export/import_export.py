@@ -443,7 +443,7 @@ class SyncTool:
 
         # Get the employee's UUID (if they exists)
         try:
-            employee_uuid = await self.dataloader.find_mo_employee_uuid(dn)
+            employee_uuid = await self.dataloader.find_mo_employee_uuid(ldap_object)
         except InvalidCPR:  # pragma: no cover
             if self.settings.ldap_to_mo_legacy_skip_invalid_cpr_accounts:
                 return

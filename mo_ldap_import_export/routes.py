@@ -495,6 +495,17 @@ def construct_router(settings: Settings) -> APIRouter:
         if start_at:
             uuids = [uuid for uuid in uuids if uuid > start_at]
 
+        attributes_to_fetch = {"objectClass", settings.ldap_unique_id_field}
+        if settings.ldap_cpr_attribute:
+            attributes_to_fetch.add(settings.ldap_cpr_attribute)
+
+        if settings.conversion_mapping.ldap_to_mo:
+            attributes_to_fetch |= {
+                attr
+                for mapping in settings.conversion_mapping.ldap_to_mo.values()
+                for attr in mapping.ldap_attributes
+            }
+
         async def process_uuid(uuid: LDAPUUID) -> dict[str, Any]:
             try:
                 dn = await sync_tool.dataloader.ldapapi.get_ldap_dn(uuid)
@@ -503,19 +514,19 @@ def construct_router(settings: Settings) -> APIRouter:
                         "__ldap_uuid": uuid,
                         "message": "No matching DN",
                     }
-                # Ignore changes to non-employee objects
-                ldap_object_classes = (
-                    await sync_tool.dataloader.ldapapi.get_attribute_by_dn(
-                        dn, "objectClass"
-                    )
+                ldap_object = await sync_tool.dataloader.ldapapi.get_object_by_dn(
+                    dn, attributes=attributes_to_fetch
                 )
+                # Ignore changes to non-employee objects
+                assert hasattr(ldap_object, "objectClass")
+                ldap_object_classes = ldap_object.objectClass
+
                 employee_object_class = settings.ldap_object_class
                 if employee_object_class not in ldap_object_classes:  # pragma: no cover
                     return {
                         "__ldap_uuid": uuid,
                         "message": "Skipping non-employee",
                     }
-                ldap_object = await sync_tool.dataloader.ldapapi.get_object_by_dn(dn)
                 await sync_tool.import_single_user(ldap_object, dry_run=True)
                 return {
                     "__ldap_uuid": uuid,
@@ -547,7 +558,21 @@ def construct_router(settings: Settings) -> APIRouter:
         dn = await sync_tool.dataloader.ldapapi.get_ldap_dn(uuid)
         if dn is None:
             return
-        ldap_object = await sync_tool.dataloader.ldapapi.get_object_by_dn(dn)
+        settings = sync_tool.settings
+        attributes = {settings.ldap_unique_id_field}
+        if settings.ldap_cpr_attribute:
+            attributes.add(settings.ldap_cpr_attribute)
+
+        if settings.conversion_mapping.ldap_to_mo:
+            attributes |= {
+                attr
+                for mapping in settings.conversion_mapping.ldap_to_mo.values()
+                for attr in mapping.ldap_attributes
+            }
+
+        ldap_object = await sync_tool.dataloader.ldapapi.get_object_by_dn(
+            dn, attributes=attributes
+        )
         await sync_tool.import_single_user(ldap_object, dry_run=True)
 
     @router.get("/Inspect/mo/uuid2dn/{uuid}", status_code=200, tags=["LDAP"])

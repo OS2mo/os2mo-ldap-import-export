@@ -1153,6 +1153,19 @@ def construct_filters_dict(dataloader: DataLoader) -> dict[str, Any]:
     }
 
 
+async def find_mo_employee_uuid(dataloader: DataLoader, dn: DN) -> EmployeeUUID | None:
+    # This function is used in Jinja templates, where we do not have an LdapObject
+    # already available, so we fetch it here.
+    # We fetch the CPR attribute and the unique ID field to satisfy the assertions
+    # in dataloader.find_mo_employee_uuid.
+    attributes = {dataloader.settings.ldap_unique_id_field}
+    if dataloader.settings.ldap_cpr_attribute:
+        attributes.add(dataloader.settings.ldap_cpr_attribute)
+
+    ldap_object = await dataloader.ldapapi.get_object_by_dn(dn, attributes=attributes)
+    return await dataloader.find_mo_employee_uuid(ldap_object)
+
+
 def construct_globals_dict(
     settings: Settings, dataloader: DataLoader
 ) -> dict[str, Any]:
@@ -1233,7 +1246,7 @@ def construct_globals_dict(
         ),
         "refresh": partial(refresh, graphql_client),
         "refresh_ldap": partial(refresh_ldap, settings, graphql_client),
-        "find_mo_employee_uuid": dataloader.find_mo_employee_uuid,
+        "find_mo_employee_uuid": partial(find_mo_employee_uuid, dataloader),
         "resolve_dar_address": partial(resolve_dar_address, graphql_client),
         "get_legacy_manager_person_uuid": partial(
             get_legacy_manager_person_uuid, moapi
