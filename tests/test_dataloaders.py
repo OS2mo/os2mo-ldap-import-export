@@ -692,17 +692,24 @@ async def test_convert_ldap_uuids_to_dns(
     dataloader: DataLoader,
     ldap_dns: list[str],
 ) -> None:
-    dataloader.ldapapi.get_ldap_dn = AsyncMock()  # type: ignore
-    dataloader.ldapapi.get_ldap_dn.side_effect = ldap_dns
+    dataloader.ldapapi.get_object_by_uuid = AsyncMock()  # type: ignore
+    dataloader.ldapapi.get_object_by_uuid.side_effect = [
+        LdapObject(dn=dn) for dn in ldap_dns
+    ]
 
     uuids = {cast(LDAPUUID, uuid4()) for _ in ldap_dns}
-    dns = await dataloader.ldapapi.convert_ldap_uuids_to_dns(uuids)
-    assert dns == dict(zip(uuids, ldap_dns, strict=False))
+    result_map = await dataloader.ldapapi.convert_ldap_uuids_to_dns(uuids)
+    assert len(result_map) == len(ldap_dns)
+    assert set(result_map.keys()) == uuids
+    assert {obj.dn for obj in result_map.values() if obj is not None} == set(ldap_dns)
 
 
 async def test_convert_ldap_uuids_to_dns_exception(dataloader: DataLoader) -> None:
-    dataloader.ldapapi.get_ldap_dn = AsyncMock()  # type: ignore
-    dataloader.ldapapi.get_ldap_dn.side_effect = ["CN=foo", ValueError("BOOM")]
+    dataloader.ldapapi.get_object_by_uuid = AsyncMock()  # type: ignore
+    dataloader.ldapapi.get_object_by_uuid.side_effect = [
+        LdapObject(dn="CN=foo"),
+        ValueError("BOOM"),
+    ]
 
     with pytest.raises(ValueError) as exc_info:
         await dataloader.ldapapi.convert_ldap_uuids_to_dns(
@@ -713,7 +720,7 @@ async def test_convert_ldap_uuids_to_dns_exception(dataloader: DataLoader) -> No
     assert isinstance(exc_info.value.__cause__, ExceptionGroup)
     assert len(exc_info.value.__cause__.exceptions) == 1
 
-    dataloader.ldapapi.get_ldap_dn.side_effect = [
+    dataloader.ldapapi.get_object_by_uuid.side_effect = [
         ValueError("BANG"),
         ValueError("BOOM"),
     ]
@@ -1295,10 +1302,14 @@ async def test_find_mo_employee_dn_by_itsystem(
     }
 
     dn = "CN=foo"
-    dataloader.ldapapi.get_ldap_dn = AsyncMock()  # type: ignore
-    dataloader.ldapapi.get_ldap_dn.return_value = dn
+    dataloader.ldapapi.convert_ldap_uuids_to_dns = AsyncMock()  # type: ignore
+    dataloader.ldapapi.convert_ldap_uuids_to_dns.return_value = {
+        LDAPUUID(str(ituser_uuid)): LdapObject(dn=dn, objectGUID=str(ituser_uuid))
+    }
 
     result = await dataloader.find_mo_employee_dn_by_itsystem(employee_uuid)
     assert result == {dn}
 
-    dataloader.ldapapi.get_ldap_dn.assert_called_once_with(ituser_uuid)
+    dataloader.ldapapi.convert_ldap_uuids_to_dns.assert_called_once_with(
+        {LDAPUUID(str(ituser_uuid))}
+    )

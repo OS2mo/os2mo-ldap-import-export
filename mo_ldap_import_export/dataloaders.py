@@ -147,12 +147,14 @@ class DataLoader:
         it_users = await self.moapi.load_mo_employee_it_users(uuid, it_system_uuid)
         ldap_uuid_ituser_map = extract_unique_ldap_uuids(it_users)
         ldap_uuids = set(ldap_uuid_ituser_map.keys())
-        uuid_dn_map = await self.ldapapi.convert_ldap_uuids_to_dns(ldap_uuids)
+
+        uuid_ldap_object_map = await self.ldapapi.convert_ldap_uuids_to_dns(ldap_uuids)
 
         # Find the LDAP UUIDs that could not be mapped to DNs
         missing_dn_uuids = {
-            ldap_uuid for ldap_uuid, dn in uuid_dn_map.items() if dn is None
+            ldap_uuid for ldap_uuid, obj in uuid_ldap_object_map.items() if obj is None
         }
+
         # Find the MO UUIDs referring to the LDAP UUIDs that could not be found
         missing_dn_mo_uuid = {
             ldap_uuid_ituser_map[ldap_uuid].uuid for ldap_uuid in missing_dn_uuids
@@ -163,8 +165,7 @@ class DataLoader:
                 logger.info("Terminating correlation link it-user", uuid=mo_uuid)
                 tg.create_task(self.moapi.terminate_ituser(mo_uuid, mo_today()))
 
-        dns = set(uuid_dn_map.values())
-        dns.discard(None)
+        dns = {obj.dn for obj in uuid_ldap_object_map.values() if obj is not None}
         # No DNs, no problem
         if not dns:
             return set()

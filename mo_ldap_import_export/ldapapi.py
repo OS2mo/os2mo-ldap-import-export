@@ -284,11 +284,12 @@ class LDAPAPI:
 
     async def convert_ldap_uuids_to_dns(
         self, ldap_uuids: set[LDAPUUID]
-    ) -> dict[LDAPUUID, DN | None]:
+    ) -> dict[LDAPUUID, LdapObject | None]:
         try:
             async with asyncio.TaskGroup() as tg:
                 tasks = {
-                    uuid: tg.create_task(self.get_ldap_dn(uuid)) for uuid in ldap_uuids
+                    uuid: tg.create_task(self.get_object_by_uuid(uuid, set()))
+                    for uuid in ldap_uuids
                 }
         except Exception as e:
             raise ValueError("Exceptions during UUID2DN translation") from e
