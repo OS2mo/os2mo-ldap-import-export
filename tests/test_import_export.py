@@ -78,7 +78,7 @@ async def test_listen_to_changes_in_employees_no_dn(
     dataloader: AsyncMock, sync_tool: SyncTool
 ) -> None:
     employee_uuid = uuid4()
-    dataloader.find_mo_employee_dn.return_value = set()
+    dataloader.find_mo_employee_dn.return_value = []
     dataloader.make_mo_employee_dn.side_effect = RequeueException("Not found")
 
     template = AsyncMock()
@@ -524,7 +524,7 @@ async def test_get_primary_engagement(
 
 
 async def test_find_best_dn(sync_tool: SyncTool) -> None:
-    sync_tool.dataloader.find_mo_employee_dn.return_value = set()  # type: ignore
+    sync_tool.dataloader.find_mo_employee_dn.return_value = []  # type: ignore
     sync_tool.dataloader._find_best_dn = partial(  # type: ignore
         DataLoader._find_best_dn, sync_tool.dataloader
     )

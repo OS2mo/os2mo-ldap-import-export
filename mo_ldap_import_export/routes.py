@@ -744,12 +744,12 @@ def construct_router(settings: Settings) -> APIRouter:
         ldapapi = dataloader.ldapapi
 
         ldap_objects = await ldapapi.cpr2dns(cpr_number, set())
-        dns = {obj.dn for obj in ldap_objects}
-        if not dns:
+        if not ldap_objects:
             logger.info("Found no DNs for cpr_number")
             raise HTTPException(status_code=404, detail="No DNs found for CPR number")
 
-        dns = await filter_dns(settings, ldap_connection, dns)
+        ldap_objects = await filter_dns(settings, ldap_connection, ldap_objects)
+        dns = {obj.dn for obj in ldap_objects}
 
         # SD-changed-at only calls this endpoint when creating users in MO (to
         # know which UUID to use), but apply_discriminator requires a MO person
@@ -793,12 +793,12 @@ def construct_router(settings: Settings) -> APIRouter:
         attributes = {settings.ldap_unique_id_field, account_name}
 
         ldap_objects = await dataloader.find_mo_employee_dn(uuid)
+        ldap_objects = await filter_dns(settings, ldap_connection, ldap_objects)
         dns = {obj.dn for obj in ldap_objects}
         if not dns:
             logger.info("Found no DNs for cpr_number")
             raise HTTPException(status_code=404, detail="No DNs found for CPR number")
 
-        dns = await filter_dns(settings, ldap_connection, dns)
         best_dn = await apply_discriminator(
             settings, ldap_connection, dataloader.moapi, uuid, dns
         )
