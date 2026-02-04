@@ -204,7 +204,8 @@ class DataLoader:
         )
         dns = set()
         with suppress(NoObjectsReturnedException):
-            dns = await self.ldapapi.cpr2dns(cpr_number)
+            ldap_objects = await self.ldapapi.cpr2dns(cpr_number)
+            dns = {obj.dn for obj in ldap_objects}
         if not dns:
             return set()
         logger.info(

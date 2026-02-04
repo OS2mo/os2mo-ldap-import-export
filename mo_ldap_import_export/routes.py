@@ -747,7 +747,8 @@ def construct_router(settings: Settings) -> APIRouter:
 
         ldapapi = dataloader.ldapapi
 
-        dns = await ldapapi.cpr2dns(cpr_number)
+        ldap_objects = await ldapapi.cpr2dns(cpr_number)
+        dns = {obj.dn for obj in ldap_objects}
         if not dns:
             logger.info("Found no DNs for cpr_number")
             raise HTTPException(status_code=404, detail="No DNs found for CPR number")

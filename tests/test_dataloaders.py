@@ -1215,7 +1215,7 @@ async def test_find_mo_employee_dn_by_cpr_number(
     route.result = {"employees": {"objects": [{"validities": [employee]}]}}
 
     dataloader.ldapapi.cpr2dns = AsyncMock()  # type: ignore
-    dataloader.ldapapi.cpr2dns.return_value = {dn for dn in (dns or [])}
+    dataloader.ldapapi.cpr2dns.return_value = [LdapObject(dn=dn) for dn in (dns or [])]
 
     result = await dataloader.find_mo_employee_dn_by_cpr_number(employee_uuid)
     assert result == expected

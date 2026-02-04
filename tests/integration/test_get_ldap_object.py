@@ -71,7 +71,7 @@ async def test_to_ldap(
     )
     # Create the user and fetch the DN
     await trigger_sync(EmployeeUUID(mo_person.uuid))
-    dn = one(await ldap_api.cpr2dns(CPRNumber(mo_person_cpr_number)))
+    dn = one(await ldap_api.cpr2dns(CPRNumber(mo_person_cpr_number))).dn
 
     # Check that the created object is as expected
     expected = {

@@ -321,7 +321,7 @@ class LDAPAPI:
         cpr_number = str(raw_cpr_number)
         return CPRNumber(cpr_number)
 
-    async def cpr2dns(self, cpr_number: CPRNumber) -> set[DN]:
+    async def cpr2dns(self, cpr_number: CPRNumber) -> list[LdapObject]:
         if not self.settings.ldap_cpr_attribute:
             raise NoObjectsReturnedException("cpr_field is not configured")
 
@@ -343,14 +343,13 @@ class LDAPAPI:
         try:
             search_results = await object_search(searchParameters, self.connection)
         except LDAPNoSuchObjectResult:
-            return set()
+            return []
         ldap_objects: list[LdapObject] = [
             await make_ldap_object(search_result, self.connection)
             for search_result in search_results
         ]
-        dns = {obj.dn for obj in ldap_objects}
-        logger.info("Found LDAP(s) object", dns=dns)
-        return set(dns)
+        logger.info("Found LDAP(s) object", dns={obj.dn for obj in ldap_objects})
+        return ldap_objects
 
     async def modify_ldap_object(
         self,
