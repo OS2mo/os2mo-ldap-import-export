@@ -17,6 +17,9 @@ from fastramqpi.context import Context
 from ldap3 import MOCK_SYNC
 from ldap3 import Connection
 from ldap3 import Server
+from ldap3.core.exceptions import LDAPInvalidDnError
+from ldap3.utils.dn import parse_dn
+from ldap3.utils.dn import safe_dn
 from more_itertools import collapse
 from pydantic import parse_obj_as
 from structlog.testing import capture_logs
@@ -31,7 +34,6 @@ from mo_ldap_import_export.ldap import check_ou_in_list_of_ous
 from mo_ldap_import_export.ldap import configure_ldap_connection
 from mo_ldap_import_export.ldap import construct_server
 from mo_ldap_import_export.ldap import get_client_strategy
-from mo_ldap_import_export.ldap import is_dn
 from mo_ldap_import_export.ldap import is_uuid
 from mo_ldap_import_export.ldap import ldap_healthcheck
 from mo_ldap_import_export.ldap import paged_search
@@ -292,6 +294,21 @@ async def test_ldap_healthcheck_exception(ldap_connection: MagicMock) -> None:
 
     check = await ldap_healthcheck(context)
     assert check is False
+
+
+def is_dn(value: Any) -> bool:
+    """
+    Determine if a value is a dn (distinguished name) string
+    """
+    if not isinstance(value, str):
+        return False
+
+    try:
+        safe_dn(value)
+        parse_dn(value)
+    except LDAPInvalidDnError:
+        return False
+    return True
 
 
 async def test_is_dn():

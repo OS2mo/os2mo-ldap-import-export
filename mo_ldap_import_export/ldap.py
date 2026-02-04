@@ -28,15 +28,12 @@ from ldap3 import Server
 from ldap3 import ServerPool
 from ldap3 import Tls
 from ldap3 import set_config_parameter
-from ldap3.core.exceptions import LDAPInvalidDnError
 from ldap3.core.exceptions import LDAPNoSuchObjectResult
 from ldap3.operation.search import FilterNode
 from ldap3.operation.search import compile_filter
 from ldap3.operation.search import parse_filter
 from ldap3.protocol.rfc4511 import Filter as RFC4511Filter
 from ldap3.utils.conv import escape_filter_chars
-from ldap3.utils.dn import parse_dn
-from ldap3.utils.dn import safe_dn
 from more_itertools import one
 from more_itertools import only
 from pyasn1.codec.ber import encoder as ber_encoder
@@ -759,21 +756,6 @@ async def single_object_search(
         too_short=no_results_exception,
         too_long=too_long_exception,
     )
-
-
-def is_dn(value):
-    """
-    Determine if a value is a dn (distinguished name) string
-    """
-    if not isinstance(value, str):
-        return False
-
-    try:
-        safe_dn(value)
-        parse_dn(value)
-    except LDAPInvalidDnError:
-        return False
-    return True
 
 
 async def get_ldap_object(
