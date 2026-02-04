@@ -44,19 +44,15 @@ async def test_convert_ldap_uuids_to_dns(
             "log_level": "info",
             "unique_ldap_uuid": missing_uuid,
         },
-        {
-            "event": "Unable to convert LDAP UUID to DN",
-            "log_level": "warning",
-            "uuid": missing_uuid,
-        },
     ]
 
     # Convert existing LDAP UUID
     with capture_logs() as cap_logs:
         result = await ldap_api.convert_ldap_uuids_to_dns({ldap_person_uuid})
-        assert result == {
-            ldap_person_uuid: "uid=abk,ou=os2mo,o=magenta,dc=magenta,dc=dk"
-        }
+        assert len(result) == 1
+        obj = result[ldap_person_uuid]
+        assert obj is not None
+        assert obj.dn == "uid=abk,ou=os2mo,o=magenta,dc=magenta,dc=dk"
 
     assert cap_logs == [
         {
@@ -71,10 +67,11 @@ async def test_convert_ldap_uuids_to_dns(
         result = await ldap_api.convert_ldap_uuids_to_dns(
             {ldap_person_uuid, missing_uuid}
         )
-        assert result == {
-            missing_uuid: None,
-            ldap_person_uuid: "uid=abk,ou=os2mo,o=magenta,dc=magenta,dc=dk",
-        }
+        assert len(result) == 2
+        assert result[missing_uuid] is None
+        obj = result[ldap_person_uuid]
+        assert obj is not None
+        assert obj.dn == "uid=abk,ou=os2mo,o=magenta,dc=magenta,dc=dk"
 
     TestCase().assertCountEqual(
         cap_logs,
@@ -88,11 +85,6 @@ async def test_convert_ldap_uuids_to_dns(
                 "event": "Looking for LDAP object",
                 "log_level": "info",
                 "unique_ldap_uuid": missing_uuid,
-            },
-            {
-                "event": "Unable to convert LDAP UUID to DN",
-                "log_level": "warning",
-                "uuid": missing_uuid,
             },
         ],
     )

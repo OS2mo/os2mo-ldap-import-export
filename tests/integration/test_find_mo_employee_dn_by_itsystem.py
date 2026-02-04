@@ -147,11 +147,6 @@ async def test_find_mo_employee_dn_by_itsystem_ituser_termination(
             "unique_ldap_uuid": ldap_uuid,
         },
         {
-            "event": "Unable to convert LDAP UUID to DN",
-            "log_level": "warning",
-            "uuid": ldap_uuid,
-        },
-        {
             "event": "Terminating correlation link it-user",
             "log_level": "info",
             "uuid": ANY,
