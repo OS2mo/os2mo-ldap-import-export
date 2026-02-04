@@ -26,7 +26,6 @@ from .ldap import LDAPConnection
 from .ldap import construct_assertion_control
 from .ldap import construct_assertion_control_filter
 from .ldap import get_ldap_object
-from .ldap import make_ldap_object
 from .ldap import object_search
 from .ldap import single_object_search
 from .ldap_classes import LdapObject
@@ -108,9 +107,7 @@ class LDAPAPI:
             search_result = await single_object_search(
                 searchParameters, self.connection
             )
-            return await make_ldap_object(
-                search_result, self.ldap_connection.connection, nest=False
-            )
+            return LdapObject(dn=search_result["dn"], **search_result["attributes"])
         return None
 
     async def get_ldap_dn(self, unique_ldap_uuid: LDAPUUID) -> DN | None:
@@ -347,7 +344,7 @@ class LDAPAPI:
         except LDAPNoSuchObjectResult:
             return []
         ldap_objects: list[LdapObject] = [
-            await make_ldap_object(search_result, self.connection)
+            LdapObject(dn=search_result["dn"], **search_result["attributes"])
             for search_result in search_results
         ]
         logger.info("Found LDAP(s) object", dns={obj.dn for obj in ldap_objects})
@@ -487,9 +484,7 @@ class LDAPAPI:
     async def get_object_by_dn(
         self, dn: DN, attributes: set | None = None
     ) -> LdapObject:
-        return await get_ldap_object(
-            self.ldap_connection.connection, dn, attributes, nest=False
-        )
+        return await get_ldap_object(self.ldap_connection.connection, dn, attributes)
 
     async def get_attribute_by_dn(self, dn: DN, attribute: str) -> Any:
         ldap_object = await self.get_object_by_dn(dn, {attribute})
