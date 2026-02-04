@@ -277,13 +277,13 @@ async def test_rolebinding_sync(
     await trigger_mo_to_ldap_sync("person2person", magnus.uuid)
 
     # Fetch DNs for users
-    alvida_dn = one(await ldap_api.cpr2dns(CPRNumber(alvida_cpr))).dn
+    alvida_dn = one(await ldap_api.cpr2dns(CPRNumber(alvida_cpr), set())).dn
     assert alvida_dn == f"cn={alvida_cpr},ou=os2mo,o=magenta,dc=magenta,dc=dk"
-    eline_dn = one(await ldap_api.cpr2dns(CPRNumber(eline_cpr))).dn
+    eline_dn = one(await ldap_api.cpr2dns(CPRNumber(eline_cpr), set())).dn
     assert eline_dn == f"cn={eline_cpr},ou=os2mo,o=magenta,dc=magenta,dc=dk"
-    bruce_dn = one(await ldap_api.cpr2dns(CPRNumber(bruce_cpr))).dn
+    bruce_dn = one(await ldap_api.cpr2dns(CPRNumber(bruce_cpr), set())).dn
     assert bruce_dn == f"cn={bruce_cpr},ou=os2mo,o=magenta,dc=magenta,dc=dk"
-    magnus_dn = one(await ldap_api.cpr2dns(CPRNumber(magnus_cpr))).dn
+    magnus_dn = one(await ldap_api.cpr2dns(CPRNumber(magnus_cpr), set())).dn
     assert magnus_dn == f"cn={magnus_cpr},ou=os2mo,o=magenta,dc=magenta,dc=dk"
 
     # Trigger a full synchronization
