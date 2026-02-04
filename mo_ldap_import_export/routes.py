@@ -799,15 +799,15 @@ def construct_router(settings: Settings) -> APIRouter:
             logger.info("Found no DNs for cpr_number")
             raise HTTPException(status_code=404, detail="No DNs found for CPR number")
 
-        best_dn = await apply_discriminator(
-            settings, ldap_connection, dataloader.moapi, uuid, dns
+        best_object = await apply_discriminator(
+            settings, ldap_connection, dataloader.moapi, uuid, ldap_objects
         )
-        if best_dn is None:
+        if best_object is None:
             logger.info("No DNs survived discriminator")
             raise HTTPException(status_code=404, detail="No DNs survived discriminator")
 
         # Note: get_ldap_object handles ADs non-standard entryUUID lookup format
-        ldap_object = await get_ldap_object(ldap_connection, best_dn, attributes)
+        ldap_object = await get_ldap_object(ldap_connection, best_object.dn, attributes)
         return {
             "dn": ldap_object.dn,
             # UUID parsed and then stringifed to handle ADs non-standard UUID formatting
