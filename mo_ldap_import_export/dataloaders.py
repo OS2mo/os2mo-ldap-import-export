@@ -177,8 +177,8 @@ class DataLoader:
         )
         return cast(set[DN], dns)
 
-    async def find_mo_employee_dn_by_cpr_number(self, uuid: UUID) -> set[DN]:
-        """Tries to find the LDAP DNs belonging to a MO employee via CPR numbers.
+    async def find_mo_employee_dn_by_cpr_number(self, uuid: UUID) -> list[LdapObject]:
+        """Tries to find the LDAP objects belonging to a MO employee via CPR numbers.
 
         Args:
             uuid: UUID of the employee to try to find DNs for.
@@ -187,7 +187,7 @@ class DataLoader:
             NoObjectsReturnedException: If the MO employee could not be found.
 
         Returns:
-            A potentially empty set of DNs.
+            A potentially empty list of LdapObjects.
         """
         # If the employee has a cpr-no, try using that to find matchind DNs
         employee = await self.moapi.load_mo_employee(uuid)
@@ -196,24 +196,23 @@ class DataLoader:
         cpr_number = CPRNumber(employee.cpr_number) if employee.cpr_number else None
         # No CPR, no problem
         if not cpr_number:
-            return set()
+            return []
 
         logger.info(
             "Attempting CPR number lookup",
             employee_uuid=uuid,
         )
-        dns = set()
+        ldap_objects: list[LdapObject] = []
         with suppress(NoObjectsReturnedException):
             ldap_objects = await self.ldapapi.cpr2dns(cpr_number, set())
-            dns = {obj.dn for obj in ldap_objects}
-        if not dns:
-            return set()
+        if not ldap_objects:
+            return []
         logger.info(
             "Found DN(s) using CPR number lookup",
-            dns=dns,
+            dns={obj.dn for obj in ldap_objects},
             employee_uuid=uuid,
         )
-        return dns
+        return ldap_objects
 
     async def find_mo_employee_dn(self, uuid: UUID) -> set[DN]:
         """Tries to find the LDAP DNs belonging to a MO employee.
@@ -237,10 +236,11 @@ class DataLoader:
         # TODO: We may want to expand this in the future to also check for half-created
         #       objects, to support scenarios where the application may crash after
         #       creating an LDAP account, but before making a MO ITUser.
-        ituser_dns, cpr_number_dns = await asyncio.gather(
+        ituser_dns, cpr_number_objects = await asyncio.gather(
             self.find_mo_employee_dn_by_itsystem(uuid),
             self.find_mo_employee_dn_by_cpr_number(uuid),
         )
+        cpr_number_dns = {obj.dn for obj in cpr_number_objects}
         dns = ituser_dns | cpr_number_dns
         if dns:
             logger.info("Found DNs for MO employee", employee_uuid=uuid, dns=dns)

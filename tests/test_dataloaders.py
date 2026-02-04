@@ -492,7 +492,7 @@ async def test_find_mo_employee_dn(dataloader: MagicMock) -> None:
     dataloader.find_mo_employee_dn_by_itsystem.return_value = set()
 
     dataloader.find_mo_employee_dn_by_cpr_number = AsyncMock()
-    dataloader.find_mo_employee_dn_by_cpr_number.return_value = set()
+    dataloader.find_mo_employee_dn_by_cpr_number.return_value = []
 
     with capture_logs() as cap_logs:
         result = await dataloader.find_mo_employee_dn(employee_uuid)
@@ -504,7 +504,10 @@ async def test_find_mo_employee_dn(dataloader: MagicMock) -> None:
     ]
 
     dataloader.find_mo_employee_dn_by_itsystem.return_value = {"A", "B"}
-    dataloader.find_mo_employee_dn_by_cpr_number.return_value = {"C", "D"}
+    dataloader.find_mo_employee_dn_by_cpr_number.return_value = [
+        LdapObject(dn="C"),
+        LdapObject(dn="D"),
+    ]
 
     with capture_logs() as cap_logs:
         result = await dataloader.find_mo_employee_dn(employee_uuid)
@@ -1218,7 +1221,7 @@ async def test_find_mo_employee_dn_by_cpr_number(
     dataloader.ldapapi.cpr2dns.return_value = [LdapObject(dn=dn) for dn in (dns or [])]
 
     result = await dataloader.find_mo_employee_dn_by_cpr_number(employee_uuid)
-    assert result == expected
+    assert {obj.dn for obj in result} == expected
 
     if dns is not None:
         dataloader.ldapapi.cpr2dns.assert_called_once_with(cpr_number, set())
