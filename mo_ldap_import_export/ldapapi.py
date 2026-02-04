@@ -321,7 +321,9 @@ class LDAPAPI:
         cpr_number = str(raw_cpr_number)
         return CPRNumber(cpr_number)
 
-    async def cpr2dns(self, cpr_number: CPRNumber) -> list[LdapObject]:
+    async def cpr2dns(
+        self, cpr_number: CPRNumber, attributes: set[str]
+    ) -> list[LdapObject]:
         if not self.settings.ldap_cpr_attribute:
             raise NoObjectsReturnedException("cpr_field is not configured")
 
@@ -338,7 +340,7 @@ class LDAPAPI:
         searchParameters = {
             "search_base": search_bases,
             "search_filter": f"(&({object_class_filter})({cpr_filter}))",
-            "attributes": [],
+            "attributes": list(attributes),
         }
         try:
             search_results = await object_search(searchParameters, self.connection)

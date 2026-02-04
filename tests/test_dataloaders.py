@@ -1221,7 +1221,7 @@ async def test_find_mo_employee_dn_by_cpr_number(
     assert result == expected
 
     if dns is not None:
-        dataloader.ldapapi.cpr2dns.assert_called_once_with(cpr_number)
+        dataloader.ldapapi.cpr2dns.assert_called_once_with(cpr_number, set())
 
 
 @pytest.mark.envvar({"LDAP_IT_SYSTEM": "ADUUID"})

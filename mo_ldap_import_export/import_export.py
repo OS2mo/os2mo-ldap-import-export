@@ -488,7 +488,7 @@ class SyncTool:
             cpr_number = self.dataloader.ldapapi.ldap_object2cpr(ldap_object)
             # Only attempt to load accounts if we have a CPR number to do so with
             if cpr_number:
-                ldap_objects = await self.dataloader.ldapapi.cpr2dns(cpr_number)
+                ldap_objects = await self.dataloader.ldapapi.cpr2dns(cpr_number, set())
                 dns = {obj.dn for obj in ldap_objects}
 
         # At this point 'employee_uuid' is an UUID that may or may not be in MO

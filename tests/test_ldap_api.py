@@ -20,5 +20,5 @@ async def test_cpr2dns_not_configured(monkeypatch: pytest.MonkeyPatch) -> None:
     ldapapi = LDAPAPI(settings, connection)
 
     with pytest.raises(NoObjectsReturnedException) as exc_info:
-        await ldapapi.cpr2dns(CPRNumber("0101700000"))
+        await ldapapi.cpr2dns(CPRNumber("0101700000"), set())
     assert "cpr_field is not configured" in str(exc_info.value)
