@@ -4,7 +4,6 @@
 
 import asyncio
 from contextlib import suppress
-from typing import cast
 from uuid import UUID
 
 import structlog
@@ -126,14 +125,14 @@ class DataLoader:
         logger.info("No matching employee", dn=dn)
         return None
 
-    async def find_mo_employee_dn_by_itsystem(self, uuid: UUID) -> set[DN]:
-        """Tries to find the LDAP DNs belonging to a MO employee via ITUsers.
+    async def find_mo_employee_dn_by_itsystem(self, uuid: UUID) -> list[LdapObject]:
+        """Tries to find the LDAP objects belonging to a MO employee via ITUsers.
 
         Args:
             uuid: UUID of the employee to try to find DNs for.
 
         Returns:
-            A potentially empty set of DNs.
+            A potentially empty list of LdapObjects.
         """
         # TODO: How do we know if the ITUser is up-to-date with the newest DNs in AD?
 
@@ -141,7 +140,7 @@ class DataLoader:
         raw_it_system_uuid = await self.moapi.get_ldap_it_system_uuid()
         # If it does not exist, we cannot fetch users for it
         if raw_it_system_uuid is None:
-            return set()
+            return []
 
         it_system_uuid = UUID(raw_it_system_uuid)
         it_users = await self.moapi.load_mo_employee_it_users(uuid, it_system_uuid)
@@ -165,18 +164,18 @@ class DataLoader:
                 logger.info("Terminating correlation link it-user", uuid=mo_uuid)
                 tg.create_task(self.moapi.terminate_ituser(mo_uuid, mo_today()))
 
-        dns = {obj.dn for obj in uuid_ldap_object_map.values() if obj is not None}
+        ldap_objects = [obj for obj in uuid_ldap_object_map.values() if obj is not None]
         # No DNs, no problem
-        if not dns:
-            return set()
+        if not ldap_objects:
+            return []
 
         # If we have one or more ITUsers (with valid dns), return those
         logger.info(
             "Found DN(s) using ITUser lookup",
-            dns=dns,
+            dns={obj.dn for obj in ldap_objects},
             employee_uuid=uuid,
         )
-        return cast(set[DN], dns)
+        return ldap_objects
 
     async def find_mo_employee_dn_by_cpr_number(self, uuid: UUID) -> list[LdapObject]:
         """Tries to find the LDAP objects belonging to a MO employee via CPR numbers.
@@ -237,11 +236,12 @@ class DataLoader:
         # TODO: We may want to expand this in the future to also check for half-created
         #       objects, to support scenarios where the application may crash after
         #       creating an LDAP account, but before making a MO ITUser.
-        ituser_dns, cpr_number_objects = await asyncio.gather(
+        ituser_objects, cpr_number_objects = await asyncio.gather(
             self.find_mo_employee_dn_by_itsystem(uuid),
             self.find_mo_employee_dn_by_cpr_number(uuid),
         )
         cpr_number_dns = {obj.dn for obj in cpr_number_objects}
+        ituser_dns = {obj.dn for obj in ituser_objects}
         dns = ituser_dns | cpr_number_dns
         if dns:
             logger.info("Found DNs for MO employee", employee_uuid=uuid, dns=dns)

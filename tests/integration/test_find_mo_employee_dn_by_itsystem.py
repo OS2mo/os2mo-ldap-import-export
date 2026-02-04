@@ -8,6 +8,7 @@ from uuid import UUID
 
 import pytest
 from fastramqpi.context import Context
+from more_itertools import one
 from structlog.testing import capture_logs
 
 from mo_ldap_import_export.dataloaders import DataLoader
@@ -89,8 +90,8 @@ async def test_find_mo_employee_dn_by_itsystem_ituser_termination(
 
     # Cannot find any DNs as the LDAP account is not attached to the mo person
     with capture_logs() as cap_logs:
-        dns = await sync_tool.dataloader.find_mo_employee_dn_by_itsystem(mo_person)
-        assert dns == set()
+        result = await sync_tool.dataloader.find_mo_employee_dn_by_itsystem(mo_person)
+        assert result == []
     assert cap_logs == []
 
     # Ensure that no link exists between the mo person and LDAP account
@@ -109,8 +110,8 @@ async def test_find_mo_employee_dn_by_itsystem_ituser_termination(
 
     # Ensure that we can find the DN now using the mo person
     with capture_logs() as cap_logs:
-        dns = await sync_tool.dataloader.find_mo_employee_dn_by_itsystem(mo_person)
-        assert dns == {dn}
+        result = await sync_tool.dataloader.find_mo_employee_dn_by_itsystem(mo_person)
+        assert one(result).dn == dn
     assert cap_logs == [
         {
             "event": "Looking for LDAP object",
@@ -138,8 +139,8 @@ async def test_find_mo_employee_dn_by_itsystem_ituser_termination(
 
     # Rerun the mapping code, this should delete the link and return no match
     with capture_logs() as cap_logs:
-        dns = await sync_tool.dataloader.find_mo_employee_dn_by_itsystem(mo_person)
-        assert dns == set()
+        result = await sync_tool.dataloader.find_mo_employee_dn_by_itsystem(mo_person)
+        assert result == []
     assert cap_logs == [
         {
             "event": "Looking for LDAP object",

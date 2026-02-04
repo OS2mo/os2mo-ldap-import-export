@@ -489,7 +489,7 @@ async def test_find_mo_employee_dn(dataloader: MagicMock) -> None:
     employee_uuid = uuid4()
 
     dataloader.find_mo_employee_dn_by_itsystem = AsyncMock()
-    dataloader.find_mo_employee_dn_by_itsystem.return_value = set()
+    dataloader.find_mo_employee_dn_by_itsystem.return_value = []
 
     dataloader.find_mo_employee_dn_by_cpr_number = AsyncMock()
     dataloader.find_mo_employee_dn_by_cpr_number.return_value = []
@@ -503,7 +503,10 @@ async def test_find_mo_employee_dn(dataloader: MagicMock) -> None:
         "Unable to find DNs for MO employee",
     ]
 
-    dataloader.find_mo_employee_dn_by_itsystem.return_value = {"A", "B"}
+    dataloader.find_mo_employee_dn_by_itsystem.return_value = [
+        LdapObject(dn="A"),
+        LdapObject(dn="B"),
+    ]
     dataloader.find_mo_employee_dn_by_cpr_number.return_value = [
         LdapObject(dn="C"),
         LdapObject(dn="D"),
@@ -1245,7 +1248,7 @@ async def test_find_mo_employee_dn_by_itsystem_no_itsystem(
     route.result = {"itsystems": {"objects": []}}
 
     result = await dataloader.find_mo_employee_dn_by_itsystem(employee_uuid)
-    assert result == set()
+    assert result == []
 
 
 @pytest.mark.envvar({"LDAP_IT_SYSTEM": "ADUUID"})
@@ -1263,7 +1266,7 @@ async def test_find_mo_employee_dn_by_itsystem_no_match(
     route2.result = {"itusers": {"objects": []}}
 
     result = await dataloader.find_mo_employee_dn_by_itsystem(employee_uuid)
-    assert result == set()
+    assert result == []
 
 
 @pytest.mark.envvar({"LDAP_IT_SYSTEM": "ADUUID"})
@@ -1308,7 +1311,7 @@ async def test_find_mo_employee_dn_by_itsystem(
     }
 
     result = await dataloader.find_mo_employee_dn_by_itsystem(employee_uuid)
-    assert result == {dn}
+    assert one(result).dn == dn
 
     dataloader.ldapapi.convert_ldap_uuids_to_dns.assert_called_once_with(
         {LDAPUUID(str(ituser_uuid))}
