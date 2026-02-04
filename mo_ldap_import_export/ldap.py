@@ -28,15 +28,12 @@ from ldap3 import Server
 from ldap3 import ServerPool
 from ldap3 import Tls
 from ldap3 import set_config_parameter
-from ldap3.core.exceptions import LDAPInvalidDnError
 from ldap3.core.exceptions import LDAPNoSuchObjectResult
 from ldap3.operation.search import FilterNode
 from ldap3.operation.search import compile_filter
 from ldap3.operation.search import parse_filter
 from ldap3.protocol.rfc4511 import Filter as RFC4511Filter
 from ldap3.utils.conv import escape_filter_chars
-from ldap3.utils.dn import parse_dn
-from ldap3.utils.dn import safe_dn
 from more_itertools import one
 from more_itertools import only
 from pyasn1.codec.ber import encoder as ber_encoder
@@ -55,7 +52,6 @@ from .types import RDN
 from .types import EmployeeUUID
 from .utils import combine_dn_strings
 from .utils import ensure_list
-from .utils import is_list
 
 logger = structlog.stdlib.get_logger()
 
@@ -762,33 +758,16 @@ async def single_object_search(
     )
 
 
-def is_dn(value):
-    """
-    Determine if a value is a dn (distinguished name) string
-    """
-    if not isinstance(value, str):
-        return False
-
-    try:
-        safe_dn(value)
-        parse_dn(value)
-    except LDAPInvalidDnError:
-        return False
-    return True
-
-
 async def get_ldap_object(
     ldap_connection: Connection,
     dn: DN,
     attributes: set | None = None,
-    nest: bool = True,
 ) -> LdapObject:
     """Gets a ldap object based on its DN.
 
     Args:
         dn: The DN to read.
         context: The FastRAMQPI context.
-        nest: Whether to also fetch and nest related objects.
         attributes: The set of attributes to read.
 
     Returns:
@@ -806,57 +785,7 @@ async def get_ldap_object(
     search_result = await single_object_search(searchParameters, ldap_connection)
     dn = search_result["dn"]
     logger.info("Found DN", dn=dn)
-    return await make_ldap_object(search_result, ldap_connection, nest=nest)
-
-
-async def make_ldap_object(
-    response: dict, ldap_connection: Connection, nest: bool = True
-) -> LdapObject:
-    """Takes an LDAP response and formats it as an LdapObject.
-
-    Args:
-        response: The LDAP response.
-        context: The FastRAMQPI context.
-        nest: Whether to also fetch and nest related objects.
-
-    Returns:
-        The LDAP object constructed from the response.
-    """
-    attributes = sorted(list(response["attributes"].keys()))
-    ldap_dict = {"dn": response["dn"]}
-
-    async def get_nested_ldap_object(dn):
-        """
-        Gets a ldap object based on its DN - unless we are in a nested loop
-        """
-
-        if nest:
-            logger.info("Loading nested ldap object", dn=dn)
-            return await get_ldap_object(ldap_connection, dn, nest=False)
-        raise Exception("Already running in nested loop")  # pragma: no cover
-
-    def is_other_dn(value):
-        """
-        Determine if the value is a dn (distinguished name)
-        But not the dn of the main object itself
-
-        This is to avoid that the code requests information about itself
-        """
-        return is_dn(value) and value != response["dn"]
-
-    for attribute in attributes:
-        value = response["attributes"][attribute]
-        if is_other_dn(value) and nest:
-            ldap_dict[attribute] = await get_nested_ldap_object(value)
-        elif is_list(value):
-            ldap_dict[attribute] = [
-                (await get_nested_ldap_object(v)) if is_other_dn(v) and nest else v
-                for v in value
-            ]
-        else:
-            ldap_dict[attribute] = value
-
-    return LdapObject(**ldap_dict)
+    return LdapObject(dn=search_result["dn"], **search_result["attributes"])
 
 
 def is_uuid(entity: Any) -> bool:

@@ -406,24 +406,19 @@ def construct_router(settings: Settings) -> APIRouter:
 
     @router.get("/Inspect/dn/{dn}", status_code=200, tags=["LDAP"])
     async def ldap_fetch_object_by_dn(
-        ldap_connection: depends.Connection, dn: DN, nest: bool = False
+        ldap_connection: depends.Connection, dn: DN
     ) -> Any:
-        return encode_result(
-            await get_ldap_object(ldap_connection, dn, {"*"}, nest=nest)
-        )
+        return encode_result(await get_ldap_object(ldap_connection, dn, {"*"}))
 
     @router.get("/Inspect/uuid/{uuid}", status_code=200, tags=["LDAP"])
     async def ldap_fetch_object_by_uuid(
         dataloader: depends.DataLoader,
         ldap_connection: depends.Connection,
         uuid: LDAPUUID,
-        nest: bool = False,
     ) -> Any:
         dn = await dataloader.ldapapi.get_ldap_dn(uuid)
         assert dn is not None
-        return encode_result(
-            await get_ldap_object(ldap_connection, dn, {"*"}, nest=nest)
-        )
+        return encode_result(await get_ldap_object(ldap_connection, dn, {"*"}))
 
     @router.get("/Inspect/mo2ldap/all", status_code=200, tags=["LDAP"])
     async def mo2ldap_templating_all(

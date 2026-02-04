@@ -17,6 +17,9 @@ from fastramqpi.context import Context
 from ldap3 import MOCK_SYNC
 from ldap3 import Connection
 from ldap3 import Server
+from ldap3.core.exceptions import LDAPInvalidDnError
+from ldap3.utils.dn import parse_dn
+from ldap3.utils.dn import safe_dn
 from more_itertools import collapse
 from pydantic import parse_obj_as
 from structlog.testing import capture_logs
@@ -31,10 +34,8 @@ from mo_ldap_import_export.ldap import check_ou_in_list_of_ous
 from mo_ldap_import_export.ldap import configure_ldap_connection
 from mo_ldap_import_export.ldap import construct_server
 from mo_ldap_import_export.ldap import get_client_strategy
-from mo_ldap_import_export.ldap import is_dn
 from mo_ldap_import_export.ldap import is_uuid
 from mo_ldap_import_export.ldap import ldap_healthcheck
-from mo_ldap_import_export.ldap import make_ldap_object
 from mo_ldap_import_export.ldap import paged_search
 from mo_ldap_import_export.ldap import single_object_search
 from mo_ldap_import_export.ldap_classes import LdapObject
@@ -295,6 +296,21 @@ async def test_ldap_healthcheck_exception(ldap_connection: MagicMock) -> None:
     assert check is False
 
 
+def is_dn(value: Any) -> bool:
+    """
+    Determine if a value is a dn (distinguished name) string
+    """
+    if not isinstance(value, str):
+        return False
+
+    try:
+        safe_dn(value)
+        parse_dn(value)
+    except LDAPInvalidDnError:
+        return False
+    return True
+
+
 async def test_is_dn():
     assert is_dn("CN=Harry Styles,OU=Band,DC=Stage") is True
     assert is_dn("foo") is False
@@ -310,68 +326,11 @@ async def test_make_generic_ldap_object(cpr_field: str, context: Context):
         "manager": "CN=Jonie Mitchell,OU=Band,DC=Stage",
     }
 
-    ldap_connection = context["user_context"]["ldap_connection"]
-    ldap_object = await make_ldap_object(response, ldap_connection, nest=False)
+    ldap_object = LdapObject(dn=response["dn"], **response["attributes"])
 
     expected_ldap_object = LdapObject(**response["attributes"], dn=response["dn"])
 
     assert ldap_object == expected_ldap_object
-
-
-async def test_make_nested_ldap_object(cpr_field: str, context: Context):
-    # Here we expect the manager's entry to be another ldap object instead of a string
-    # As well as the band members
-    attributes_without_nests = {
-        "Name": "Harry",
-        "Occupation": "Douchebag",
-    }
-
-    response: dict[str, Any] = {}
-    response["dn"] = "CN=Harry Styles,OU=Band,DC=Stage"
-    response["attributes"] = attributes_without_nests.copy()
-    response["attributes"]["manager"] = "CN=Jonie Mitchell,OU=Band,DC=Stage"
-    response["attributes"]["band_members"] = [
-        "CN=George Harrisson,OU=Band,DC=Stage",
-        "CN=Ringo Starr,OU=Band,DC=Stage",
-    ]
-    response["attributes"][cpr_field] = "0101011234"
-
-    # But we do not expect the manager and band members friends or buddies to be
-    # ldap objects
-    nested_response: dict[str, Any] = {}
-    nested_response["dn"] = "CN=Person with affiliation to Harry, OU=Band, DC=Stage"
-    nested_response["attributes"] = {
-        "Name": "Anonymous",
-        "Occupation": "Slave",
-        "best_friend": "CN=God,OU=Band,DC=Stage",
-        "buddies": [
-            "CN=Satan,OU=Band,DC=Stage",
-            "CN=Vladimir,OU=Band,DC=Stage",
-        ],
-    }
-
-    with patch(
-        "mo_ldap_import_export.ldap.single_object_search",
-        return_value=nested_response,
-    ):
-        ldap_connection = context["user_context"]["ldap_connection"]
-        ldap_object = await make_ldap_object(response, ldap_connection, nest=True)
-
-    # harry is an Employee because he has a cpr no.
-    assert isinstance(ldap_object, LdapObject)
-
-    # The manager is generic because she does not have a cpr no.
-    assert isinstance(ldap_object.manager, LdapObject)  # type: ignore
-
-    # The manager's buddies are dns because we only nest 1 level
-    assert is_dn(ldap_object.manager.best_friend) is True  # type: ignore
-    assert is_dn(ldap_object.manager.buddies[0]) is True  # type: ignore
-    assert is_dn(ldap_object.manager.buddies[1]) is True  # type: ignore
-
-    # The band members are generic because they do not have a cpr no.
-    assert isinstance(ldap_object.band_members, list)  # type: ignore
-    assert isinstance(ldap_object.band_members[0], LdapObject)  # type: ignore
-    assert isinstance(ldap_object.band_members[1], LdapObject)  # type: ignore
 
 
 async def test_get_ldap_attributes():
