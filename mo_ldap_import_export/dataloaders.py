@@ -148,7 +148,9 @@ class DataLoader:
         ldap_uuid_ituser_map = extract_unique_ldap_uuids(it_users)
         ldap_uuids = set(ldap_uuid_ituser_map.keys())
 
-        uuid_ldap_object_map = await self.ldapapi.convert_ldap_uuids_to_dns(ldap_uuids)
+        uuid_ldap_object_map = await self.ldapapi.convert_ldap_uuids_to_dns(
+            ldap_uuids, set()
+        )
 
         # Find the LDAP UUIDs that could not be mapped to DNs
         missing_dn_uuids = {

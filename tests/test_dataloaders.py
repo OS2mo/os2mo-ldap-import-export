@@ -701,7 +701,7 @@ async def test_convert_ldap_uuids_to_dns(
     ]
 
     uuids = {cast(LDAPUUID, uuid4()) for _ in ldap_dns}
-    result_map = await dataloader.ldapapi.convert_ldap_uuids_to_dns(uuids)
+    result_map = await dataloader.ldapapi.convert_ldap_uuids_to_dns(uuids, set())
     assert len(result_map) == len(ldap_dns)
     assert set(result_map.keys()) == uuids
     assert {obj.dn for obj in result_map.values() if obj is not None} == set(ldap_dns)
@@ -716,7 +716,7 @@ async def test_convert_ldap_uuids_to_dns_exception(dataloader: DataLoader) -> No
 
     with pytest.raises(ValueError) as exc_info:
         await dataloader.ldapapi.convert_ldap_uuids_to_dns(
-            {cast(LDAPUUID, uuid4()), cast(LDAPUUID, uuid4())}
+            {cast(LDAPUUID, uuid4()), cast(LDAPUUID, uuid4())}, set()
         )
     assert "Exceptions during UUID2DN translation" in str(exc_info.value)
     assert exc_info.value.__cause__ is not None
@@ -730,7 +730,7 @@ async def test_convert_ldap_uuids_to_dns_exception(dataloader: DataLoader) -> No
 
     with pytest.raises(ValueError) as exc_info:
         await dataloader.ldapapi.convert_ldap_uuids_to_dns(
-            {cast(LDAPUUID, uuid4()), cast(LDAPUUID, uuid4())}
+            {cast(LDAPUUID, uuid4()), cast(LDAPUUID, uuid4())}, set()
         )
     assert "Exceptions during UUID2DN translation" in str(exc_info.value)
     assert exc_info.value.__cause__ is not None
@@ -1314,5 +1314,5 @@ async def test_find_mo_employee_dn_by_itsystem(
     assert one(result).dn == dn
 
     dataloader.ldapapi.convert_ldap_uuids_to_dns.assert_called_once_with(
-        {LDAPUUID(str(ituser_uuid))}
+        {LDAPUUID(str(ituser_uuid))}, set()
     )
