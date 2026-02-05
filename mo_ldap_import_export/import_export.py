@@ -440,6 +440,8 @@ class SyncTool:
             logger.info("import_single_user called without mapping")
             return
 
+        attributes_to_load = set(ldap_object.dict().keys()) - {"dn"}
+
         # Get the employee's UUID (if they exists)
         try:
             employee_uuid = await self.dataloader.find_mo_employee_uuid(ldap_object)
@@ -490,7 +492,7 @@ class SyncTool:
             # Only attempt to load accounts if we have a CPR number to do so with
             if cpr_number:
                 ldap_objects_list = await self.dataloader.ldapapi.cpr2dns(
-                    cpr_number, set()
+                    cpr_number, attributes_to_load
                 )
 
         # At this point 'employee_uuid' is an UUID that may or may not be in MO
@@ -528,7 +530,7 @@ class SyncTool:
             )
             # We refetch the ldap_object with the same attributes as the incoming one
             ldap_object = await self.dataloader.ldapapi.get_object_by_dn(
-                best_object.dn, attributes=set(ldap_object.dict().keys()) - {"dn"}
+                best_object.dn, attributes=attributes_to_load
             )
             exit_stack.enter_context(bound_contextvars(dn=best_object.dn))
 
