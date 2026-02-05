@@ -444,13 +444,17 @@ async def filter_dns(
     mapping = await fetch_dn_mapping(ldap_connection, discriminator_fields, dns)
     dns_passing_template = {
         dn
-        for dn in dns
-        if await evaluate_template(discriminator_filter, dn, mapping[dn])
+        for dn, field_values in mapping.items()
+        if await evaluate_template(discriminator_filter, dn, field_values)
     }
     objects_passing_template = [
         obj for obj in ldap_objects if obj.dn in dns_passing_template
     ]
-    logger.info("Discriminator filter run", dns=dns, dns_passing=dns_passing_template)
+    logger.info(
+        "Discriminator filter run",
+        dns=set(mapping.keys()),
+        dns_passing=dns_passing_template,
+    )
     return objects_passing_template
 
 
