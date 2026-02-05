@@ -29,11 +29,11 @@ async def test_create_address_read_equivalence(
         visibility=public,
         validity={"from": datetime(1970, 1, 1, tzinfo=MO_TZ)},
     )
-    await mo_api.create([address])
+    await mo_api.create(address)
     assert await mo_api.load_mo_address(address_uuid) == address
 
     address = address.copy(update={"value": "modified@example.com"})
-    await mo_api.edit([address])
+    await mo_api.edit(address)
     assert await mo_api.load_mo_address(address_uuid) == address
 
 
@@ -53,7 +53,7 @@ async def test_create_address_ituser_read_equivalence(
         person=mo_person,
         validity={"from": datetime(1970, 1, 1, tzinfo=MO_TZ)},
     )
-    await mo_api.create([ituser1])
+    await mo_api.create(ituser1)
 
     ituser2_uuid = uuid4()
     ituser2 = ITUser(
@@ -63,7 +63,7 @@ async def test_create_address_ituser_read_equivalence(
         person=mo_person,
         validity={"from": datetime(1970, 1, 1, tzinfo=MO_TZ)},
     )
-    await mo_api.create([ituser2])
+    await mo_api.create(ituser2)
 
     address_uuid = uuid4()
     address = Address(
@@ -76,7 +76,7 @@ async def test_create_address_ituser_read_equivalence(
         visibility=public,
         validity={"from": datetime(1970, 1, 1, tzinfo=MO_TZ)},
     )
-    await mo_api.create([address])
+    await mo_api.create(address)
     assert await mo_api.load_mo_address(address_uuid) == address
 
     # TODO: Enable this code to prove that the relation can be removed
@@ -85,5 +85,5 @@ async def test_create_address_ituser_read_equivalence(
     # assert await mo_api.load_mo_address(address_uuid) == address
 
     address = address.copy(update={"ituser": ituser2_uuid})
-    await mo_api.edit([address])
+    await mo_api.edit(address)
     assert await mo_api.load_mo_address(address_uuid) == address

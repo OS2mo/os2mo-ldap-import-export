@@ -667,4 +667,4 @@ class SyncTool:
                 },
             )
 
-        await self.dataloader.moapi.create_or_edit_mo_objects([operation])
+        await self.dataloader.moapi.create_or_edit_mo_objects(*operation)
