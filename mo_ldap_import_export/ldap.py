@@ -459,14 +459,14 @@ async def apply_discriminator(
     ldap_connection: Connection,
     moapi: MOAPI,
     uuid: EmployeeUUID,
-    dns: set[DN],
-) -> DN | None:
-    """Find the account to synchronize from a set of DNs.
+    ldap_objects: list[LdapObject],
+) -> LdapObject | None:
+    """Find the account to synchronize from a list of LdapObjects.
 
-    The DNs are evaluated depending on the configuration of the discriminator.
+    The objects are evaluated depending on the configuration of the discriminator.
 
     Args:
-        dns: The set of DNs to evaluate.
+        ldap_objects: The list of LdapObjects to evaluate.
 
     Raises:
         RequeueException: If the provided DNs could not be read from LDAP.
@@ -475,11 +475,14 @@ async def apply_discriminator(
     Returns:
         The account to synchronize (if any).
     """
-    assert isinstance(dns, set)
+    assert isinstance(ldap_objects, list)
 
     # Empty input-set means we have no accounts to consider
-    if not dns:
+    if not ldap_objects:
         return None
+
+    dn_to_obj = {obj.dn: obj for obj in ldap_objects}
+    dns = set(dn_to_obj.keys())
 
     if settings.discriminator_legacy_bypass_via_itsystem:  # pragma: no cover
         # This branch attempts to implement a emulation of the discriminator behavior
@@ -503,7 +506,7 @@ async def apply_discriminator(
 
         # If only one account exists, we simply use it whatever it is
         if len(dns) == 1:
-            return one(dns)
+            return dn_to_obj[one(dns)]
 
         # If multiple accounts exist, we try to find the one that was synchronized
         # "last time" by looking at an IT-user that should be created during
@@ -532,14 +535,14 @@ async def apply_discriminator(
             sam_account_name_map = {await dn2sam(dn): dn for dn in dns}
             if expected_sam_account_name not in sam_account_name_map:
                 raise ValueError("Unable to find IT-user account")
-            return sam_account_name_map[expected_sam_account_name]
+            return dn_to_obj[sam_account_name_map[expected_sam_account_name]]
         # If no IT-user links were found, simply return the IT-user with the lowest DN
-        return min(dns)
+        return dn_to_obj[min(dns)]
 
     discriminator_fields = settings.discriminator_fields
     # If discriminator is not configured, there can be only one user
     if not discriminator_fields:
-        return one(dns)
+        return dn_to_obj[one(dns)]
 
     # These settings must be set for the function to work
     # This should always be the case, as they are enforced by pydantic
@@ -558,12 +561,14 @@ async def apply_discriminator(
             dn for dn in dns if await evaluate_template(discriminator, dn, mapping[dn])
         }
         if dns_passing_template:
-            return one(
-                dns_passing_template,
-                too_long=MultipleObjectsReturnedException(
-                    f"Ambiguous account result from apply discriminator {dns_passing_template=}"
-                ),
-            )
+            return dn_to_obj[
+                one(
+                    dns_passing_template,
+                    too_long=MultipleObjectsReturnedException(
+                        f"Ambiguous account result from apply discriminator {dns_passing_template=}"
+                    ),
+                )
+            ]
 
     return None
 

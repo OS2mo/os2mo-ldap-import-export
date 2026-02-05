@@ -432,8 +432,7 @@ class SyncTool:
             exit_stack: The injected exit-stack.
             dry_run: If True, simulates the import without making changes.
         """
-        dn = ldap_object.dn
-        exit_stack.enter_context(bound_contextvars(dn=dn))
+        exit_stack.enter_context(bound_contextvars(dn=ldap_object.dn))
 
         logger.info("Importing user")
 
@@ -501,37 +500,35 @@ class SyncTool:
         ldap_objects_list = await filter_dns(
             self.settings, self.ldap_connection, ldap_objects_list
         )
-        dns = {obj.dn for obj in ldap_objects_list}
-        best_dn = await apply_discriminator(
+        best_object = await apply_discriminator(
             self.settings,
             self.ldap_connection,
             self.dataloader.moapi,
             employee_uuid,
-            dns,
+            ldap_objects_list,
         )
         # If no good LDAP account was found, we do not want to synchronize at all
-        if best_dn is None:
+        if best_object is None:
             logger.info(
                 "Aborting synchronization, as no good LDAP account was found",
-                dns=dns,
+                dns={obj.dn for obj in ldap_objects_list},
                 employee_uuid=employee_uuid,
             )
             return
 
         # At this point, we have the best possible DN for the user, and their employee UUID
-        if dn != best_dn:
+        if ldap_object.dn != best_object.dn:
             logger.info(
                 "Found better DN for employee",
-                best_dn=best_dn,
-                dns=dns,
+                best_dn=best_object.dn,
+                dns={obj.dn for obj in ldap_objects_list},
                 employee_uuid=employee_uuid,
             )
-            dn = best_dn
             # We refetch the ldap_object with the same attributes as the incoming one
             ldap_object = await self.dataloader.ldapapi.get_object_by_dn(
-                dn, attributes=set(ldap_object.dict().keys()) - {"dn"}
+                best_object.dn, attributes=set(ldap_object.dict().keys()) - {"dn"}
             )
-            exit_stack.enter_context(bound_contextvars(dn=dn))
+            exit_stack.enter_context(bound_contextvars(dn=best_object.dn))
 
         json_keys = list(self.settings.conversion_mapping.ldap_to_mo.keys())
         json_keys = [
@@ -545,7 +542,7 @@ class SyncTool:
         json_keys = [
             json_key
             for json_key in json_keys
-            if await self.perform_import_checks(dn, json_key)
+            if await self.perform_import_checks(best_object.dn, json_key)
         ]
         logger.info("Import checks executed", json_keys=json_keys)
 
