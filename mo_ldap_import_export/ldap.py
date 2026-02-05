@@ -424,7 +424,7 @@ async def evaluate_template(
 
 
 async def filter_dns(
-    settings: Settings, ldap_connection: Connection, ldap_objects: list[LdapObject]
+    settings: Settings, ldap_objects: list[LdapObject]
 ) -> list[LdapObject]:
     assert isinstance(ldap_objects, list)
 

@@ -501,9 +501,7 @@ class SyncTool:
         # We always want to synchronize from the best LDAP account, instead of just
         # synchronizing from the last LDAP account that has been touched.
         # Thus we process the list of DNs found for the user to pick the best one.
-        ldap_objects_list = await filter_dns(
-            self.settings, self.ldap_connection, ldap_objects_list
-        )
+        ldap_objects_list = await filter_dns(self.settings, ldap_objects_list)
         best_object = await apply_discriminator(
             self.settings,
             self.ldap_connection,

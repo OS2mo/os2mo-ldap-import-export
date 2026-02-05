@@ -3,7 +3,6 @@
 import json
 from collections.abc import Awaitable
 from collections.abc import Callable
-from unittest.mock import AsyncMock
 
 import pytest
 
@@ -22,27 +21,23 @@ from tests.integration.conftest import AddLdapPerson
 @pytest.mark.usefixtures("minimal_valid_environmental_variables")
 @pytest.mark.parametrize("input_dns", [[], ["CN=foo"], ["CN=foo", "CN=bar"]])
 async def test_filter_dns_no_filter(input_dns: list[str]) -> None:
-    ldap_connection = AsyncMock()
-
     settings = Settings()
     assert settings.discriminator_filter is None
 
     input_objects = [LdapObject(dn=dn) for dn in input_dns]
-    output_objects = await filter_dns(settings, ldap_connection, input_objects)
+    output_objects = await filter_dns(settings, input_objects)
     assert input_objects == output_objects
 
 
 @pytest.mark.usefixtures("minimal_valid_environmental_variables")
 async def test_filter_dns_no_fields() -> None:
-    ldap_connection = AsyncMock()
-
     settings = Settings()
     assert settings.discriminator_filter is None
     settings = settings.copy(update={"discriminator_filter": "True"})
     assert settings.discriminator_filter == "True"
 
     with pytest.raises(AssertionError) as exc_info:
-        await filter_dns(settings, ldap_connection, [LdapObject(dn="CN=foo")])
+        await filter_dns(settings, [LdapObject(dn="CN=foo")])
     assert "discriminator_fields must be set" in str(exc_info.value)
 
 
@@ -96,7 +91,7 @@ async def test_filter_dns(
     settings = Settings()
     ldap_obj = await ldap_api.get_object_by_dn(dn=ldap_person_dn, attributes={"title"})
 
-    result = await filter_dns(settings, ldap_api.ldap_connection.connection, [ldap_obj])
+    result = await filter_dns(settings, [ldap_obj])
     expected = [] if filtered else [ldap_obj]
     assert result == expected
 
@@ -160,9 +155,7 @@ async def test_filter_dns_accepts_pre_moonlanding(
         await ldap_api.get_object_by_dn(dn, attributes={"employeeNumber"})
         for dn in [b18, b19, a19, a20]
     ]
-    result = await filter_dns(
-        settings, ldap_api.ldap_connection.connection, input_objects
-    )
+    result = await filter_dns(settings, input_objects)
     assert {obj.dn for obj in result} == {b18, b19}
 
 

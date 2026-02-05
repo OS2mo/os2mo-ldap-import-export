@@ -754,7 +754,7 @@ def construct_router(settings: Settings) -> APIRouter:
             logger.info("Found no DNs for cpr_number")
             raise HTTPException(status_code=404, detail="No DNs found for CPR number")
 
-        ldap_objects = await filter_dns(settings, ldap_connection, ldap_objects)
+        ldap_objects = await filter_dns(settings, ldap_objects)
         dns = {obj.dn for obj in ldap_objects}
 
         # SD-changed-at only calls this endpoint when creating users in MO (to
@@ -799,7 +799,7 @@ def construct_router(settings: Settings) -> APIRouter:
         attributes = {settings.ldap_unique_id_field, account_name}
 
         ldap_objects = await dataloader.find_mo_employee_dn(uuid, attributes)
-        ldap_objects = await filter_dns(settings, ldap_connection, ldap_objects)
+        ldap_objects = await filter_dns(settings, ldap_objects)
         dns = {obj.dn for obj in ldap_objects}
         if not dns:
             logger.info("Found no DNs for cpr_number")
