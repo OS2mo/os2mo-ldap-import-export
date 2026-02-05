@@ -495,7 +495,7 @@ async def test_find_mo_employee_dn(dataloader: MagicMock) -> None:
     dataloader.find_mo_employee_dn_by_cpr_number.return_value = []
 
     with capture_logs() as cap_logs:
-        result = await dataloader.find_mo_employee_dn(employee_uuid)
+        result = await dataloader.find_mo_employee_dn(employee_uuid, set())
         assert result == []
     log_events = [log["event"] for log in cap_logs]
     assert log_events == [
@@ -513,7 +513,7 @@ async def test_find_mo_employee_dn(dataloader: MagicMock) -> None:
     ]
 
     with capture_logs() as cap_logs:
-        result = await dataloader.find_mo_employee_dn(employee_uuid)
+        result = await dataloader.find_mo_employee_dn(employee_uuid, set())
         assert {obj.dn for obj in result} == {"A", "B", "C", "D"}
     log_events = [log["event"] for log in cap_logs]
     assert log_events == ["Attempting to find DNs", "Found DNs for MO employee"]

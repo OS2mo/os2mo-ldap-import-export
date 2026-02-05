@@ -572,7 +572,7 @@ def construct_router(settings: Settings) -> APIRouter:
 
     @router.get("/Inspect/mo/uuid2dn/{uuid}", status_code=200, tags=["LDAP"])
     async def mo_uuid_to_ldap_dn(dataloader: depends.DataLoader, uuid: UUID) -> set[DN]:
-        ldap_objects = await dataloader.find_mo_employee_dn(uuid)
+        ldap_objects = await dataloader.find_mo_employee_dn(uuid, set())
         return {obj.dn for obj in ldap_objects}
 
     @router.get(
@@ -792,7 +792,7 @@ def construct_router(settings: Settings) -> APIRouter:
         # Setting for UUID field to handle ADs non-standard entryUUID field
         attributes = {settings.ldap_unique_id_field, account_name}
 
-        ldap_objects = await dataloader.find_mo_employee_dn(uuid)
+        ldap_objects = await dataloader.find_mo_employee_dn(uuid, attributes)
         ldap_objects = await filter_dns(settings, ldap_connection, ldap_objects)
         dns = {obj.dn for obj in ldap_objects}
         if not dns:
