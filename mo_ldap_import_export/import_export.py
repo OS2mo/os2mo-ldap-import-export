@@ -450,8 +450,7 @@ class SyncTool:
             raise
         if employee_uuid:
             # If we found an employee UUID, we want to use that to find all DNs
-            ldap_objects = await self.dataloader.find_mo_employee_dn(employee_uuid)
-            dns = {obj.dn for obj in ldap_objects}
+            ldap_objects_list = await self.dataloader.find_mo_employee_dn(employee_uuid)
         else:  # We did not find an employee UUID
             ldap_to_mo = self.settings.conversion_mapping.ldap_to_mo
             assert ldap_to_mo is not None
@@ -481,7 +480,7 @@ class SyncTool:
 
             # We want to create our employee using the best possible LDAP account.
             # By default, we will use the account that was provided to us in the event.
-            dns = {dn}
+            ldap_objects_list = [ldap_object]
 
             # However we may be able to find other accounts using the CPR number on the
             # event triggered account, by searching for the CPR number in all of LDAP.
@@ -489,16 +488,20 @@ class SyncTool:
             cpr_number = self.dataloader.ldapapi.ldap_object2cpr(ldap_object)
             # Only attempt to load accounts if we have a CPR number to do so with
             if cpr_number:
-                ldap_objects = await self.dataloader.ldapapi.cpr2dns(cpr_number, set())
-                dns = {obj.dn for obj in ldap_objects}
+                ldap_objects_list = await self.dataloader.ldapapi.cpr2dns(
+                    cpr_number, set()
+                )
 
         # At this point 'employee_uuid' is an UUID that may or may not be in MO
-        # At this point 'dns' is a list of LDAP account DNs
+        # At this point 'ldap_objects_list' is a list of LDAP objects
 
         # We always want to synchronize from the best LDAP account, instead of just
         # synchronizing from the last LDAP account that has been touched.
         # Thus we process the list of DNs found for the user to pick the best one.
-        dns = await filter_dns(self.settings, self.ldap_connection, dns)
+        ldap_objects_list = await filter_dns(
+            self.settings, self.ldap_connection, ldap_objects_list
+        )
+        dns = {obj.dn for obj in ldap_objects_list}
         best_dn = await apply_discriminator(
             self.settings,
             self.ldap_connection,

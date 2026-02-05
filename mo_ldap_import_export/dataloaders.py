@@ -301,8 +301,10 @@ class DataLoader:
             synchronization should not take place.
         """
         ldap_objects = await self.find_mo_employee_dn(uuid)
+        ldap_objects = await filter_dns(
+            self.settings, self.ldapapi.connection, ldap_objects
+        )
         dns = {obj.dn for obj in ldap_objects}
-        dns = await filter_dns(self.settings, self.ldapapi.connection, dns)
         # If we found DNs, we want to synchronize to the best of them
         if not dns:
             return None
