@@ -62,6 +62,7 @@ from mo_ldap_import_export.moapi import Verb
 from mo_ldap_import_export.moapi import extract_current_or_latest_validity
 from mo_ldap_import_export.models import Address
 from mo_ldap_import_export.models import Employee
+from mo_ldap_import_export.models import MOBase
 from mo_ldap_import_export.models import Termination
 from mo_ldap_import_export.routes import load_all_current_it_users
 from mo_ldap_import_export.types import LDAPUUID
@@ -1189,16 +1190,22 @@ async def test_create_or_edit_mo_objects(dataloader: DataLoader) -> None:
     )
     terminate = Termination(mo_class=Address, uuid=uuid4(), at=datetime.datetime.now())
 
-    objs = [(create, Verb.CREATE), (edit, Verb.EDIT), (terminate, Verb.TERMINATE)]
+    objs: list[tuple[MOBase | Termination, Verb]] = [
+        (create, Verb.CREATE),
+        (edit, Verb.EDIT),
+        (terminate, Verb.TERMINATE),
+    ]
 
     moapi.create = AsyncMock()  # type: ignore
     moapi.edit = AsyncMock()  # type: ignore
     moapi.terminate = AsyncMock()  # type: ignore
 
-    await moapi.create_or_edit_mo_objects(objs)  # type: ignore
-    moapi.create.assert_called_once_with([create])
-    moapi.edit.assert_called_once_with([edit])
-    moapi.terminate.assert_called_once_with([terminate])
+    for obj, verb in objs:
+        await moapi.create_or_edit_mo_objects(obj, verb)
+
+    moapi.create.assert_called_once_with(create)
+    moapi.edit.assert_called_once_with(edit)
+    moapi.terminate.assert_called_once_with(terminate)
 
 
 @pytest.mark.parametrize(

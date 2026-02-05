@@ -7,7 +7,6 @@ from datetime import UTC
 from datetime import datetime
 from enum import Enum
 from enum import auto
-from typing import Any
 from typing import Protocol
 from typing import TypeVar
 from typing import cast
@@ -15,7 +14,6 @@ from uuid import UUID
 
 import structlog
 from fastapi.encoders import jsonable_encoder
-from more_itertools import bucket
 from more_itertools import one
 from more_itertools import only
 
@@ -71,8 +69,6 @@ from .models import Termination
 from .types import CPRNumber
 from .types import EmployeeUUID
 from .types import OrgUnitUUID
-from .utils import is_exception
-from .utils import star
 
 logger = structlog.stdlib.get_logger()
 
@@ -567,33 +563,16 @@ class MOAPI:
         return cast(list[ITUser], output)
 
     async def create_or_edit_mo_objects(
-        self, objects: list[tuple[MOBase | Termination, Verb]]
+        self, obj: MOBase | Termination, verb: Verb
     ) -> None:
-        # Split objects into groups
-        verb_groups = bucket(objects, key=star(lambda _, verb: verb))
-        creates = [obj for obj, _ in verb_groups[Verb.CREATE]]
-        assert all(isinstance(obj, MOBase) for obj in creates)
+        if verb == Verb.CREATE:
+            await self.create(cast(MOBase, obj))
+        elif verb == Verb.EDIT:
+            await self.edit(cast(MOBase, obj))
+        elif verb == Verb.TERMINATE:
+            await self.terminate(cast(Termination, obj))
 
-        edits = [obj for obj, _ in verb_groups[Verb.EDIT]]
-        assert all(isinstance(obj, MOBase) for obj in edits)
-
-        terminates = [obj for obj, _ in verb_groups[Verb.TERMINATE]]
-        assert all(isinstance(obj, Termination) for obj in terminates)
-
-        await asyncio.gather(
-            self.create(cast(list[MOBase], creates)),
-            self.edit(cast(list[MOBase], edits)),
-            self.terminate(cast(list[Termination], terminates)),
-        )
-
-    async def create(self, creates: list[MOBase]) -> None:
-        tasks = [self.create_object(obj) for obj in creates]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        exceptions = cast(list[Exception], list(filter(is_exception, results)))
-        if exceptions:  # pragma: no cover
-            raise ExceptionGroup("Exceptions during creation", exceptions)
-
-    async def create_object(self, obj: MOBase) -> UUID:
+    async def create(self, obj: MOBase) -> UUID:
         if isinstance(obj, Address):
             return await self.create_address(obj)
         elif isinstance(obj, Employee):
@@ -744,14 +723,7 @@ class MOAPI:
         )
         return org_unit.uuid
 
-    async def edit(self, edits: list[MOBase]) -> None:
-        tasks = [self.edit_object(obj) for obj in edits]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        exceptions = cast(list[Exception], list(filter(is_exception, results)))
-        if exceptions:  # pragma: no cover
-            raise ExceptionGroup("Exceptions during modification", exceptions)
-
-    async def edit_object(self, obj: MOBase) -> UUID:
+    async def edit(self, obj: MOBase) -> UUID:
         if isinstance(obj, Address):
             return await self.edit_address(obj)
         elif isinstance(obj, Employee):  # pragma: no cover
@@ -897,32 +869,11 @@ class MOAPI:
         )
         return org_unit.uuid
 
-    async def terminate(self, terminatees: list[Termination]) -> None:
-        """Terminate a list of details.
+    async def terminate(self, obj: Termination) -> UUID:
+        motype = obj.mo_class
+        uuid = obj.uuid
+        at = obj.at
 
-        This method calls `terminate_object` for each objects in parallel.
-
-        Args:
-            terminatees: The list of details to terminate.
-
-        Returns:
-            UUIDs of the terminated entries
-        """
-        detail_terminations: list[dict[str, Any]] = [
-            {
-                "motype": terminate.mo_class,
-                "uuid": terminate.uuid,
-                "at": terminate.at,
-            }
-            for terminate in terminatees
-        ]
-        tasks = [self.terminate_object(**detail) for detail in detail_terminations]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        exceptions = cast(list[Exception], list(filter(is_exception, results)))
-        if exceptions:  # pragma: no cover
-            raise ExceptionGroup("Exceptions during termination", exceptions)
-
-    async def terminate_object(self, uuid: UUID, at: datetime, motype: type) -> UUID:
         """Terminate a detail."""
         if issubclass(motype, Address):
             return await self.terminate_address(uuid, at)

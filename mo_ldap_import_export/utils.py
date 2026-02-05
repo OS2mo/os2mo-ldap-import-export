@@ -4,7 +4,6 @@ import re
 from datetime import datetime
 from datetime import time
 from functools import partial
-from functools import wraps
 from typing import Any
 from typing import TypeVar
 from typing import cast
@@ -126,18 +125,6 @@ def is_list(x: Any | list[Any]) -> bool:
     return isinstance(x, list)
 
 
-def is_exception(x: Any) -> bool:
-    """Decide whether the provided argument is an exception.
-
-    Args:
-        x: A potential exception.
-
-    Returns:
-        Whether the provided argument is an exception or not.
-    """
-    return isinstance(x, Exception)
-
-
 def ensure_list(x: Any | list[Any]) -> list[Any]:
     """Wrap the argument in a list if not a list.
 
@@ -176,11 +163,3 @@ def get_delete_flag(mo_object: dict[str, Any]) -> bool:
         )
         return True
     return False
-
-
-def star(func):
-    @wraps(func)
-    def wrapper(tup: tuple) -> Any:
-        return func(*tup)
-
-    return wrapper
