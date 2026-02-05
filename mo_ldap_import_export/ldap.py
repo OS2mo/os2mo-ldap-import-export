@@ -439,8 +439,33 @@ async def filter_dns(
     discriminator_fields = settings.discriminator_fields
     assert discriminator_fields, "discriminator_fields must be set"
 
-    dns = {obj.dn for obj in ldap_objects}
-    mapping = await fetch_dn_mapping(ldap_connection, discriminator_fields, dns)
+    # Check if any fields are missing on any ldap_objects
+    def calculate_missing_fields(obj: LdapObject) -> set[str]:
+        required_fields = set(discriminator_fields)
+        available_attributes = set(obj.dict().keys())
+        missing_fields = required_fields - available_attributes
+        return missing_fields
+
+    objs_missing_fields = {
+        obj.dn: calculate_missing_fields(obj) for obj in ldap_objects
+    }
+    objs_missing_fields = {
+        dn: missing_fields
+        for dn, missing_fields in objs_missing_fields.items()
+        if missing_fields
+    }
+    assert (
+        not objs_missing_fields
+    ), "LDAP object(s) missing required discriminator fields"
+
+    mapping = {
+        obj.dn: {
+            field: ldapobject2discriminator(obj, field)
+            for field in discriminator_fields
+        }
+        for obj in ldap_objects
+    }
+
     dns_passing_template = {
         dn
         for dn, field_values in mapping.items()
