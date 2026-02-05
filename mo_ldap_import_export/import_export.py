@@ -450,7 +450,8 @@ class SyncTool:
             raise
         if employee_uuid:
             # If we found an employee UUID, we want to use that to find all DNs
-            dns = await self.dataloader.find_mo_employee_dn(employee_uuid)
+            ldap_objects = await self.dataloader.find_mo_employee_dn(employee_uuid)
+            dns = {obj.dn for obj in ldap_objects}
         else:  # We did not find an employee UUID
             ldap_to_mo = self.settings.conversion_mapping.ldap_to_mo
             assert ldap_to_mo is not None

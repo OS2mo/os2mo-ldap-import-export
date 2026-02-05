@@ -9,6 +9,7 @@ from uuid import UUID
 import structlog
 from more_itertools import duplicates_everseen
 from more_itertools import one
+from more_itertools import unique_everseen
 
 from .config import Settings
 from .exceptions import MultipleObjectsReturnedException
@@ -214,8 +215,8 @@ class DataLoader:
         )
         return ldap_objects
 
-    async def find_mo_employee_dn(self, uuid: UUID) -> set[DN]:
-        """Tries to find the LDAP DNs belonging to a MO employee.
+    async def find_mo_employee_dn(self, uuid: UUID) -> list[LdapObject]:
+        """Tries to find the LDAP objects belonging to a MO employee.
 
         Args:
             uuid: UUID of the employee to try to find DNs for.
@@ -224,7 +225,7 @@ class DataLoader:
             NoObjectsReturnedException: If the MO employee could not be found.
 
         Returns:
-            A potentially empty set of DNs.
+            A potentially empty list of LdapObjects.
         """
         # TODO: This should probably return a list of EntityUUIDs rather than DNs
         #       However this should probably be a change away from DNs in general
@@ -240,14 +241,18 @@ class DataLoader:
             self.find_mo_employee_dn_by_itsystem(uuid),
             self.find_mo_employee_dn_by_cpr_number(uuid),
         )
-        cpr_number_dns = {obj.dn for obj in cpr_number_objects}
-        ituser_dns = {obj.dn for obj in ituser_objects}
-        dns = ituser_dns | cpr_number_dns
-        if dns:
-            logger.info("Found DNs for MO employee", employee_uuid=uuid, dns=dns)
-            return dns
+        all_objects = ituser_objects + cpr_number_objects
+        unique_objects = list(unique_everseen(all_objects, key=lambda obj: obj.dn))
+
+        if unique_objects:
+            logger.info(
+                "Found DNs for MO employee",
+                employee_uuid=uuid,
+                dns={obj.dn for obj in unique_objects},
+            )
+            return unique_objects
         logger.warning("Unable to find DNs for MO employee", employee_uuid=uuid)
-        return set()
+        return []
 
     async def make_mo_employee_dn(
         self, uuid: UUID, common_name: str | None = None
@@ -295,7 +300,8 @@ class DataLoader:
             created, while the latter is a signal that an account was found, and that
             synchronization should not take place.
         """
-        dns = await self.find_mo_employee_dn(uuid)
+        ldap_objects = await self.find_mo_employee_dn(uuid)
+        dns = {obj.dn for obj in ldap_objects}
         dns = await filter_dns(self.settings, self.ldapapi.connection, dns)
         # If we found DNs, we want to synchronize to the best of them
         if not dns:

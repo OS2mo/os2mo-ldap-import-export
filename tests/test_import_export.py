@@ -71,7 +71,7 @@ def fake_dn() -> DN:
 
 @pytest.fixture
 def fake_find_mo_employee_dn(sync_tool: SyncTool, fake_dn: DN) -> None:
-    sync_tool.dataloader.find_mo_employee_dn.return_value = {fake_dn}  # type: ignore
+    sync_tool.dataloader.find_mo_employee_dn.return_value = [LdapObject(dn=fake_dn)]  # type: ignore
 
 
 async def test_listen_to_changes_in_employees_no_dn(

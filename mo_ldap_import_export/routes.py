@@ -572,7 +572,8 @@ def construct_router(settings: Settings) -> APIRouter:
 
     @router.get("/Inspect/mo/uuid2dn/{uuid}", status_code=200, tags=["LDAP"])
     async def mo_uuid_to_ldap_dn(dataloader: depends.DataLoader, uuid: UUID) -> set[DN]:
-        return await dataloader.find_mo_employee_dn(uuid)
+        ldap_objects = await dataloader.find_mo_employee_dn(uuid)
+        return {obj.dn for obj in ldap_objects}
 
     @router.get(
         "/Inspect/non_existing_unique_ldap_uuids", status_code=202, tags=["LDAP"]
@@ -791,7 +792,8 @@ def construct_router(settings: Settings) -> APIRouter:
         # Setting for UUID field to handle ADs non-standard entryUUID field
         attributes = {settings.ldap_unique_id_field, account_name}
 
-        dns = await dataloader.find_mo_employee_dn(uuid)
+        ldap_objects = await dataloader.find_mo_employee_dn(uuid)
+        dns = {obj.dn for obj in ldap_objects}
         if not dns:
             logger.info("Found no DNs for cpr_number")
             raise HTTPException(status_code=404, detail="No DNs found for CPR number")
