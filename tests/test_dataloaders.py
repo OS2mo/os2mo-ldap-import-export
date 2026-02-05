@@ -1230,7 +1230,7 @@ async def test_find_mo_employee_dn_by_cpr_number(
     dataloader.ldapapi.cpr2dns = AsyncMock()  # type: ignore
     dataloader.ldapapi.cpr2dns.return_value = [LdapObject(dn=dn) for dn in (dns or [])]
 
-    result = await dataloader.find_mo_employee_dn_by_cpr_number(employee_uuid)
+    result = await dataloader.find_mo_employee_dn_by_cpr_number(employee_uuid, set())
     assert {obj.dn for obj in result} == expected
 
     if dns is not None:

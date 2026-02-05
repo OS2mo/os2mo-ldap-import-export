@@ -183,11 +183,14 @@ class DataLoader:
         )
         return ldap_objects
 
-    async def find_mo_employee_dn_by_cpr_number(self, uuid: UUID) -> list[LdapObject]:
+    async def find_mo_employee_dn_by_cpr_number(
+        self, uuid: UUID, attributes: set[str]
+    ) -> list[LdapObject]:
         """Tries to find the LDAP objects belonging to a MO employee via CPR numbers.
 
         Args:
             uuid: UUID of the employee to try to find DNs for.
+            attributes: The set of attributes to load for the LDAP objects.
 
         Raises:
             NoObjectsReturnedException: If the MO employee could not be found.
@@ -210,7 +213,7 @@ class DataLoader:
         )
         ldap_objects: list[LdapObject] = []
         with suppress(NoObjectsReturnedException):
-            ldap_objects = await self.ldapapi.cpr2dns(cpr_number, set())
+            ldap_objects = await self.ldapapi.cpr2dns(cpr_number, attributes)
         if not ldap_objects:
             return []
         logger.info(
@@ -244,7 +247,7 @@ class DataLoader:
         #       creating an LDAP account, but before making a MO ITUser.
         ituser_objects, cpr_number_objects = await asyncio.gather(
             self.find_mo_employee_dn_by_itsystem(uuid, set()),
-            self.find_mo_employee_dn_by_cpr_number(uuid),
+            self.find_mo_employee_dn_by_cpr_number(uuid, set()),
         )
         all_objects = ituser_objects + cpr_number_objects
         unique_objects = list(unique_everseen(all_objects, key=lambda obj: obj.dn))
