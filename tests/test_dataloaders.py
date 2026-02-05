@@ -1247,7 +1247,7 @@ async def test_find_mo_employee_dn_by_itsystem_no_itsystem(
     route = graphql_mock.query("read_itsystem_uuid")
     route.result = {"itsystems": {"objects": []}}
 
-    result = await dataloader.find_mo_employee_dn_by_itsystem(employee_uuid)
+    result = await dataloader.find_mo_employee_dn_by_itsystem(employee_uuid, set())
     assert result == []
 
 
@@ -1265,7 +1265,7 @@ async def test_find_mo_employee_dn_by_itsystem_no_match(
     route2 = graphql_mock.query("read_ituser_by_employee_and_itsystem_uuid")
     route2.result = {"itusers": {"objects": []}}
 
-    result = await dataloader.find_mo_employee_dn_by_itsystem(employee_uuid)
+    result = await dataloader.find_mo_employee_dn_by_itsystem(employee_uuid, set())
     assert result == []
 
 
@@ -1310,7 +1310,7 @@ async def test_find_mo_employee_dn_by_itsystem(
         LDAPUUID(str(ituser_uuid)): LdapObject(dn=dn, objectGUID=str(ituser_uuid))
     }
 
-    result = await dataloader.find_mo_employee_dn_by_itsystem(employee_uuid)
+    result = await dataloader.find_mo_employee_dn_by_itsystem(employee_uuid, set())
     assert one(result).dn == dn
 
     dataloader.ldapapi.convert_ldap_uuids_to_dns.assert_called_once_with(

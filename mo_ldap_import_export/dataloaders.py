@@ -126,11 +126,14 @@ class DataLoader:
         logger.info("No matching employee", dn=dn)
         return None
 
-    async def find_mo_employee_dn_by_itsystem(self, uuid: UUID) -> list[LdapObject]:
+    async def find_mo_employee_dn_by_itsystem(
+        self, uuid: UUID, attributes: set[str]
+    ) -> list[LdapObject]:
         """Tries to find the LDAP objects belonging to a MO employee via ITUsers.
 
         Args:
             uuid: UUID of the employee to try to find DNs for.
+            attributes: The set of attributes to load for the LDAP objects.
 
         Returns:
             A potentially empty list of LdapObjects.
@@ -149,7 +152,7 @@ class DataLoader:
         ldap_uuids = set(ldap_uuid_ituser_map.keys())
 
         uuid_ldap_object_map = await self.ldapapi.convert_ldap_uuids_to_dns(
-            ldap_uuids, set()
+            ldap_uuids, attributes
         )
 
         # Find the LDAP UUIDs that could not be mapped to DNs
@@ -240,7 +243,7 @@ class DataLoader:
         #       objects, to support scenarios where the application may crash after
         #       creating an LDAP account, but before making a MO ITUser.
         ituser_objects, cpr_number_objects = await asyncio.gather(
-            self.find_mo_employee_dn_by_itsystem(uuid),
+            self.find_mo_employee_dn_by_itsystem(uuid, set()),
             self.find_mo_employee_dn_by_cpr_number(uuid),
         )
         all_objects = ituser_objects + cpr_number_objects
