@@ -501,6 +501,9 @@ def construct_router(settings: Settings) -> APIRouter:
                 for attr in mapping.ldap_attributes
             }
 
+        if settings.discriminator_fields:  # pragma: no cover
+            attributes_to_fetch.update(settings.discriminator_fields)
+
         async def process_uuid(uuid: LDAPUUID) -> dict[str, Any]:
             try:
                 dn = await sync_tool.dataloader.ldapapi.get_ldap_dn(uuid)
@@ -564,6 +567,9 @@ def construct_router(settings: Settings) -> APIRouter:
                 for mapping in settings.conversion_mapping.ldap_to_mo.values()
                 for attr in mapping.ldap_attributes
             }
+
+        if settings.discriminator_fields:  # pragma: no cover
+            attributes.update(settings.discriminator_fields)
 
         ldap_object = await sync_tool.dataloader.ldapapi.get_object_by_dn(
             dn, attributes=attributes
