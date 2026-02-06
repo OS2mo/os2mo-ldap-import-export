@@ -26,11 +26,11 @@ async def test_create_ituser_read_equivalence(
         person=mo_person,
         validity={"from": datetime(1970, 1, 1, tzinfo=MO_TZ)},
     )
-    await mo_api.create([ituser])
+    await mo_api.create(ituser)
     assert await mo_api.load_mo_it_user(ituser_uuid) == ituser
 
     ituser = ituser.copy(update={"user_key": "modified"})
-    await mo_api.edit([ituser])
+    await mo_api.edit(ituser)
     assert await mo_api.load_mo_it_user(ituser_uuid) == ituser
 
 
@@ -49,11 +49,11 @@ async def test_create_ituser_external_id_read_equivalence(
         external_id="my_external_id",
         validity={"from": datetime(1970, 1, 1, tzinfo=MO_TZ)},
     )
-    await mo_api.create([ituser])
+    await mo_api.create(ituser)
     assert await mo_api.load_mo_it_user(ituser_uuid) == ituser
 
     ituser = ituser.copy(update={"external_id": "modified"})
-    await mo_api.edit([ituser])
+    await mo_api.edit(ituser)
     assert await mo_api.load_mo_it_user(ituser_uuid) == ituser
 
 
@@ -78,7 +78,7 @@ async def test_create_ituser_engagements_read_equivalence(
         primary=primary,
         validity={"from": datetime(1970, 1, 1, tzinfo=MO_TZ)},
     )
-    await mo_api.create([engagement])
+    await mo_api.create(engagement)
 
     ituser_uuid = uuid4()
     ituser = ITUser(
@@ -89,13 +89,13 @@ async def test_create_ituser_engagements_read_equivalence(
         engagements=[engagement_uuid],
         validity={"from": datetime(1970, 1, 1, tzinfo=MO_TZ)},
     )
-    await mo_api.create([ituser])
+    await mo_api.create(ituser)
     mo_ituser = await mo_api.load_mo_it_user(ituser_uuid)
     assert mo_ituser is not None
     assert mo_ituser == ituser
 
     ituser = ituser.copy(update={"engagements": []})
-    await mo_api.edit([ituser])
+    await mo_api.edit(ituser)
     mo_ituser = await mo_api.load_mo_it_user(ituser_uuid)
     assert mo_ituser is not None
     assert mo_ituser == ituser

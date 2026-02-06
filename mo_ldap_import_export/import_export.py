@@ -648,18 +648,13 @@ class SyncTool:
 
         mo_attributes = set(mapping.get_fields().keys())
         operation = await self.format_converted_object(converted_object, mo_attributes)
-
         if operation is None:  # pragma: no cover
             logger.info("No converted objects after formatting", dn=dn)
             return
+        obj, verb = operation
 
-        logger.info(
-            "Importing object",
-            operation=operation,
-            dn=dn,
-        )
+        logger.info("Importing object", verb=verb, obj=obj, dn=dn)
         if dry_run:
-            obj, verb = operation
             raise DryRunException(
                 "Would have uploaded changes to MO",
                 dn,
@@ -669,4 +664,4 @@ class SyncTool:
                 },
             )
 
-        await self.dataloader.moapi.create_or_edit_mo_objects([operation])
+        await self.dataloader.moapi.create_or_edit_mo_objects(obj, verb)
