@@ -90,7 +90,9 @@ async def test_find_mo_employee_dn_by_itsystem_ituser_termination(
 
     # Cannot find any DNs as the LDAP account is not attached to the mo person
     with capture_logs() as cap_logs:
-        result = await sync_tool.dataloader.find_mo_employee_dn_by_itsystem(mo_person)
+        result = await sync_tool.dataloader.find_mo_employee_dn_by_itsystem(
+            uuid=mo_person, attributes=set()
+        )
         assert result == []
     assert cap_logs == []
 
@@ -110,7 +112,9 @@ async def test_find_mo_employee_dn_by_itsystem_ituser_termination(
 
     # Ensure that we can find the DN now using the mo person
     with capture_logs() as cap_logs:
-        result = await sync_tool.dataloader.find_mo_employee_dn_by_itsystem(mo_person)
+        result = await sync_tool.dataloader.find_mo_employee_dn_by_itsystem(
+            uuid=mo_person, attributes=set()
+        )
         assert one(result).dn == dn
     assert cap_logs == [
         {
@@ -139,7 +143,9 @@ async def test_find_mo_employee_dn_by_itsystem_ituser_termination(
 
     # Rerun the mapping code, this should delete the link and return no match
     with capture_logs() as cap_logs:
-        result = await sync_tool.dataloader.find_mo_employee_dn_by_itsystem(mo_person)
+        result = await sync_tool.dataloader.find_mo_employee_dn_by_itsystem(
+            uuid=mo_person, attributes=set()
+        )
         assert result == []
     assert cap_logs == [
         {
