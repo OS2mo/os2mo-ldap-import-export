@@ -8,7 +8,6 @@ import pytest
 from mo_ldap_import_export.config import Settings
 from mo_ldap_import_export.exceptions import MultipleObjectsReturnedException
 from mo_ldap_import_export.ldap import apply_discriminator
-from mo_ldap_import_export.ldap_classes import LdapObject
 from mo_ldap_import_export.ldapapi import LDAPAPI
 from mo_ldap_import_export.moapi import MOAPI
 from mo_ldap_import_export.types import EmployeeUUID
@@ -45,7 +44,7 @@ async def test_prefers_shorter_usernames(
         ldap_api.ldap_connection.connection,
         mo_api,
         EmployeeUUID(uuid4()),
-        [LdapObject(dn=dn) for dn in [ava, cleo, emily]],
+        [await ldap_api.get_object_by_dn(dn) for dn in [ava, cleo, emily]],
     )
     assert result is not None
     assert result.dn == ava
@@ -55,7 +54,7 @@ async def test_prefers_shorter_usernames(
         ldap_api.ldap_connection.connection,
         mo_api,
         EmployeeUUID(uuid4()),
-        [LdapObject(dn=dn) for dn in [cleo, emily]],
+        [await ldap_api.get_object_by_dn(dn) for dn in [cleo, emily]],
     )
     assert result is not None
     assert result.dn == cleo
@@ -65,7 +64,7 @@ async def test_prefers_shorter_usernames(
         ldap_api.ldap_connection.connection,
         mo_api,
         EmployeeUUID(uuid4()),
-        [LdapObject(dn=emily)],
+        [await ldap_api.get_object_by_dn(emily)],
     )
     assert result is not None
     assert result.dn == emily
@@ -111,7 +110,7 @@ async def test_ignore_substring(
         ldap_api.ldap_connection.connection,
         mo_api,
         EmployeeUUID(uuid4()),
-        [LdapObject(dn=classic)],
+        [await ldap_api.get_object_by_dn(classic)],
     )
     assert result is None
 
@@ -121,7 +120,7 @@ async def test_ignore_substring(
         ldap_api.ldap_connection.connection,
         mo_api,
         EmployeeUUID(uuid4()),
-        [LdapObject(dn=dn) for dn in [classic, grass, passenger]],
+        [await ldap_api.get_object_by_dn(dn) for dn in [classic, grass, passenger]],
     )
     assert result is None
 
@@ -132,7 +131,7 @@ async def test_ignore_substring(
             ldap_api.ldap_connection.connection,
             mo_api,
             EmployeeUUID(uuid4()),
-            [LdapObject(dn=dn) for dn in [ava, cleo]],
+            [await ldap_api.get_object_by_dn(dn) for dn in [ava, cleo]],
         )
     assert "Ambiguous account result from apply discriminator" in str(exc_info.value)
 
@@ -142,7 +141,7 @@ async def test_ignore_substring(
         ldap_api.ldap_connection.connection,
         mo_api,
         EmployeeUUID(uuid4()),
-        [LdapObject(dn=dn) for dn in [classic, ava]],
+        [await ldap_api.get_object_by_dn(dn) for dn in [classic, ava]],
     )
     assert result is not None
     assert result.dn == ava
@@ -152,7 +151,7 @@ async def test_ignore_substring(
         ldap_api.ldap_connection.connection,
         mo_api,
         EmployeeUUID(uuid4()),
-        [LdapObject(dn=dn) for dn in [passenger, cleo]],
+        [await ldap_api.get_object_by_dn(dn) for dn in [passenger, cleo]],
     )
     assert result is not None
     assert result.dn == cleo
@@ -163,7 +162,7 @@ async def test_ignore_substring(
         ldap_api.ldap_connection.connection,
         mo_api,
         EmployeeUUID(uuid4()),
-        [LdapObject(dn=dn) for dn in [ava, grass, assessment]],
+        [await ldap_api.get_object_by_dn(dn) for dn in [ava, grass, assessment]],
     )
     assert result is not None
     assert result.dn == ava
@@ -173,7 +172,7 @@ async def test_ignore_substring(
         ldap_api.ldap_connection.connection,
         mo_api,
         EmployeeUUID(uuid4()),
-        [LdapObject(dn=dn) for dn in [cleo, classic, passenger]],
+        [await ldap_api.get_object_by_dn(dn) for dn in [cleo, classic, passenger]],
     )
     assert result is not None
     assert result.dn == cleo
@@ -186,7 +185,7 @@ async def test_ignore_substring(
             mo_api,
             EmployeeUUID(uuid4()),
             [
-                LdapObject(dn=dn)
+                await ldap_api.get_object_by_dn(dn)
                 for dn in [ava, cleo, classic, grass, passenger, assessment]
             ],
         )
