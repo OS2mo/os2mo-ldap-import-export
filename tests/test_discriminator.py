@@ -26,7 +26,6 @@ from mo_ldap_import_export.customer_specific_checks import ImportChecks
 from mo_ldap_import_export.dataloaders import DataLoader
 from mo_ldap_import_export.depends import GraphQLClient
 from mo_ldap_import_export.environments.main import construct_environment
-from mo_ldap_import_export.exceptions import RequeueException
 from mo_ldap_import_export.import_export import SyncTool
 from mo_ldap_import_export.ldap import apply_discriminator
 from mo_ldap_import_export.ldap import configure_ldap_connection
@@ -382,18 +381,18 @@ async def test_apply_discriminator_settings_invariants(
             ldap_connection,
             mo_api,
             EmployeeUUID(uuid4()),
-            [LdapObject(dn=ldap_dn)],
+            [LdapObject(dn=ldap_dn, sn="foo")],
         )
 
 
 async def test_apply_discriminator_unknown_dn(
     monkeypatch: pytest.MonkeyPatch, ldap_connection: Connection, mo_api: MOAPI
 ) -> None:
-    """Test that apply_discriminator requeues on missing DNs."""
+    """Test that apply_discriminator asserts on missing fields (was unknown DN)."""
     monkeypatch.setenv("DISCRIMINATOR_FIELDS", '["sn"]')
     monkeypatch.setenv("DISCRIMINATOR_VALUES", '["__never_gonna_match__"]')
     settings = Settings()
-    with pytest.raises(RequeueException) as exc_info:
+    with pytest.raises(AssertionError) as exc_info:
         await apply_discriminator(
             settings,
             ldap_connection,
@@ -401,7 +400,7 @@ async def test_apply_discriminator_unknown_dn(
             EmployeeUUID(uuid4()),
             [LdapObject(dn="CN=__missing__dn__")],
         )
-    assert "Unable to lookup DN(s)" in str(exc_info.value)
+    assert "missing required discriminator fields" in str(exc_info.value)
 
 
 @pytest.mark.usefixtures("minimal_valid_environmental_variables")
@@ -414,31 +413,29 @@ async def test_apply_discriminator_missing_field(
     """Test that apply_discriminator works with a single user on valid settings."""
     another_username = "bar"
     another_ldap_dn = f"CN={another_username},{ldap_container_dn}"
-    ldap_connection.strategy.add_entry(
-        another_ldap_dn,
-        {
-            "objectClass": "inetOrgPerson",
-            "userPassword": str(uuid4()),
-            "revision": 1,
-            "entryUUID": "{" + str(uuid4()) + "}",
-            "employeeID": "0101700001",
-        },
+    # This object is missing "hkOS2MOSync"
+    obj = LdapObject(
+        dn=another_ldap_dn,
+        objectClass="inetOrgPerson",
+        userPassword=str(uuid4()),
+        revision=1,
+        entryUUID="{" + str(uuid4()) + "}",
+        employeeID="0101700001",
     )
 
     monkeypatch.setenv("DISCRIMINATOR_FIELDS", '["hkOS2MOSync"]')
     monkeypatch.setenv("DISCRIMINATOR_VALUES", '["No"]')
 
     settings = Settings()
-    with capture_logs() as cap_logs:
-        result = await apply_discriminator(
+    with pytest.raises(AssertionError) as exc_info:
+        await apply_discriminator(
             settings,
             ldap_connection,
             mo_api,
             EmployeeUUID(uuid4()),
-            [LdapObject(dn=another_ldap_dn)],
+            [obj],
         )
-        assert "Discriminator value is None" in (x["event"] for x in cap_logs)
-    assert result is None
+    assert "missing required discriminator fields" in str(exc_info.value)
 
 
 @pytest.fixture
@@ -524,8 +521,6 @@ async def context(sync_tool_and_context: tuple[SyncTool, Context]) -> Context:
         pytest.param(
             True,
             [
-                "Found DN",
-                "Found DN",
                 "Aborting synchronization, as no good LDAP account was found",
             ],
             marks=pytest.mark.envvar(
@@ -539,8 +534,6 @@ async def context(sync_tool_and_context: tuple[SyncTool, Context]) -> Context:
         pytest.param(
             True,
             [
-                "Found DN",
-                "Found DN",
                 "Import to MO filtered",
                 "Import checks executed",
             ],
@@ -555,8 +548,6 @@ async def context(sync_tool_and_context: tuple[SyncTool, Context]) -> Context:
         pytest.param(
             True,
             [
-                "Found DN",
-                "Found DN",
                 "Found better DN for employee",
                 "Found DN",
                 "Import to MO filtered",
@@ -641,10 +632,9 @@ async def test_import_single_user_apply_discriminator(
         }
     }
 
+    ldap_object = await get_ldap_object(ldap_connection, ldap_dn)
     with capture_logs() as cap_logs:
-        await sync_tool.import_single_user(
-            LdapObject(dn=ldap_dn, employeeID="0101700001", entryUUID=str(uuid4()))
-        )
+        await sync_tool.import_single_user(ldap_object)
     events = [x["event"] for x in cap_logs if x["log_level"] != "debug"]
 
     assert (
@@ -677,8 +667,6 @@ async def test_import_single_user_apply_discriminator(
         pytest.param(
             True,
             [
-                "Found DN",
-                "Found DN",
                 "Aborting synchronization, as no good LDAP account was found",
             ],
             marks=pytest.mark.envvar(
@@ -692,8 +680,6 @@ async def test_import_single_user_apply_discriminator(
         pytest.param(
             True,
             [
-                "Found DN",
-                "Found DN",
                 "Not writing to LDAP as changeset is empty",
             ],
             marks=pytest.mark.envvar(
@@ -707,8 +693,6 @@ async def test_import_single_user_apply_discriminator(
         pytest.param(
             True,
             [
-                "Found DN",
-                "Found DN",
                 "Not writing to LDAP as changeset is empty",
             ],
             marks=pytest.mark.envvar(
@@ -797,11 +781,31 @@ async def test_listen_to_changes_in_employees(
     [
         # Single field
         # Check no template matches
-        (["sn"], {"CN=foo": {}, "CN=bar": {}}, "{{ False }}", None),
-        (["sn"], {"CN=foo": {}, "CN=bar": {}}, "{{ 'PleaseHelpMe' }}", None),
+        (
+            ["sn"],
+            {"CN=foo": {"sn": "foo"}, "CN=bar": {"sn": "bar"}},
+            "{{ False }}",
+            None,
+        ),
+        (
+            ["sn"],
+            {"CN=foo": {"sn": "foo"}, "CN=bar": {"sn": "bar"}},
+            "{{ 'PleaseHelpMe' }}",
+            None,
+        ),
         # Check dn is specific value
-        (["sn"], {"CN=foo": {}, "CN=bar": {}}, "{{ dn == 'CN=foo' }}", "CN=foo"),
-        (["sn"], {"CN=foo": {}, "CN=bar": {}}, "{{ dn == 'CN=bar' }}", "CN=bar"),
+        (
+            ["sn"],
+            {"CN=foo": {"sn": "foo"}, "CN=bar": {"sn": "bar"}},
+            "{{ dn == 'CN=foo' }}",
+            "CN=foo",
+        ),
+        (
+            ["sn"],
+            {"CN=foo": {"sn": "foo"}, "CN=bar": {"sn": "bar"}},
+            "{{ dn == 'CN=bar' }}",
+            "CN=bar",
+        ),
         # Check SN value
         (
             ["sn"],
@@ -868,27 +872,39 @@ async def test_listen_to_changes_in_employees(
         # Check SN value
         (
             ["sn", "uid"],
-            {"CN=foo": {"sn": "foo"}, "CN=bar": {"sn": "bar"}},
+            {
+                "CN=foo": {"sn": "foo", "uid": "foo"},
+                "CN=bar": {"sn": "bar", "uid": "bar"},
+            },
             "{{ value == 'foo' }}",
             # This is `None` as value is not uniquely determined
             None,
         ),
         (
             ["sn", "uid"],
-            {"CN=foo": {"sn": "foo"}, "CN=bar": {"sn": "bar"}},
+            {
+                "CN=foo": {"sn": "foo", "uid": "foo"},
+                "CN=bar": {"sn": "bar", "uid": "bar"},
+            },
             "{{ sn == 'foo' }}",
             "CN=foo",
         ),
         (
             ["sn", "uid"],
-            {"CN=foo": {"sn": "foo"}, "CN=bar": {"sn": "bar"}},
+            {
+                "CN=foo": {"sn": "foo", "uid": None},
+                "CN=bar": {"sn": "bar", "uid": None},
+            },
             "{{ uid == 'foo' }}",
-            # This is `None` as `uid` is unset
+            # This is `None` as `uid` is unset (None)
             None,
         ),
         (
             ["sn", "uid"],
-            {"CN=foo": {"sn": "foo"}, "CN=bar": {"sn": "bar", "uid": "foo"}},
+            {
+                "CN=foo": {"sn": "foo", "uid": "bar"},
+                "CN=bar": {"sn": "bar", "uid": "foo"},
+            },
             "{{ uid == 'foo' }}",
             "CN=bar",
         ),
@@ -928,24 +944,20 @@ async def test_apply_discriminator_template(
     )
     ldap_connection = AsyncMock()
 
-    async def get_ldap_object(
-        ldap_connection: Connection, dn: DN, *args: Any, **kwargs: Any
-    ) -> LdapObject:
-        return parse_obj_as(LdapObject, {"dn": dn, **dn_map[dn]})
+    ldap_objects = [parse_obj_as(LdapObject, {"dn": dn, **dn_map[dn]}) for dn in dn_map]
 
-    with patch("mo_ldap_import_export.ldap.get_ldap_object", wraps=get_ldap_object):
-        result = await apply_discriminator(
-            settings,
-            ldap_connection,
-            mo_api,
-            EmployeeUUID(uuid4()),
-            [LdapObject(dn=dn) for dn in dn_map],
-        )
-        if expected:
-            assert result is not None
-            assert result.dn == expected
-        else:
-            assert result is None
+    result = await apply_discriminator(
+        settings,
+        ldap_connection,
+        mo_api,
+        EmployeeUUID(uuid4()),
+        ldap_objects,
+    )
+    if expected:
+        assert result is not None
+        assert result.dn == expected
+    else:
+        assert result is None
 
 
 async def test_get_existing_values(sync_tool: SyncTool, context: Context) -> None:
