@@ -311,10 +311,9 @@ class DataLoader:
             created, while the latter is a signal that an account was found, and that
             synchronization should not take place.
         """
-        ldap_objects = await self.find_mo_employee_dn(uuid=uuid, attributes=set())
-        ldap_objects = await filter_dns(
-            self.settings, self.ldapapi.connection, ldap_objects
-        )
+        attributes = set(self.settings.discriminator_fields)
+        ldap_objects = await self.find_mo_employee_dn(uuid=uuid, attributes=attributes)
+        ldap_objects = await filter_dns(self.settings, ldap_objects)
         dns = {obj.dn for obj in ldap_objects}
         # If we found DNs, we want to synchronize to the best of them
         if not dns:

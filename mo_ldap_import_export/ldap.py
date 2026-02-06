@@ -331,6 +331,28 @@ class LDAPConnection:
         return response, result
 
 
+def ldapobject2discriminator(
+    ldap_object: LdapObject, discriminator_field: str
+) -> str | int | None:
+    # The value can either be a string or a list
+    value = getattr(ldap_object, discriminator_field, None)
+    if value is None:
+        logger.debug("Discriminator value is None before unpacking", dn=ldap_object.dn)
+        return None
+    # TODO: Figure out when it is a string instead of a list
+    #       Maybe it is an AD only thing?
+    # NOTE: userAccountControl is in integer attribute
+    if isinstance(value, str | int):  # pragma: no cover
+        return value
+    # If it is a list, we assume it is
+    unpacked_value = only(value)
+    if unpacked_value is None:
+        logger.debug("Discriminator value is None", dn=ldap_object.dn)
+        return None
+    assert isinstance(unpacked_value, str)
+    return unpacked_value
+
+
 async def fetch_field_mapping(
     ldap_connection: Connection, discriminator_fields: list[str], dn: DN
 ) -> dict[str, str | int | None]:
@@ -356,29 +378,6 @@ async def fetch_field_mapping(
         # raising an alarm due to messages not being processed, and thus ensuring that
         # someone will look into the issue.
         raise RequeueException("Unable to lookup DN(s)") from exc
-
-    def ldapobject2discriminator(
-        ldap_object: LdapObject, discriminator_field: str
-    ) -> str | int | None:
-        # The value can either be a string or a list
-        value = getattr(ldap_object, discriminator_field, None)
-        if value is None:
-            logger.debug(
-                "Discriminator value is None before unpacking", dn=ldap_object.dn
-            )
-            return None
-        # TODO: Figure out when it is a string instead of a list
-        #       Maybe it is an AD only thing?
-        # NOTE: userAccountControl is in integer attribute
-        if isinstance(value, str | int):  # pragma: no cover
-            return value
-        # If it is a list, we assume it is
-        unpacked_value = only(value)
-        if unpacked_value is None:
-            logger.debug("Discriminator value is None", dn=ldap_object.dn)
-            return None
-        assert isinstance(unpacked_value, str)
-        return unpacked_value
 
     return {
         discriminator_field: ldapobject2discriminator(ldap_object, discriminator_field)
@@ -425,7 +424,7 @@ async def evaluate_template(
 
 
 async def filter_dns(
-    settings: Settings, ldap_connection: Connection, ldap_objects: list[LdapObject]
+    settings: Settings, ldap_objects: list[LdapObject]
 ) -> list[LdapObject]:
     assert isinstance(ldap_objects, list)
 
@@ -440,17 +439,46 @@ async def filter_dns(
     discriminator_fields = settings.discriminator_fields
     assert discriminator_fields, "discriminator_fields must be set"
 
-    dns = {obj.dn for obj in ldap_objects}
-    mapping = await fetch_dn_mapping(ldap_connection, discriminator_fields, dns)
+    # Check if any fields are missing on any ldap_objects
+    def calculate_missing_fields(obj: LdapObject) -> set[str]:
+        required_fields = set(discriminator_fields)
+        available_attributes = set(obj.dict().keys())
+        missing_fields = required_fields - available_attributes
+        return missing_fields
+
+    objs_missing_fields = {
+        obj.dn: calculate_missing_fields(obj) for obj in ldap_objects
+    }
+    objs_missing_fields = {
+        dn: missing_fields
+        for dn, missing_fields in objs_missing_fields.items()
+        if missing_fields
+    }
+    assert (
+        not objs_missing_fields
+    ), "LDAP object(s) missing required discriminator fields"
+
+    mapping = {
+        obj.dn: {
+            field: ldapobject2discriminator(obj, field)
+            for field in discriminator_fields
+        }
+        for obj in ldap_objects
+    }
+
     dns_passing_template = {
         dn
-        for dn in dns
-        if await evaluate_template(discriminator_filter, dn, mapping[dn])
+        for dn, field_values in mapping.items()
+        if await evaluate_template(discriminator_filter, dn, field_values)
     }
     objects_passing_template = [
         obj for obj in ldap_objects if obj.dn in dns_passing_template
     ]
-    logger.info("Discriminator filter run", dns=dns, dns_passing=dns_passing_template)
+    logger.info(
+        "Discriminator filter run",
+        dns=set(mapping.keys()),
+        dns_passing=dns_passing_template,
+    )
     return objects_passing_template
 
 

@@ -501,6 +501,9 @@ def construct_router(settings: Settings) -> APIRouter:
                 for attr in mapping.ldap_attributes
             }
 
+        if settings.discriminator_fields:  # pragma: no cover
+            attributes_to_fetch.update(settings.discriminator_fields)
+
         async def process_uuid(uuid: LDAPUUID) -> dict[str, Any]:
             try:
                 dn = await sync_tool.dataloader.ldapapi.get_ldap_dn(uuid)
@@ -564,6 +567,9 @@ def construct_router(settings: Settings) -> APIRouter:
                 for mapping in settings.conversion_mapping.ldap_to_mo.values()
                 for attr in mapping.ldap_attributes
             }
+
+        if settings.discriminator_fields:  # pragma: no cover
+            attributes.update(settings.discriminator_fields)
 
         ldap_object = await sync_tool.dataloader.ldapapi.get_object_by_dn(
             dn, attributes=attributes
@@ -748,7 +754,7 @@ def construct_router(settings: Settings) -> APIRouter:
             logger.info("Found no DNs for cpr_number")
             raise HTTPException(status_code=404, detail="No DNs found for CPR number")
 
-        ldap_objects = await filter_dns(settings, ldap_connection, ldap_objects)
+        ldap_objects = await filter_dns(settings, ldap_objects)
         dns = {obj.dn for obj in ldap_objects}
 
         # SD-changed-at only calls this endpoint when creating users in MO (to
@@ -793,7 +799,7 @@ def construct_router(settings: Settings) -> APIRouter:
         attributes = {settings.ldap_unique_id_field, account_name}
 
         ldap_objects = await dataloader.find_mo_employee_dn(uuid, attributes)
-        ldap_objects = await filter_dns(settings, ldap_connection, ldap_objects)
+        ldap_objects = await filter_dns(settings, ldap_objects)
         dns = {obj.dn for obj in ldap_objects}
         if not dns:
             logger.info("Found no DNs for cpr_number")
