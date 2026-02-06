@@ -572,7 +572,7 @@ def construct_router(settings: Settings) -> APIRouter:
 
     @router.get("/Inspect/mo/uuid2dn/{uuid}", status_code=200, tags=["LDAP"])
     async def mo_uuid_to_ldap_dn(dataloader: depends.DataLoader, uuid: UUID) -> set[DN]:
-        ldap_objects = await dataloader.find_mo_employee_dn(uuid, set())
+        ldap_objects = await dataloader.find_mo_employee_dn(uuid=uuid, attributes=set())
         return {obj.dn for obj in ldap_objects}
 
     @router.get(

@@ -495,7 +495,9 @@ async def test_find_mo_employee_dn(dataloader: MagicMock) -> None:
     dataloader.find_mo_employee_dn_by_cpr_number.return_value = []
 
     with capture_logs() as cap_logs:
-        result = await dataloader.find_mo_employee_dn(employee_uuid, set())
+        result = await dataloader.find_mo_employee_dn(
+            uuid=employee_uuid, attributes=set()
+        )
         assert result == []
     log_events = [log["event"] for log in cap_logs]
     assert log_events == [
@@ -513,7 +515,9 @@ async def test_find_mo_employee_dn(dataloader: MagicMock) -> None:
     ]
 
     with capture_logs() as cap_logs:
-        result = await dataloader.find_mo_employee_dn(employee_uuid, set())
+        result = await dataloader.find_mo_employee_dn(
+            uuid=employee_uuid, attributes=set()
+        )
         assert {obj.dn for obj in result} == {"A", "B", "C", "D"}
     log_events = [log["event"] for log in cap_logs]
     assert log_events == ["Attempting to find DNs", "Found DNs for MO employee"]
@@ -701,7 +705,9 @@ async def test_convert_ldap_uuids_to_dns(
     ]
 
     uuids = {cast(LDAPUUID, uuid4()) for _ in ldap_dns}
-    result_map = await dataloader.ldapapi.convert_ldap_uuids_to_dns(uuids, set())
+    result_map = await dataloader.ldapapi.convert_ldap_uuids_to_dns(
+        ldap_uuids=uuids, attributes=set()
+    )
     assert len(result_map) == len(ldap_dns)
     assert set(result_map.keys()) == uuids
     assert {obj.dn for obj in result_map.values() if obj is not None} == set(ldap_dns)
@@ -716,7 +722,8 @@ async def test_convert_ldap_uuids_to_dns_exception(dataloader: DataLoader) -> No
 
     with pytest.raises(ValueError) as exc_info:
         await dataloader.ldapapi.convert_ldap_uuids_to_dns(
-            {cast(LDAPUUID, uuid4()), cast(LDAPUUID, uuid4())}, set()
+            ldap_uuids={cast(LDAPUUID, uuid4()), cast(LDAPUUID, uuid4())},
+            attributes=set(),
         )
     assert "Exceptions during UUID2DN translation" in str(exc_info.value)
     assert exc_info.value.__cause__ is not None
@@ -730,7 +737,8 @@ async def test_convert_ldap_uuids_to_dns_exception(dataloader: DataLoader) -> No
 
     with pytest.raises(ValueError) as exc_info:
         await dataloader.ldapapi.convert_ldap_uuids_to_dns(
-            {cast(LDAPUUID, uuid4()), cast(LDAPUUID, uuid4())}, set()
+            ldap_uuids={cast(LDAPUUID, uuid4()), cast(LDAPUUID, uuid4())},
+            attributes=set(),
         )
     assert "Exceptions during UUID2DN translation" in str(exc_info.value)
     assert exc_info.value.__cause__ is not None
@@ -1230,7 +1238,9 @@ async def test_find_mo_employee_dn_by_cpr_number(
     dataloader.ldapapi.cpr2dns = AsyncMock()  # type: ignore
     dataloader.ldapapi.cpr2dns.return_value = [LdapObject(dn=dn) for dn in (dns or [])]
 
-    result = await dataloader.find_mo_employee_dn_by_cpr_number(employee_uuid, set())
+    result = await dataloader.find_mo_employee_dn_by_cpr_number(
+        uuid=employee_uuid, attributes=set()
+    )
     assert {obj.dn for obj in result} == expected
 
     if dns is not None:
@@ -1247,7 +1257,9 @@ async def test_find_mo_employee_dn_by_itsystem_no_itsystem(
     route = graphql_mock.query("read_itsystem_uuid")
     route.result = {"itsystems": {"objects": []}}
 
-    result = await dataloader.find_mo_employee_dn_by_itsystem(employee_uuid, set())
+    result = await dataloader.find_mo_employee_dn_by_itsystem(
+        uuid=employee_uuid, attributes=set()
+    )
     assert result == []
 
 
@@ -1265,7 +1277,9 @@ async def test_find_mo_employee_dn_by_itsystem_no_match(
     route2 = graphql_mock.query("read_ituser_by_employee_and_itsystem_uuid")
     route2.result = {"itusers": {"objects": []}}
 
-    result = await dataloader.find_mo_employee_dn_by_itsystem(employee_uuid, set())
+    result = await dataloader.find_mo_employee_dn_by_itsystem(
+        uuid=employee_uuid, attributes=set()
+    )
     assert result == []
 
 
@@ -1310,9 +1324,11 @@ async def test_find_mo_employee_dn_by_itsystem(
         LDAPUUID(str(ituser_uuid)): LdapObject(dn=dn, objectGUID=str(ituser_uuid))
     }
 
-    result = await dataloader.find_mo_employee_dn_by_itsystem(employee_uuid, set())
+    result = await dataloader.find_mo_employee_dn_by_itsystem(
+        uuid=employee_uuid, attributes=set()
+    )
     assert one(result).dn == dn
 
     dataloader.ldapapi.convert_ldap_uuids_to_dns.assert_called_once_with(
-        {LDAPUUID(str(ituser_uuid))}, set()
+        ldap_uuids={LDAPUUID(str(ituser_uuid))}, attributes=set()
     )

@@ -152,7 +152,7 @@ class DataLoader:
         ldap_uuids = set(ldap_uuid_ituser_map.keys())
 
         uuid_ldap_object_map = await self.ldapapi.convert_ldap_uuids_to_dns(
-            ldap_uuids, attributes
+            ldap_uuids=ldap_uuids, attributes=attributes
         )
 
         # Find the LDAP UUIDs that could not be mapped to DNs
@@ -249,8 +249,8 @@ class DataLoader:
         #       objects, to support scenarios where the application may crash after
         #       creating an LDAP account, but before making a MO ITUser.
         ituser_objects, cpr_number_objects = await asyncio.gather(
-            self.find_mo_employee_dn_by_itsystem(uuid, attributes),
-            self.find_mo_employee_dn_by_cpr_number(uuid, attributes),
+            self.find_mo_employee_dn_by_itsystem(uuid=uuid, attributes=attributes),
+            self.find_mo_employee_dn_by_cpr_number(uuid=uuid, attributes=attributes),
         )
         all_objects = ituser_objects + cpr_number_objects
         unique_objects = list(unique_everseen(all_objects, key=lambda obj: obj.dn))
@@ -311,7 +311,7 @@ class DataLoader:
             created, while the latter is a signal that an account was found, and that
             synchronization should not take place.
         """
-        ldap_objects = await self.find_mo_employee_dn(uuid, set())
+        ldap_objects = await self.find_mo_employee_dn(uuid=uuid, attributes=set())
         ldap_objects = await filter_dns(
             self.settings, self.ldapapi.connection, ldap_objects
         )
