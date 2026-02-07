@@ -108,7 +108,7 @@ def get_client_strategy():
 
 
 def construct_server_pool(settings: Settings) -> ServerPool:
-    servers = list(map(construct_server, settings.ldap_controllers))
+    servers = [construct_server(c) for c in settings.ldap_controllers]
     # Pick the next server to use at random, retry connections 10 times,
     # discard non-active servers.
     server_pool = ServerPool(
@@ -377,6 +377,31 @@ async def evaluate_template(
     return result.strip() == "True"
 
 
+def calculate_discriminator_mapping(
+    ldap_objects: list[LdapObject], discriminator_fields: list[str]
+) -> dict[DN, dict[str, str | int | None]]:
+    required_fields = set(discriminator_fields)
+    objs_missing_fields = {
+        obj.dn: required_fields - set(obj.dict().keys()) for obj in ldap_objects
+    }
+    objs_missing_fields = {
+        dn: missing_fields
+        for dn, missing_fields in objs_missing_fields.items()
+        if missing_fields
+    }
+    assert (
+        not objs_missing_fields
+    ), "LDAP object(s) missing required discriminator fields"
+
+    return {
+        obj.dn: {
+            field: ldapobject2discriminator(obj, field)
+            for field in discriminator_fields
+        }
+        for obj in ldap_objects
+    }
+
+
 async def filter_dns(
     settings: Settings, ldap_objects: list[LdapObject]
 ) -> list[LdapObject]:
@@ -393,32 +418,7 @@ async def filter_dns(
     discriminator_fields = settings.discriminator_fields
     assert discriminator_fields, "discriminator_fields must be set"
 
-    # Check if any fields are missing on any ldap_objects
-    def calculate_missing_fields(obj: LdapObject) -> set[str]:
-        required_fields = set(discriminator_fields)
-        available_attributes = set(obj.dict().keys())
-        missing_fields = required_fields - available_attributes
-        return missing_fields
-
-    objs_missing_fields = {
-        obj.dn: calculate_missing_fields(obj) for obj in ldap_objects
-    }
-    objs_missing_fields = {
-        dn: missing_fields
-        for dn, missing_fields in objs_missing_fields.items()
-        if missing_fields
-    }
-    assert (
-        not objs_missing_fields
-    ), "LDAP object(s) missing required discriminator fields"
-
-    mapping = {
-        obj.dn: {
-            field: ldapobject2discriminator(obj, field)
-            for field in discriminator_fields
-        }
-        for obj in ldap_objects
-    }
+    mapping = calculate_discriminator_mapping(ldap_objects, discriminator_fields)
 
     dns_passing_template = {
         dn
@@ -531,32 +531,7 @@ async def apply_discriminator(
     # But no guarantees are given as pydantic is lenient with run validators
     assert settings.discriminator_values != []
 
-    # Check if any fields are missing on any ldap_objects
-    def calculate_missing_fields(obj: LdapObject) -> set[str]:
-        required_fields = set(discriminator_fields)
-        available_attributes = set(obj.dict().keys())
-        missing_fields = required_fields - available_attributes
-        return missing_fields
-
-    objs_missing_fields = {
-        obj.dn: calculate_missing_fields(obj) for obj in ldap_objects
-    }
-    objs_missing_fields = {
-        dn: missing_fields
-        for dn, missing_fields in objs_missing_fields.items()
-        if missing_fields
-    }
-    assert (
-        not objs_missing_fields
-    ), "LDAP object(s) missing required discriminator fields"
-
-    mapping = {
-        obj.dn: {
-            field: ldapobject2discriminator(obj, field)
-            for field in discriminator_fields
-        }
-        for obj in ldap_objects
-    }
+    mapping = calculate_discriminator_mapping(ldap_objects, discriminator_fields)
 
     # If the discriminator_function is template, discriminator values will be a
     # prioritized list of jinja templates (first meaning most important), and we will
