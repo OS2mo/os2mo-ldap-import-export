@@ -276,8 +276,8 @@ def graphql_mock(respx_mock: MockRouter) -> Iterator[GraphQLMocker]:
 
 
 @pytest.fixture
-def converter() -> MagicMock:
-    converter = MagicMock()
+def converter() -> AsyncMock:
+    converter = AsyncMock()
     converter.get_accepted_json_keys.return_value = [
         "Employee",
         "Address",
@@ -287,7 +287,6 @@ def converter() -> MagicMock:
     converter._import_to_mo_.return_value = True
 
     converter.to_ldap = AsyncMock()
-    converter.from_ldap = AsyncMock()
     converter.to_ldap.return_value = LdapObject(dn="CN=foo", name="Angus")
 
     converter.get_employee_address_type_user_key = AsyncMock()
