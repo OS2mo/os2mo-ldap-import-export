@@ -4,6 +4,7 @@ import json
 from collections.abc import Awaitable
 from collections.abc import Callable
 from contextlib import ExitStack
+from datetime import datetime
 from functools import wraps
 from typing import Any
 from typing import TypeVar
@@ -582,6 +583,19 @@ class SyncTool:
         mo_class = mapping.as_mo_class()
         mo_object = await self.fetch_uuid_object(uuid, mo_class) if uuid else None
 
+        # Decide termination date
+        termination_date = None
+        if mapping.terminate:
+            try:
+                termination_date_str = await self.converter.render_template(
+                    "terminate", mapping.terminate, context
+                )
+            except SkipObject:  # pragma: no cover
+                logger.info("Skipping object", field="terminate", dn=dn)
+                return
+            if termination_date_str:
+                termination_date = datetime.fromisoformat(termination_date_str)
+
         # Handle creates
         if mo_object is None:
             try:
@@ -607,39 +621,27 @@ class SyncTool:
             await self.dataloader.moapi.create(converted_object)
             return
 
-        # Handle termination
-        if mapping.terminate:
-            try:
-                terminate_template = mapping.terminate
-                terminate = await self.converter.render_template(
-                    "terminate", terminate_template, context
-                )
-            except SkipObject:  # pragma: no cover
-                logger.info("Skipping object", field="terminate", dn=dn)
+        # Handle terminations
+        if termination_date is not None:
+            # Asked to terminate, but uuid template did not return an uuid, i.e.
+            # there was no object to actually terminate, so we just skip it.
+            if not uuid:  # pragma: no cover
+                message = "Unable to terminate without UUID"
+                logger.info(message)
                 return
-
-            if terminate:
-                # Asked to terminate, but uuid template did not return an uuid, i.e.
-                # there was no object to actually terminate, so we just skip it.
-                if not uuid:  # pragma: no cover
-                    message = "Unable to terminate without UUID"
-                    logger.info(message)
-                    return
-                termination = Termination(mo_class=mo_class, at=terminate, uuid=uuid)
-                logger.info(
-                    "Importing object", verb=Verb.TERMINATE, obj=termination, dn=dn
+            termination = Termination(mo_class=mo_class, at=termination_date, uuid=uuid)
+            logger.info("Importing object", verb=Verb.TERMINATE, obj=termination, dn=dn)
+            if dry_run:
+                raise DryRunException(
+                    "Would have uploaded changes to MO",
+                    dn,
+                    details={
+                        "verb": str(Verb.TERMINATE),
+                        "obj": jsonable_encoder(termination, exclude={"mo_class"}),
+                    },
                 )
-                if dry_run:
-                    raise DryRunException(
-                        "Would have uploaded changes to MO",
-                        dn,
-                        details={
-                            "verb": str(Verb.TERMINATE),
-                            "obj": jsonable_encoder(termination, exclude={"mo_class"}),
-                        },
-                    )
-                await self.dataloader.moapi.terminate(termination)
-                return
+            await self.dataloader.moapi.terminate(termination)
+            return
 
         # Handle updates
         try:
