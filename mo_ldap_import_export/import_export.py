@@ -612,9 +612,25 @@ class SyncTool:
                         message = "Unable to terminate without UUID"
                         logger.info(message)
                         raise SkipObject(message)
-                    converted_object = Termination(
+                    termination = Termination(
                         mo_class=mo_class, at=terminate, uuid=uuid
                     )
+                    logger.info(
+                        "Importing object", verb=Verb.TERMINATE, obj=termination, dn=dn
+                    )
+                    if dry_run:
+                        raise DryRunException(
+                            "Would have uploaded changes to MO",
+                            dn,
+                            details={
+                                "verb": str(Verb.TERMINATE),
+                                "obj": jsonable_encoder(
+                                    termination, exclude={"mo_class"}
+                                ),
+                            },
+                        )
+                    await self.dataloader.moapi.terminate(termination)
+                    return
 
             if converted_object is None:
                 # TODO: asyncio.gather this for future dataloader bulking
@@ -680,22 +696,6 @@ class SyncTool:
 
         mo_attributes = set(mapping.get_fields().keys())
         assert converted_object is not None
-
-        if isinstance(converted_object, Termination):
-            logger.info(
-                "Importing object", verb=Verb.TERMINATE, obj=converted_object, dn=dn
-            )
-            if dry_run:
-                raise DryRunException(
-                    "Would have uploaded changes to MO",
-                    dn,
-                    details={
-                        "verb": str(Verb.TERMINATE),
-                        "obj": jsonable_encoder(converted_object, exclude={"mo_class"}),
-                    },
-                )
-            await self.dataloader.moapi.terminate(converted_object)
-            return
 
         mo_class = type(converted_object)
         mo_object = await self.fetch_uuid_object(converted_object.uuid, mo_class)
