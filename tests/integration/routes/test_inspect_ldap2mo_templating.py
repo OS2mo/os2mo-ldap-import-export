@@ -385,7 +385,6 @@ async def test_mo2ldap_template_address(
         "Found DN",
         "Found employee via CPR matching",
         "No discriminator filter set, not filtering",
-        "Loading address",
         "Importing object",
     }.issubset(events)
 

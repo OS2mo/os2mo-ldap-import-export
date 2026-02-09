@@ -571,87 +571,44 @@ class SyncTool:
             loaded_object=loaded_object,
         )
 
-        try:
-
-            def convert_value(value: Any) -> Any:
-                if not is_list(value):
-                    return value
-                # If the value is a single element list, return the contents
-                if len(value) == 1:
-                    return one(value)
-                # Otherwise simply return the list
+        def convert_value(value: Any) -> Any:
+            if not is_list(value):
                 return value
+            # If the value is a single element list, return the contents
+            if len(value) == 1:
+                return one(value)
+            # Otherwise simply return the list
+            return value
 
-            ldap_dict = {
-                key: convert_value(value) for key, value in loaded_object.dict().items()
-            }
-            context = {"ldap": ldap_dict, **template_context}
+        ldap_dict = {
+            key: convert_value(value) for key, value in loaded_object.dict().items()
+        }
+        context = {"ldap": ldap_dict, **template_context}
 
-            mo_class = mapping.as_mo_class()
-
-            converted_object: MOBase | Termination | None = None
-
-            # Handle termination
-            if mapping.terminate:
-                terminate_template = mapping.terminate
-                terminate = await self.converter.render_template(
-                    "_terminate_", terminate_template, context
-                )
-                if terminate:
-                    # Pydantic validator ensures that uuid is set here
-                    assert hasattr(mapping, "uuid")
-                    uuid_template = mapping.uuid
-                    assert uuid_template is not None
-
-                    uuid = await self.converter.render_template(
-                        "uuid", uuid_template, context
-                    )
-                    # Asked to terminate, but uuid template did not return an uuid, i.e.
-                    # there was no object to actually terminate, so we just skip it.
-                    if not uuid:
-                        message = "Unable to terminate without UUID"
-                        logger.info(message)
-                        raise SkipObject(message)
-                    termination = Termination(
-                        mo_class=mo_class, at=terminate, uuid=uuid
-                    )
-                    logger.info(
-                        "Importing object", verb=Verb.TERMINATE, obj=termination, dn=dn
-                    )
-                    if dry_run:
-                        raise DryRunException(
-                            "Would have uploaded changes to MO",
-                            dn,
-                            details={
-                                "verb": str(Verb.TERMINATE),
-                                "obj": jsonable_encoder(
-                                    termination, exclude={"mo_class"}
-                                ),
-                            },
-                        )
-                    await self.dataloader.moapi.terminate(termination)
-                    return
-
-            converted_object = await self._create_converted_object(
-                mapping, context, mo_class
+        try:
+            # Pydantic validator ensures that uuid is set here
+            uuid_str = await self.converter.render_template(
+                "uuid", mapping.uuid, context
             )
-
         except SkipObject:
-            logger.info("Skipping object", dn=dn)
+            logger.info("Skipping object", field="uuid", dn=dn)
             return
 
-        logger.info(
-            "Converted 'n' objects ",
-            n=1,
-            dn=dn,
-        )
+        uuid = UUID(uuid_str) if uuid_str else None
 
-        mo_attributes = set(mapping.get_fields().keys())
-        assert converted_object is not None
+        mo_class = mapping.as_mo_class()
+        mo_object = await self.fetch_uuid_object(uuid, mo_class) if uuid else None
 
-        mo_class = type(converted_object)
-        mo_object = await self.fetch_uuid_object(converted_object.uuid, mo_class)
+        # Handle creates
         if mo_object is None:
+            try:
+                converted_object = await self._create_converted_object(
+                    mapping, context, mo_class
+                )
+            except SkipObject:
+                logger.info("Skipping object", dn=dn)
+                return
+
             logger.info(
                 "Importing object", verb=Verb.CREATE, obj=converted_object, dn=dn
             )
@@ -666,6 +623,51 @@ class SyncTool:
                 )
             await self.dataloader.moapi.create(converted_object)
             return
+
+        # Handle termination
+        if mapping.terminate:
+            try:
+                terminate_template = mapping.terminate
+                terminate = await self.converter.render_template(
+                    "_terminate_", terminate_template, context
+                )
+            except SkipObject:  # pragma: no cover
+                logger.info("Skipping object", field="_terminate_", dn=dn)
+                return
+
+            if terminate:
+                # Asked to terminate, but uuid template did not return an uuid, i.e.
+                # there was no object to actually terminate, so we just skip it.
+                if not uuid:  # pragma: no cover
+                    message = "Unable to terminate without UUID"
+                    logger.info(message)
+                    return
+                termination = Termination(mo_class=mo_class, at=terminate, uuid=uuid)
+                logger.info(
+                    "Importing object", verb=Verb.TERMINATE, obj=termination, dn=dn
+                )
+                if dry_run:
+                    raise DryRunException(
+                        "Would have uploaded changes to MO",
+                        dn,
+                        details={
+                            "verb": str(Verb.TERMINATE),
+                            "obj": jsonable_encoder(termination, exclude={"mo_class"}),
+                        },
+                    )
+                await self.dataloader.moapi.terminate(termination)
+                return
+
+        # Handle updates
+        try:
+            converted_object = await self._create_converted_object(
+                mapping, context, mo_class
+            )
+        except SkipObject:  # pragma: no cover
+            logger.info("Skipping object", dn=dn)
+            return
+
+        mo_attributes = set(mapping.get_fields().keys())
 
         # Convert our objects to dicts
         mo_object_dict_to_upload = mo_object.dict()

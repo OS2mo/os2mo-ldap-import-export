@@ -345,6 +345,7 @@ async def test_to_mo_skip_if_none(
     skip_object_log = {
         "dn": ldap_person_dn,
         "event": "Skipping object",
+        "field": "uuid",
         "log_level": "info",
     }
 
