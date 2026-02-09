@@ -589,48 +589,49 @@ class SyncTool:
 
             mo_class = mapping.as_mo_class()
 
-            converted_object: MOBase | Termination | None = None
-
-            # Handle termination
-            if mapping.terminate:
-                terminate_template = mapping.terminate
-                terminate = await self.converter.render_template(
-                    "_terminate_", terminate_template, context
+            uuid_template = getattr(mapping, "uuid", None)
+            uuid: UUID | None = None
+            if uuid_template:
+                rendered_uuid = await self.converter.render_template(
+                    "uuid", uuid_template, context
                 )
-                if terminate:
-                    # Pydantic validator ensures that uuid is set here
-                    assert hasattr(mapping, "uuid")
-                    uuid_template = mapping.uuid
-                    assert uuid_template is not None
+                if rendered_uuid:
+                    uuid = rendered_uuid if isinstance(rendered_uuid, UUID) else UUID(str(rendered_uuid))
 
-                    uuid = await self.converter.render_template(
-                        "uuid", uuid_template, context
+            mo_object: MOBase | None = None
+            if uuid:
+                mo_object = await self.fetch_uuid_object(uuid, mo_class)
+
+            if mo_object:
+                # Handle termination
+                if mapping.terminate:
+                    terminate_template = mapping.terminate
+                    terminate = await self.converter.render_template(
+                        "_terminate_", terminate_template, context
                     )
-                    # Asked to terminate, but uuid template did not return an uuid, i.e.
-                    # there was no object to actually terminate, so we just skip it.
-                    if not uuid:
-                        message = "Unable to terminate without UUID"
-                        logger.info(message)
-                        raise SkipObject(message)
-                    termination = Termination(
-                        mo_class=mo_class, at=terminate, uuid=uuid
-                    )
-                    logger.info(
-                        "Importing object", verb=Verb.TERMINATE, obj=termination, dn=dn
-                    )
-                    if dry_run:
-                        raise DryRunException(
-                            "Would have uploaded changes to MO",
-                            dn,
-                            details={
-                                "verb": str(Verb.TERMINATE),
-                                "obj": jsonable_encoder(
-                                    termination, exclude={"mo_class"}
-                                ),
-                            },
+                    if terminate:
+                        termination = Termination(
+                            mo_class=mo_class, at=terminate, uuid=uuid
                         )
-                    await self.dataloader.moapi.terminate(termination)
-                    return
+                        logger.info(
+                            "Importing object",
+                            verb=Verb.TERMINATE,
+                            obj=termination,
+                            dn=dn,
+                        )
+                        if dry_run:
+                            raise DryRunException(
+                                "Would have uploaded changes to MO",
+                                dn,
+                                details={
+                                    "verb": str(Verb.TERMINATE),
+                                    "obj": jsonable_encoder(
+                                        termination, exclude={"mo_class"}
+                                    ),
+                                },
+                            )
+                        await self.dataloader.moapi.terminate(termination)
+                        return
 
             # TODO: asyncio.gather this for future dataloader bulking
             mo_dict = {
@@ -696,8 +697,6 @@ class SyncTool:
         mo_attributes = set(mapping.get_fields().keys())
         assert converted_object is not None
 
-        mo_class = type(converted_object)
-        mo_object = await self.fetch_uuid_object(converted_object.uuid, mo_class)
         if mo_object is None:
             logger.info(
                 "Importing object", verb=Verb.CREATE, obj=converted_object, dn=dn
