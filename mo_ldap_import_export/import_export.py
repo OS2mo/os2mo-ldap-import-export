@@ -599,6 +599,31 @@ class SyncTool:
         mo_class = mapping.as_mo_class()
         mo_object = await self.fetch_uuid_object(uuid, mo_class) if uuid else None
 
+        # Handle creates
+        if mo_object is None:
+            try:
+                converted_object = await self._create_converted_object(
+                    mapping, context, mo_class
+                )
+            except SkipObject:
+                logger.info("Skipping object", dn=dn)
+                return
+
+            logger.info(
+                "Importing object", verb=Verb.CREATE, obj=converted_object, dn=dn
+            )
+            if dry_run:
+                raise DryRunException(
+                    "Would have uploaded changes to MO",
+                    dn,
+                    details={
+                        "verb": str(Verb.CREATE),
+                        "obj": jsonable_encoder(converted_object, exclude={"mo_class"}),
+                    },
+                )
+            await self.dataloader.moapi.create(converted_object)
+            return
+
         # Handle termination
         if mapping.terminate:
             try:
@@ -649,22 +674,6 @@ class SyncTool:
 
         mo_attributes = set(mapping.get_fields().keys())
         assert converted_object is not None
-
-        if mo_object is None:
-            logger.info(
-                "Importing object", verb=Verb.CREATE, obj=converted_object, dn=dn
-            )
-            if dry_run:
-                raise DryRunException(
-                    "Would have uploaded changes to MO",
-                    dn,
-                    details={
-                        "verb": str(Verb.CREATE),
-                        "obj": jsonable_encoder(converted_object, exclude={"mo_class"}),
-                    },
-                )
-            await self.dataloader.moapi.create(converted_object)
-            return
 
         # Convert our objects to dicts
         mo_object_dict_to_upload = mo_object.dict()

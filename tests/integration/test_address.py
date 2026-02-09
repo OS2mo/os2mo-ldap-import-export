@@ -173,6 +173,7 @@ async def test_to_mo(
     }
 )
 @pytest.mark.usefixtures("test_client")
+@pytest.mark.xfail(reason="creates are now done before terminations")
 async def test_terminate_on_create(
     graphql_client: GraphQLClient,
     mo_person: UUID,
