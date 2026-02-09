@@ -599,9 +599,7 @@ class SyncTool:
                 )
                 if terminate:
                     # Pydantic validator ensures that uuid is set here
-                    assert hasattr(mapping, "uuid")
                     uuid_template = mapping.uuid
-                    assert uuid_template is not None
 
                     uuid = await self.converter.render_template(
                         "uuid", uuid_template, context
