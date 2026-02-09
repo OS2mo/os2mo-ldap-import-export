@@ -633,56 +633,27 @@ class SyncTool:
                         await self.dataloader.moapi.terminate(termination)
                         return
 
-            # TODO: asyncio.gather this for future dataloader bulking
-            mo_dict = {
-                mo_field_name: await self.converter.render_template(
-                    mo_field_name, template_str, context
-                )
-                for mo_field_name, template_str in mapping.get_fields().items()
-            }
+            converted_object = await self._create_converted_object(
+                mapping, context, mo_class
+            )
 
-            required_attributes = get_required_attributes(mo_class)
-
-            # Load our validity default, if it is not set
-            if "validity" in required_attributes:
-                assert (
-                    "validity" not in mo_dict
-                ), "validity disallowed in ldap2mo mappings"
-                mo_dict["validity"] = {
-                    "from": mo_today(),
-                    "to": None,
-                }
-
-            # If any required attributes are missing
-            missing_attributes = required_attributes - set(mo_dict.keys())
-            # TODO: Restructure this so rejection happens during parsing?
-            if missing_attributes:  # pragma: no cover
+            if mo_object is None:
                 logger.info(
-                    "Missing attributes in dict to model conversion",
-                    mo_dict=mo_dict,
-                    mo_class=mo_class,
-                    missing_attributes=missing_attributes,
+                    "Importing object", verb=Verb.CREATE, obj=converted_object, dn=dn
                 )
-                raise ValueError("Missing attributes in dict to model conversion")
-
-            # Remove empty values
-            mo_dict = {key: value for key, value in mo_dict.items() if value}
-            # If any required attributes are missing
-            missing_attributes = required_attributes - set(mo_dict.keys())
-            if missing_attributes:  # pragma: no cover
-                logger.error(
-                    "Missing values in LDAP to synchronize",
-                    suggestion=(
-                        "If missing values are expected, consider: skip_if_none. "
-                        "If skip_if_none is used, the field is probably whitespace only."
-                    ),
-                    mo_dict=mo_dict,
-                    mo_class=mo_class,
-                    missing_attributes=missing_attributes,
-                )
-                raise RequeueException("Missing values in LDAP to synchronize")
-
-            converted_object = mo_class(**mo_dict)
+                if dry_run:
+                    raise DryRunException(
+                        "Would have uploaded changes to MO",
+                        dn,
+                        details={
+                            "verb": str(Verb.CREATE),
+                            "obj": jsonable_encoder(
+                                converted_object, exclude={"mo_class"}
+                            ),
+                        },
+                    )
+                await self.dataloader.moapi.create(converted_object)
+                return
 
         except SkipObject:
             logger.info("Skipping object", dn=dn)
@@ -696,22 +667,6 @@ class SyncTool:
 
         mo_attributes = set(mapping.get_fields().keys())
         assert converted_object is not None
-
-        if mo_object is None:
-            logger.info(
-                "Importing object", verb=Verb.CREATE, obj=converted_object, dn=dn
-            )
-            if dry_run:
-                raise DryRunException(
-                    "Would have uploaded changes to MO",
-                    dn,
-                    details={
-                        "verb": str(Verb.CREATE),
-                        "obj": jsonable_encoder(converted_object, exclude={"mo_class"}),
-                    },
-                )
-            await self.dataloader.moapi.create(converted_object)
-            return
 
         # Convert our objects to dicts
         mo_object_dict_to_upload = mo_object.dict()
@@ -762,3 +717,57 @@ class SyncTool:
             )
 
         await self.dataloader.moapi.edit(obj)
+
+    async def _create_converted_object(
+        self, mapping: LDAP2MOMapping, context: dict[str, Any], mo_class: type[MOBase]
+    ) -> MOBase:
+        # TODO: asyncio.gather this for future dataloader bulking
+        mo_dict = {
+            mo_field_name: await self.converter.render_template(
+                mo_field_name, template_str, context
+            )
+            for mo_field_name, template_str in mapping.get_fields().items()
+        }
+
+        required_attributes = get_required_attributes(mo_class)
+
+        # Load our validity default, if it is not set
+        if "validity" in required_attributes:
+            assert (
+                "validity" not in mo_dict
+            ), "validity disallowed in ldap2mo mappings"
+            mo_dict["validity"] = {
+                "from": mo_today(),
+                "to": None,
+            }
+
+        # If any required attributes are missing
+        missing_attributes = required_attributes - set(mo_dict.keys())
+        # TODO: Restructure this so rejection happens during parsing?
+        if missing_attributes:  # pragma: no cover
+            logger.info(
+                "Missing attributes in dict to model conversion",
+                mo_dict=mo_dict,
+                mo_class=mo_class,
+                missing_attributes=missing_attributes,
+            )
+            raise ValueError("Missing attributes in dict to model conversion")
+
+        # Remove empty values
+        mo_dict = {key: value for key, value in mo_dict.items() if value}
+        # If any required attributes are missing
+        missing_attributes = required_attributes - set(mo_dict.keys())
+        if missing_attributes:  # pragma: no cover
+            logger.error(
+                "Missing values in LDAP to synchronize",
+                suggestion=(
+                    "If missing values are expected, consider: skip_if_none. "
+                    "If skip_if_none is used, the field is probably whitespace only."
+                ),
+                mo_dict=mo_dict,
+                mo_class=mo_class,
+                missing_attributes=missing_attributes,
+            )
+            raise RequeueException("Missing values in LDAP to synchronize")
+
+        return mo_class(**mo_dict)

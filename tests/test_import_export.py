@@ -81,9 +81,9 @@ async def test_listen_to_changes_in_employees_no_dn(
     dataloader.find_mo_employee_dn.return_value = []
     dataloader.make_mo_employee_dn.side_effect = RequeueException("Not found")
 
-    template = AsyncMock()
-    template.render_async.return_value = '{"key": "value"}'
-    sync_tool.converter.environment.from_string.return_value = template  # type: ignore
+    template = MagicMock()
+    template.render_async = AsyncMock(return_value='{"key": "value"}')
+    sync_tool.converter.environment.from_string = MagicMock(return_value=template)  # type: ignore
 
     dataloader._find_best_dn = partial(DataLoader._find_best_dn, dataloader)
 
