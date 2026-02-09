@@ -448,7 +448,7 @@ async def test_mo2ldap_template_address_terminate(
             "obj": {
                 "uuid": str(address.uuid),
                 # Strip timezone info
-                "at": mo_today().isoformat()[:-6],
+                "at": mo_today().isoformat(),
             },
         }
     }

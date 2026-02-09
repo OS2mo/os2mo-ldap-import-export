@@ -37,6 +37,13 @@ class IncorrectMapping(HTTPException):
         super().__init__(status_code=500, detail=message)
 
 
+class EmptyFieldsToSynchronise(HTTPException):
+    """Raised when ldap-object has empty fields."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(status_code=500, detail=message)
+
+
 class ReadOnlyException(HTTPException):
     """Raised when the integration would write if not in read-only mode."""
 

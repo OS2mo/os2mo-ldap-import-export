@@ -6,6 +6,7 @@ from collections.abc import Callable
 from contextlib import ExitStack
 from datetime import datetime
 from datetime import time
+from datetime import timedelta
 from functools import wraps
 from typing import Any
 from typing import TypeVar
@@ -33,11 +34,12 @@ from .customer_specific_checks import ExportChecks
 from .dataloaders import DN
 from .dataloaders import DataLoader
 from .dataloaders import NoGoodLDAPAccountFound
+from .exceptions import AcknowledgeException
 from .exceptions import DryRunException
+from .exceptions import EmptyFieldsToSynchronise
 from .exceptions import IncorrectMapping
 from .exceptions import InvalidCPR
 from .exceptions import NoObjectsReturnedException
-from .exceptions import RequeueException
 from .exceptions import SkipObject
 from .ldap import apply_discriminator
 from .ldap import filter_dns
@@ -56,6 +58,7 @@ from .models import Termination
 from .models import Validity
 from .types import EmployeeUUID
 from .types import OrgUnitUUID
+from .utils import MO_TZ
 from .utils import ensure_list
 from .utils import is_list
 from .utils import mo_today
@@ -597,13 +600,18 @@ class SyncTool:
             if termination_date_str:
                 termination_date = datetime.fromisoformat(termination_date_str)
                 # MO requires dates to be at midnight :)
-                termination_date = datetime.combine(termination_date, time.min)
+                termination_date = datetime.combine(
+                    date=termination_date,
+                    time=time.min,
+                    # TODO: enforce timezone from template
+                    tzinfo=termination_date.tzinfo or MO_TZ,
+                )
 
         # Handle creates
         if mo_object is None:
             try:
                 converted_object = await self._create_converted_object(
-                    mapping, context, mo_class
+                    mapping, context, mo_class, termination_date
                 )
             except SkipObject:
                 logger.info("Skipping object", dn=dn)
@@ -644,13 +652,17 @@ class SyncTool:
                     },
                 )
             await self.dataloader.moapi.terminate(termination)
-            return
 
         # Handle updates
         try:
             converted_object = await self._create_converted_object(
-                mapping, context, mo_class
+                mapping, context, mo_class, termination_date
             )
+        except EmptyFieldsToSynchronise:
+            # Empty fields are okay if the template just wanted to terminate
+            if termination_date is not None:
+                return
+            raise
         except SkipObject:  # pragma: no cover
             logger.info("Skipping object", dn=dn)
             return
@@ -711,7 +723,11 @@ class SyncTool:
         await self.dataloader.moapi.edit(obj)
 
     async def _create_converted_object(
-        self, mapping: LDAP2MOMapping, context: dict[str, Any], mo_class: type[MOBase]
+        self,
+        mapping: LDAP2MOMapping,
+        context: dict[str, Any],
+        mo_class: type[MOBase],
+        termination_date: datetime | None,
     ) -> MOBase:
         # TODO: asyncio.gather this for future dataloader bulking
         mo_dict = {
@@ -728,8 +744,14 @@ class SyncTool:
             assert "validity" not in mo_dict, "validity disallowed in ldap2mo mappings"
             mo_dict["validity"] = Validity(
                 start=mo_today(),
-                end=None,
+                end=termination_date,
             ).dict()
+            # TODO(#61435): MO does not support objects with a validity less
+            # than a day.
+            if termination_date and termination_date - mo_today() <= timedelta(days=1):
+                raise AcknowledgeException(
+                    "MO does not support objects with a validity less than a day"
+                )
 
         # If any required attributes are missing
         missing_attributes = required_attributes - set(mo_dict.keys())
@@ -758,6 +780,6 @@ class SyncTool:
                 mo_class=mo_class,
                 missing_attributes=missing_attributes,
             )
-            raise RequeueException("Missing values in LDAP to synchronize")
+            raise EmptyFieldsToSynchronise("Missing values in LDAP to synchronize")
 
         return mo_class(**mo_dict)
