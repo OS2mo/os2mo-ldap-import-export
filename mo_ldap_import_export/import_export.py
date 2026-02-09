@@ -598,46 +598,12 @@ class SyncTool:
                 if rendered_uuid:
                     uuid = rendered_uuid if isinstance(rendered_uuid, UUID) else UUID(str(rendered_uuid))
 
-            mo_object: MOBase | None = None
-            if uuid:
-                mo_object = await self.fetch_uuid_object(uuid, mo_class)
+            mo_object = await self.fetch_uuid_object(uuid, mo_class) if uuid else None
 
-            if mo_object:
-                # Handle termination
-                if mapping.terminate:
-                    terminate_template = mapping.terminate
-                    terminate = await self.converter.render_template(
-                        "_terminate_", terminate_template, context
-                    )
-                    if terminate:
-                        termination = Termination(
-                            mo_class=mo_class, at=terminate, uuid=uuid
-                        )
-                        logger.info(
-                            "Importing object",
-                            verb=Verb.TERMINATE,
-                            obj=termination,
-                            dn=dn,
-                        )
-                        if dry_run:
-                            raise DryRunException(
-                                "Would have uploaded changes to MO",
-                                dn,
-                                details={
-                                    "verb": str(Verb.TERMINATE),
-                                    "obj": jsonable_encoder(
-                                        termination, exclude={"mo_class"}
-                                    ),
-                                },
-                            )
-                        await self.dataloader.moapi.terminate(termination)
-                        return
-
-            converted_object = await self._create_converted_object(
-                mapping, context, mo_class
-            )
-
-            if mo_object is None:
+            if not mo_object:
+                converted_object = await self._create_converted_object(
+                    mapping, context, mo_class
+                )
                 logger.info(
                     "Importing object", verb=Verb.CREATE, obj=converted_object, dn=dn
                 )
@@ -654,6 +620,40 @@ class SyncTool:
                     )
                 await self.dataloader.moapi.create(converted_object)
                 return
+
+            # Handle termination
+            if mapping.terminate:
+                terminate_template = mapping.terminate
+                terminate = await self.converter.render_template(
+                    "_terminate_", terminate_template, context
+                )
+                if terminate:
+                    termination = Termination(
+                        mo_class=mo_class, at=terminate, uuid=uuid
+                    )
+                    logger.info(
+                        "Importing object",
+                        verb=Verb.TERMINATE,
+                        obj=termination,
+                        dn=dn,
+                    )
+                    if dry_run:
+                        raise DryRunException(
+                            "Would have uploaded changes to MO",
+                            dn,
+                            details={
+                                "verb": str(Verb.TERMINATE),
+                                "obj": jsonable_encoder(
+                                    termination, exclude={"mo_class"}
+                                ),
+                            },
+                        )
+                    await self.dataloader.moapi.terminate(termination)
+                    return
+
+            converted_object = await self._create_converted_object(
+                mapping, context, mo_class
+            )
 
         except SkipObject:
             logger.info("Skipping object", dn=dn)
