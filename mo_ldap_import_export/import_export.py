@@ -600,7 +600,7 @@ class SyncTool:
 
             mo_object = await self.fetch_uuid_object(uuid, mo_class) if uuid else None
 
-            if not mo_object:
+            if mo_object is None:
                 converted_object = await self._create_converted_object(
                     mapping, context, mo_class
                 )
