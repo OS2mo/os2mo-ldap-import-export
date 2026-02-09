@@ -5,6 +5,7 @@ from collections.abc import Awaitable
 from collections.abc import Callable
 from contextlib import ExitStack
 from datetime import datetime
+from datetime import time
 from functools import wraps
 from typing import Any
 from typing import TypeVar
@@ -595,6 +596,8 @@ class SyncTool:
                 return
             if termination_date_str:
                 termination_date = datetime.fromisoformat(termination_date_str)
+                # MO requires dates to be at midnight :)
+                termination_date = datetime.combine(termination_date, time.min)
 
         # Handle creates
         if mo_object is None:
