@@ -612,61 +612,76 @@ class SyncTool:
                         message = "Unable to terminate without UUID"
                         logger.info(message)
                         raise SkipObject(message)
-                    converted_object = Termination(
+                    termination = Termination(
                         mo_class=mo_class, at=terminate, uuid=uuid
                     )
-
-            if converted_object is None:
-                # TODO: asyncio.gather this for future dataloader bulking
-                mo_dict = {
-                    mo_field_name: await self.converter.render_template(
-                        mo_field_name, template_str, context
+                    logger.info(
+                        "Importing object", verb=Verb.TERMINATE, obj=termination, dn=dn
                     )
-                    for mo_field_name, template_str in mapping.get_fields().items()
+                    if dry_run:
+                        raise DryRunException(
+                            "Would have uploaded changes to MO",
+                            dn,
+                            details={
+                                "verb": str(Verb.TERMINATE),
+                                "obj": jsonable_encoder(
+                                    termination, exclude={"mo_class"}
+                                ),
+                            },
+                        )
+                    await self.dataloader.moapi.terminate(termination)
+                    return
+
+            # TODO: asyncio.gather this for future dataloader bulking
+            mo_dict = {
+                mo_field_name: await self.converter.render_template(
+                    mo_field_name, template_str, context
+                )
+                for mo_field_name, template_str in mapping.get_fields().items()
+            }
+
+            required_attributes = get_required_attributes(mo_class)
+
+            # Load our validity default, if it is not set
+            if "validity" in required_attributes:
+                assert (
+                    "validity" not in mo_dict
+                ), "validity disallowed in ldap2mo mappings"
+                mo_dict["validity"] = {
+                    "from": mo_today(),
+                    "to": None,
                 }
 
-                required_attributes = get_required_attributes(mo_class)
+            # If any required attributes are missing
+            missing_attributes = required_attributes - set(mo_dict.keys())
+            # TODO: Restructure this so rejection happens during parsing?
+            if missing_attributes:  # pragma: no cover
+                logger.info(
+                    "Missing attributes in dict to model conversion",
+                    mo_dict=mo_dict,
+                    mo_class=mo_class,
+                    missing_attributes=missing_attributes,
+                )
+                raise ValueError("Missing attributes in dict to model conversion")
 
-                # Load our validity default, if it is not set
-                if "validity" in required_attributes:
-                    assert (
-                        "validity" not in mo_dict
-                    ), "validity disallowed in ldap2mo mappings"
-                    mo_dict["validity"] = {
-                        "from": mo_today(),
-                        "to": None,
-                    }
+            # Remove empty values
+            mo_dict = {key: value for key, value in mo_dict.items() if value}
+            # If any required attributes are missing
+            missing_attributes = required_attributes - set(mo_dict.keys())
+            if missing_attributes:  # pragma: no cover
+                logger.error(
+                    "Missing values in LDAP to synchronize",
+                    suggestion=(
+                        "If missing values are expected, consider: skip_if_none. "
+                        "If skip_if_none is used, the field is probably whitespace only."
+                    ),
+                    mo_dict=mo_dict,
+                    mo_class=mo_class,
+                    missing_attributes=missing_attributes,
+                )
+                raise RequeueException("Missing values in LDAP to synchronize")
 
-                # If any required attributes are missing
-                missing_attributes = required_attributes - set(mo_dict.keys())
-                # TODO: Restructure this so rejection happens during parsing?
-                if missing_attributes:  # pragma: no cover
-                    logger.info(
-                        "Missing attributes in dict to model conversion",
-                        mo_dict=mo_dict,
-                        mo_class=mo_class,
-                        missing_attributes=missing_attributes,
-                    )
-                    raise ValueError("Missing attributes in dict to model conversion")
-
-                # Remove empty values
-                mo_dict = {key: value for key, value in mo_dict.items() if value}
-                # If any required attributes are missing
-                missing_attributes = required_attributes - set(mo_dict.keys())
-                if missing_attributes:  # pragma: no cover
-                    logger.error(
-                        "Missing values in LDAP to synchronize",
-                        suggestion=(
-                            "If missing values are expected, consider: skip_if_none. "
-                            "If skip_if_none is used, the field is probably whitespace only."
-                        ),
-                        mo_dict=mo_dict,
-                        mo_class=mo_class,
-                        missing_attributes=missing_attributes,
-                    )
-                    raise RequeueException("Missing values in LDAP to synchronize")
-
-                converted_object = mo_class(**mo_dict)
+            converted_object = mo_class(**mo_dict)
 
         except SkipObject:
             logger.info("Skipping object", dn=dn)
@@ -680,22 +695,6 @@ class SyncTool:
 
         mo_attributes = set(mapping.get_fields().keys())
         assert converted_object is not None
-
-        if isinstance(converted_object, Termination):
-            logger.info(
-                "Importing object", verb=Verb.TERMINATE, obj=converted_object, dn=dn
-            )
-            if dry_run:
-                raise DryRunException(
-                    "Would have uploaded changes to MO",
-                    dn,
-                    details={
-                        "verb": str(Verb.TERMINATE),
-                        "obj": jsonable_encoder(converted_object, exclude={"mo_class"}),
-                    },
-                )
-            await self.dataloader.moapi.terminate(converted_object)
-            return
 
         mo_class = type(converted_object)
         mo_object = await self.fetch_uuid_object(converted_object.uuid, mo_class)
