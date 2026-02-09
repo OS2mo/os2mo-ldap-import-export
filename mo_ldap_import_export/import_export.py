@@ -354,69 +354,6 @@ class SyncTool:
                 f"Missing '{json_key}' in mapping 'ldap_to_mo'"
             ) from error
 
-    async def format_converted_object(
-        self,
-        converted_object: MOBase | Termination,
-        mo_attributes: set[str],
-    ) -> tuple[MOBase | Termination, Verb] | None:
-        """
-        for Address and Engagement objects:
-            Loops through the objects, and sets the uuid if an existing matching object
-            is found
-        for ITUser objects:
-            Loops through the objects and removes it if an existing matchin object is
-            found
-        for all other objects:
-            returns the input list of converted_objects
-        """
-        if isinstance(converted_object, Termination):
-            return (converted_object, Verb.TERMINATE)
-
-        mo_class = type(converted_object)
-        mo_object = await self.fetch_uuid_object(converted_object.uuid, mo_class)
-        if mo_object is None:
-            return converted_object, Verb.CREATE
-
-        # Convert our objects to dicts
-        mo_object_dict_to_upload = mo_object.dict()
-        # Need to by_alias=True to extract the terminate_ field as its alias,
-        # _terminate_. Only the *intersection* of attribute names from
-        # mo_object_dict_to_upload and converted_mo_object_dict are used.
-        converted_mo_object_dict = converted_object.dict(by_alias=True)
-
-        # Update the existing MO object with the converted values
-        # NOTE: UUID cannot be updated as it is used to decide what we update
-        # NOTE: objectClass is removed as it is an LDAP implemenation detail
-        # TODO: Why do we not update validity???
-        mo_attributes = mo_attributes - {"validity", "uuid", "objectClass"}
-        # Only copy over keys that exist in both sets
-        mo_attributes = mo_attributes & converted_mo_object_dict.keys()
-
-        update_values = {
-            key: converted_mo_object_dict[key]
-            for key in mo_attributes
-            # Only include values that actually need to be updated
-            if mo_object_dict_to_upload[key] != converted_mo_object_dict[key]
-        }
-        # If an object is identical to the one already there, it does not need
-        # to be uploaded.
-        if not update_values:
-            logger.info("Converted object is identical to existing object, skipping")
-            return None
-
-        logger.info(
-            "Setting values on upload dict",
-            uuid=mo_object_dict_to_upload["uuid"],
-            values=update_values,
-            old_values={key: mo_object_dict_to_upload[key] for key in update_values},
-        )
-
-        mo_object_dict_to_upload.update(update_values)
-        converted_object_uuid_checked = mo_class(**mo_object_dict_to_upload)
-
-        # We found a match, so we are editing the object we matched
-        return converted_object_uuid_checked, Verb.EDIT
-
     @with_exitstack
     async def import_single_user(
         self, ldap_object: LdapObject, exit_stack: ExitStack, dry_run: bool = False
@@ -647,11 +584,61 @@ class SyncTool:
         )
 
         mo_attributes = set(mapping.get_fields().keys())
-        operation = await self.format_converted_object(converted_object, mo_attributes)
-        if operation is None:  # pragma: no cover
-            logger.info("No converted objects after formatting", dn=dn)
-            return
-        obj, verb = operation
+
+        obj: MOBase | Termination
+        if isinstance(converted_object, Termination):
+            obj = converted_object
+            verb = Verb.TERMINATE
+        else:
+            mo_class = type(converted_object)
+            mo_object = await self.fetch_uuid_object(converted_object.uuid, mo_class)
+            if mo_object is None:
+                obj = converted_object
+                verb = Verb.CREATE
+            else:
+                # Convert our objects to dicts
+                mo_object_dict_to_upload = mo_object.dict()
+                # Need to by_alias=True to extract the terminate_ field as its alias,
+                # _terminate_. Only the *intersection* of attribute names from
+                # mo_object_dict_to_upload and converted_mo_object_dict are used.
+                converted_mo_object_dict = converted_object.dict(by_alias=True)
+
+                # Update the existing MO object with the converted values
+                # NOTE: UUID cannot be updated as it is used to decide what we update
+                # NOTE: objectClass is removed as it is an LDAP implemenation detail
+                # TODO: Why do we not update validity???
+                mo_attributes = mo_attributes - {"validity", "uuid", "objectClass"}
+                # Only copy over keys that exist in both sets
+                mo_attributes = mo_attributes & converted_mo_object_dict.keys()
+
+                update_values = {
+                    key: converted_mo_object_dict[key]
+                    for key in mo_attributes
+                    # Only include values that actually need to be updated
+                    if mo_object_dict_to_upload[key] != converted_mo_object_dict[key]
+                }
+                # If an object is identical to the one already there, it does not need
+                # to be uploaded.
+                if not update_values:
+                    logger.info(
+                        "Converted object is identical to existing object, skipping"
+                    )
+                    return
+
+                logger.info(
+                    "Setting values on upload dict",
+                    uuid=mo_object_dict_to_upload["uuid"],
+                    values=update_values,
+                    old_values={
+                        key: mo_object_dict_to_upload[key] for key in update_values
+                    },
+                )
+
+                mo_object_dict_to_upload.update(update_values)
+                obj = mo_class(**mo_object_dict_to_upload)
+
+                # We found a match, so we are editing the object we matched
+                verb = Verb.EDIT
 
         logger.info("Importing object", verb=verb, obj=obj, dn=dn)
         if dry_run:

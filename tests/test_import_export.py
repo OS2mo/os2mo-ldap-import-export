@@ -102,10 +102,11 @@ async def test_listen_to_changes_in_employees_no_dn(
         ]
 
 
-async def test_format_converted_engagement_objects(
+async def test_import_single_entity_engagement_edit(
     converter: MagicMock, dataloader: AsyncMock, sync_tool: SyncTool
 ) -> None:
     employee_uuid = uuid4()
+    mo_engagement_uuid = uuid4()
 
     mo_engagement = Engagement(
         org_unit=uuid4(),
@@ -114,6 +115,7 @@ async def test_format_converted_engagement_objects(
         engagement_type=uuid4(),
         user_key="mo",
         validity={"start": "2021-01-01T00:00:00"},
+        uuid=mo_engagement_uuid,
     )
 
     ldap_engagement = Engagement(
@@ -124,23 +126,36 @@ async def test_format_converted_engagement_objects(
         user_key="ldap",
         validity={"start": "2021-01-01T00:00:00"},
         # Templated to match MO engagement
-        uuid=mo_engagement.uuid,
+        uuid=mo_engagement_uuid,
     )
 
     dataloader.moapi.load_mo_engagement.return_value = mo_engagement
+    converter.from_ldap.return_value = ldap_engagement
 
-    operation = await sync_tool.format_converted_object(
-        converted_object=ldap_engagement,
-        mo_attributes={"user_key", "job_function"},
+    mapping = MagicMock()
+    mapping.ldap_attributes = ["some_attr"]
+    mapping.get_fields.return_value = {"user_key": None, "job_function": None}
+    mapping.as_mo_class.return_value = "Engagement"
+
+    ldap_object = LdapObject(dn="CN=foo", some_attr="val")
+
+    await sync_tool.import_single_entity(
+        mapping=mapping,
+        ldap_object=ldap_object,
+        template_context={},
+        dry_run=False,
     )
-    assert operation is not None
-    desired_engagement, verb = operation
+
+    assert dataloader.moapi.create_or_edit_mo_objects.called
+    args, _ = dataloader.moapi.create_or_edit_mo_objects.call_args
+    desired_engagement, verb = args
+
     assert verb == Verb.EDIT
     assert isinstance(desired_engagement, Engagement)
     assert desired_engagement.user_key == ldap_engagement.user_key
 
 
-async def test_format_converted_engagement_objects_unmatched(
+async def test_import_single_entity_engagement_create(
     converter: MagicMock, dataloader: AsyncMock, sync_tool: SyncTool
 ) -> None:
     employee_uuid = uuid4()
@@ -157,30 +172,57 @@ async def test_format_converted_engagement_objects_unmatched(
     )
 
     dataloader.moapi.load_mo_engagement.return_value = None
+    converter.from_ldap.return_value = ldap_engagement
 
-    operation = await sync_tool.format_converted_object(
-        converted_object=ldap_engagement,
-        mo_attributes={"user_key", "job_function"},
+    mapping = MagicMock()
+    mapping.ldap_attributes = ["some_attr"]
+    mapping.get_fields.return_value = {"user_key": None, "job_function": None}
+    mapping.as_mo_class.return_value = "Engagement"
+
+    ldap_object = LdapObject(dn="CN=foo", some_attr="val")
+
+    await sync_tool.import_single_entity(
+        mapping=mapping,
+        ldap_object=ldap_object,
+        template_context={},
+        dry_run=False,
     )
-    assert operation is not None
-    desired_engagement, verb = operation
+
+    assert dataloader.moapi.create_or_edit_mo_objects.called
+    args, _ = dataloader.moapi.create_or_edit_mo_objects.call_args
+    desired_engagement, verb = args
+
     assert verb == Verb.CREATE
     assert isinstance(desired_engagement, Engagement)
     assert desired_engagement.user_key == ldap_engagement.user_key
 
 
-async def test_format_converted_employee_objects(
+async def test_import_single_entity_employee_create(
     converter: MagicMock, dataloader: AsyncMock, sync_tool: SyncTool
 ):
     dataloader.moapi.load_mo_employee.return_value = None
 
     employee = Employee(cpr_number="1212121234", given_name="Foo1", surname="Bar1")
-    operation = await sync_tool.format_converted_object(
-        converted_object=employee,
-        mo_attributes={"user_key", "job_function"},
+    converter.from_ldap.return_value = employee
+
+    mapping = MagicMock()
+    mapping.ldap_attributes = ["some_attr"]
+    mapping.get_fields.return_value = {"user_key": None, "job_function": None}
+    mapping.as_mo_class.return_value = "Employee"
+
+    ldap_object = LdapObject(dn="CN=foo", some_attr="val")
+
+    await sync_tool.import_single_entity(
+        mapping=mapping,
+        ldap_object=ldap_object,
+        template_context={},
+        dry_run=False,
     )
-    assert operation is not None
-    desired_employee, verb = operation
+
+    assert dataloader.moapi.create_or_edit_mo_objects.called
+    args, _ = dataloader.moapi.create_or_edit_mo_objects.call_args
+    desired_employee, verb = args
+
     assert verb == Verb.CREATE
     assert isinstance(desired_employee, Employee)
     assert desired_employee.user_key == employee.user_key

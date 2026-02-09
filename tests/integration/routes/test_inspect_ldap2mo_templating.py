@@ -257,7 +257,6 @@ async def test_mo2ldap_template_existing_noop(
         "Found employee via CPR matching",
         "No discriminator filter set, not filtering",
         "Converted object is identical to existing object, skipping",
-        "No converted objects after formatting",
     }.issubset(events)
 
 
