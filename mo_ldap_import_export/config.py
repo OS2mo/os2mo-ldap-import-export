@@ -116,6 +116,7 @@ class LDAP2MOMapping(MappingBaseModel):
 
     objectClass: str
     import_to_mo: Literal["true", "edit_only", "false"] = Field(alias="_import_to_mo_")
+    uuid: JinjaTemplate = Field(description="The UUID of the object in MO")
     terminate: str | None = Field(
         alias="_terminate_", description="The date at which to terminate the object"
     )
@@ -152,20 +153,6 @@ class LDAP2MOMapping(MappingBaseModel):
         mo_class = import_class(values["objectClass"])
         if mo_class is not Employee:
             raise ValueError("Edit only is only supported for employees")
-        return values
-
-    @root_validator
-    def check_uuid_set_if_terminate_set(cls, values: dict[str, Any]) -> dict[str, Any]:
-        """Ensure that uuid is set if terminate is set."""
-        if not values["terminate"]:
-            return values
-
-        if "uuid" not in values:
-            raise ValueError("UUID must be set if _terminate_ is set")
-
-        if not values["uuid"]:
-            raise ValueError("UUID must not be empty if _terminate_ is set")
-
         return values
 
     @root_validator
@@ -210,10 +197,6 @@ class LDAP2MOMapping(MappingBaseModel):
                 )
 
             # TODO: What if both are required?
-        else:  # Otherwise: We are dealing with the org_unit/person itself.
-            # A field called 'uuid' needs to be present
-            if "uuid" not in values:
-                raise ValueError("Needs to contain a key called 'uuid'")
         return values
 
     @root_validator
