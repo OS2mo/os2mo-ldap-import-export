@@ -2,11 +2,15 @@
 # SPDX-License-Identifier: MPL-2.0
 import json
 from unittest.mock import ANY
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
 from fastramqpi.context import Context
 
+from mo_ldap_import_export.customer_specific_checks import ExportChecks
+from mo_ldap_import_export.customer_specific_checks import ImportChecks
+from mo_ldap_import_export.import_export import SyncTool
 from mo_ldap_import_export.ldap_classes import LdapObject
 
 
@@ -53,17 +57,38 @@ async def test_template_strictness(
 ) -> None:
     """Test various Jinja template strictness scenarios in LdapConverter."""
     user_context = context["user_context"]
+    dataloader = user_context["dataloader"]
+    sync_tool = SyncTool(
+        dataloader=dataloader,
+        converter=user_context["converter"],
+        export_checks=ExportChecks(dataloader),
+        import_checks=ImportChecks(),
+        settings=user_context["settings"],
+        ldap_connection=user_context["ldap_connection"],
+    )
+    # Mock moapi to avoid side-effects
+    sync_tool.dataloader.moapi = AsyncMock()
+    # Mock fetch_uuid_object to return None so we always get Verb.CREATE and don't try to subscript it
+    sync_tool.fetch_uuid_object = AsyncMock(return_value=None)  # type: ignore[method-assign]
+
     settings = user_context["settings"]
-    converter = user_context["converter"]
 
     assert settings.conversion_mapping.ldap_to_mo is not None
-    employee = await converter.from_ldap(
-        LdapObject(dn="CN=foo", **ldap_values),
+    # Ensure required attributes are present to satisfy import_single_entity's assertion
+    full_ldap_values = {"givenName": "given_name", "sn": "surname", **ldap_values}
+    await sync_tool.import_single_entity(
         mapping=settings.conversion_mapping.ldap_to_mo["Employee"],
+        ldap_object=LdapObject(dn="CN=foo", **full_ldap_values),
         template_context={
             "employee_uuid": str(uuid4()),
         },
+        dry_run=False,
     )
+
+    # Get the captured object
+    assert sync_tool.dataloader.moapi.create.called
+    employee = sync_tool.dataloader.moapi.create.call_args[0][0]
+
     expected_employee = {
         "uuid": ANY,
         "user_key": "CN=foo",

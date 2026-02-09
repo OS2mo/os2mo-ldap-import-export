@@ -83,7 +83,7 @@ async def test_listen_to_changes_in_employees_no_dn(
 
     template = AsyncMock()
     template.render_async.return_value = '{"key": "value"}'
-    sync_tool.converter.environment.from_string.return_value = template  # type: ignore
+    sync_tool.converter.environment.from_string = MagicMock(return_value=template)  # type: ignore
 
     dataloader._find_best_dn = partial(DataLoader._find_best_dn, dataloader)
 
@@ -103,7 +103,7 @@ async def test_listen_to_changes_in_employees_no_dn(
 
 
 async def test_import_single_entity_engagement_edit(
-    converter: MagicMock, dataloader: AsyncMock, sync_tool: SyncTool
+    converter: AsyncMock, dataloader: AsyncMock, sync_tool: SyncTool
 ) -> None:
     employee_uuid = uuid4()
     mo_engagement_uuid = uuid4()
@@ -130,12 +130,26 @@ async def test_import_single_entity_engagement_edit(
     )
 
     dataloader.moapi.load_mo_engagement.return_value = mo_engagement
-    converter.from_ldap.return_value = ldap_engagement
+
+    # Mock render_template to return values from ldap_engagement
+    async def render_template_side_effect(field_name, template_str, context):
+        if field_name == "uuid":
+            return str(mo_engagement_uuid)
+        return str(getattr(ldap_engagement, field_name))
+
+    converter.render_template.side_effect = render_template_side_effect
 
     mapping = MagicMock()
+    mapping.terminate = None
     mapping.ldap_attributes = ["some_attr"]
-    mapping.get_fields.return_value = {"user_key": None, "job_function": None}
-    mapping.as_mo_class.return_value = "Engagement"
+    mapping.get_fields.return_value = {
+        "user_key": None,
+        "org_unit": None,
+        "person": None,
+        "job_function": None,
+        "engagement_type": None,
+    }
+    mapping.as_mo_class.return_value = Engagement
 
     ldap_object = LdapObject(dn="CN=foo", some_attr="val")
 
@@ -155,9 +169,10 @@ async def test_import_single_entity_engagement_edit(
 
 
 async def test_import_single_entity_engagement_create(
-    converter: MagicMock, dataloader: AsyncMock, sync_tool: SyncTool
+    converter: AsyncMock, dataloader: AsyncMock, sync_tool: SyncTool
 ) -> None:
     employee_uuid = uuid4()
+    mo_engagement_uuid = uuid4()
 
     ldap_engagement = Engagement(
         org_unit=uuid4(),
@@ -167,16 +182,30 @@ async def test_import_single_entity_engagement_create(
         user_key="ldap",
         validity={"start": "2021-01-01T00:00:00"},
         # Unmatched
-        uuid=uuid4(),
+        uuid=mo_engagement_uuid,
     )
 
     dataloader.moapi.load_mo_engagement.return_value = None
-    converter.from_ldap.return_value = ldap_engagement
+
+    # Mock render_template to return values from ldap_engagement
+    async def render_template_side_effect(field_name, template_str, context):
+        if field_name == "uuid":
+            return str(mo_engagement_uuid)
+        return str(getattr(ldap_engagement, field_name))
+
+    converter.render_template.side_effect = render_template_side_effect
 
     mapping = MagicMock()
+    mapping.terminate = None
     mapping.ldap_attributes = ["some_attr"]
-    mapping.get_fields.return_value = {"user_key": None, "job_function": None}
-    mapping.as_mo_class.return_value = "Engagement"
+    mapping.get_fields.return_value = {
+        "user_key": None,
+        "org_unit": None,
+        "person": None,
+        "job_function": None,
+        "engagement_type": None,
+    }
+    mapping.as_mo_class.return_value = Engagement
 
     ldap_object = LdapObject(dn="CN=foo", some_attr="val")
 
@@ -196,17 +225,32 @@ async def test_import_single_entity_engagement_create(
 
 
 async def test_import_single_entity_employee_create(
-    converter: MagicMock, dataloader: AsyncMock, sync_tool: SyncTool
+    converter: AsyncMock, dataloader: AsyncMock, sync_tool: SyncTool
 ):
+    employee_uuid = uuid4()
     dataloader.moapi.load_mo_employee.return_value = None
 
-    employee = Employee(cpr_number="1212121234", given_name="Foo1", surname="Bar1")
-    converter.from_ldap.return_value = employee
+    employee = Employee(
+        uuid=employee_uuid, cpr_number="1212121234", given_name="Foo1", surname="Bar1"
+    )
+
+    # Mock render_template to return values from employee
+    async def render_template_side_effect(field_name, template_str, context):
+        if field_name == "uuid":
+            return str(employee_uuid)
+        return str(getattr(employee, field_name))
+
+    converter.render_template.side_effect = render_template_side_effect
 
     mapping = MagicMock()
+    mapping.terminate = None
     mapping.ldap_attributes = ["some_attr"]
-    mapping.get_fields.return_value = {"user_key": None, "job_function": None}
-    mapping.as_mo_class.return_value = "Employee"
+    mapping.get_fields.return_value = {
+        "given_name": None,
+        "surname": None,
+        "cpr_number": None,
+    }
+    mapping.as_mo_class.return_value = Employee
 
     ldap_object = LdapObject(dn="CN=foo", some_attr="val")
 
@@ -222,7 +266,7 @@ async def test_import_single_entity_employee_create(
     desired_employee = one(args)
 
     assert isinstance(desired_employee, Employee)
-    assert desired_employee.user_key == employee.user_key
+    assert desired_employee.given_name == employee.given_name
 
 
 @pytest.mark.usefixtures("minimal_valid_settings")

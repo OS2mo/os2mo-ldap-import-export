@@ -136,9 +136,6 @@ def converter() -> MagicMock:
     converter._import_to_mo_ = MagicMock()
     converter._import_to_mo_.return_value = True
 
-    converter.from_ldap = AsyncMock()
-    converter.from_ldap.return_value = Employee(given_name="Angus", surname="Angusson")
-
     converter.load_info_dicts = AsyncMock()
     converter._init = AsyncMock()
 

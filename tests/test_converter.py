@@ -1,8 +1,6 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
-import datetime
 import json
-import uuid
 from functools import partial
 from typing import Any
 from typing import cast
@@ -32,15 +30,9 @@ from mo_ldap_import_export.environments.main import get_or_create_job_function_u
 from mo_ldap_import_export.environments.main import get_org_unit_name
 from mo_ldap_import_export.environments.main import get_visibility_uuid
 from mo_ldap_import_export.exceptions import NoObjectsReturnedException
-from mo_ldap_import_export.exceptions import RequeueException
 from mo_ldap_import_export.exceptions import UUIDNotFoundException
-from mo_ldap_import_export.ldap_classes import LdapObject
 from mo_ldap_import_export.main import GRAPHQL_VERSION
 from mo_ldap_import_export.moapi import MOAPI
-from mo_ldap_import_export.models import Address
-from mo_ldap_import_export.models import Employee
-from mo_ldap_import_export.models import Termination
-from mo_ldap_import_export.utils import MO_TZ
 from tests.graphql_mocker import GraphQLMocker
 
 overlay = partial(merge, strategy=Strategy.TYPESAFE_ADDITIVE)
@@ -192,64 +184,6 @@ async def dataloader(context: Context) -> AsyncMock:
 @pytest.fixture
 async def graphql_client(dataloader: AsyncMock) -> AsyncMock:
     return cast(AsyncMock, dataloader.graphql_client)
-
-
-@pytest.mark.freeze_time("2019-01-01")
-async def test_ldap_to_mo(converter: LdapConverter) -> None:
-    employee_uuid = uuid4()
-    settings = Settings()
-    assert settings.conversion_mapping.ldap_to_mo is not None
-    employee = await converter.from_ldap(
-        LdapObject(
-            dn="",
-            name="",
-            givenName="Tester",
-            sn="Testersen",
-            objectGUID="{" + str(uuid.uuid4()) + "}",
-            employeeID="0101011234",
-        ),
-        mapping=settings.conversion_mapping.ldap_to_mo["Employee"],
-        template_context={
-            "employee_uuid": str(employee_uuid),
-        },
-    )
-    assert isinstance(employee, Employee)
-    assert employee.given_name == "Tester"
-    assert employee.surname == "Testersen"
-    assert employee.uuid == employee_uuid
-
-    assert settings.conversion_mapping.ldap_to_mo is not None
-    mail = await converter.from_ldap(
-        LdapObject(
-            dn="",
-            mail="foo@bar.dk",
-        ),
-        mapping=settings.conversion_mapping.ldap_to_mo["Email"],
-        template_context={
-            "employee_uuid": str(employee_uuid),
-        },
-    )
-    assert isinstance(mail, Address)
-    assert mail.value == "foo@bar.dk"
-    assert mail.person == employee_uuid
-    start = mail.validity.dict()["start"].replace(tzinfo=None)
-
-    # Note: Date is always at midnight in MO
-    assert start == datetime.datetime(2019, 1, 1, 0, 0, 0)
-
-    with pytest.raises(RequeueException) as exc_info:
-        assert settings.conversion_mapping.ldap_to_mo is not None
-        await converter.from_ldap(
-            LdapObject(
-                dn="",
-                mail=[],
-            ),
-            mapping=settings.conversion_mapping.ldap_to_mo["Email"],
-            template_context={
-                "employee_uuid": str(employee_uuid),
-            },
-        )
-    assert "Missing values in LDAP to synchronize" in str(exc_info.value)
 
 
 def test_str_to_dict(converter: LdapConverter):
@@ -569,91 +503,9 @@ def test_check_import_and_export_flags(
         parse_obj_as(ConversionMapping, converter_mapping)
 
 
-@pytest.mark.freeze_time("2020-01-01")
-async def test_ldap_to_mo_termination(
-    monkeypatch: pytest.MonkeyPatch,
-    converter_mapping: dict[str, Any],
-    dataloader: AsyncMock,
-) -> None:
-    settings = Settings()
-    template_environment = construct_environment(settings, dataloader)
-
-    converter = LdapConverter(template_environment)
-
-    employee_uuid = uuid4()
-    assert settings.conversion_mapping.ldap_to_mo is not None
-    mail = await converter.from_ldap(
-        LdapObject(
-            dn="",
-            mail="foo@bar.dk",
-            mail_validity_from=datetime.datetime(2019, 1, 1, 0, 10, 0),
-        ),
-        mapping=settings.conversion_mapping.ldap_to_mo["Email"],
-        template_context={
-            "employee_uuid": str(employee_uuid),
-        },
-    )
-    assert isinstance(mail, Address)
-    assert not hasattr(mail, "terminate_")
-    assert mail.value == "foo@bar.dk"
-    assert mail.person == employee_uuid
-
-    # Add _terminate_ key to Email mapping
-    converter_mapping["ldap_to_mo"]["Email"]["_terminate_"] = (
-        "{{ now()|mo_datestring }}"
-    )
-    address_uuid = uuid4()
-    converter_mapping["ldap_to_mo"]["Email"]["uuid"] = str(address_uuid)
-    monkeypatch.setenv("CONVERSION_MAPPING", json.dumps(converter_mapping))
-    settings = Settings()
-    template_environment = construct_environment(settings, dataloader)
-    converter = LdapConverter(template_environment)
-
-    assert settings.conversion_mapping.ldap_to_mo is not None
-    mail = await converter.from_ldap(
-        LdapObject(
-            dn="",
-            mail="foo@bar.dk",
-            mail_validity_from=datetime.datetime(2019, 1, 1, 0, 10, 0),
-        ),
-        mapping=settings.conversion_mapping.ldap_to_mo["Email"],
-        template_context={
-            "employee_uuid": str(employee_uuid),
-        },
-    )
-    assert isinstance(mail, Termination)
-    assert mail.mo_class == Address
-    assert mail.uuid == address_uuid
-    assert mail.at == datetime.datetime(2020, 1, 1, 0, 0)
-
-
 async def test_create_facet_class_no_facet() -> None:
     dataloader = AsyncMock()
     dataloader.moapi.load_mo_facet_uuid.return_value = None
     with pytest.raises(NoObjectsReturnedException) as exc_info:
         await _create_facet_class(dataloader.moapi, "class_key", "facet_key")
     assert "Could not find facet with user_key = 'facet_key'" in str(exc_info.value)
-
-
-@pytest.mark.freeze_time("2022-08-10T12:34:56")
-async def test_ldap_to_mo_default_validity(converter: LdapConverter) -> None:
-    settings = Settings()
-    employee_uuid = uuid4()
-    assert settings.conversion_mapping.ldap_to_mo is not None
-    mail = await converter.from_ldap(
-        LdapObject(
-            dn="",
-            mail="foo@bar.dk",
-        ),
-        mapping=settings.conversion_mapping.ldap_to_mo["Email"],
-        template_context={
-            "employee_uuid": str(employee_uuid),
-        },
-    )
-    assert isinstance(mail, Address)
-    assert mail.value == "foo@bar.dk"
-    assert mail.person == employee_uuid
-    assert mail.validity.dict() == {
-        "start": datetime.datetime(2022, 8, 10, 0, 0, tzinfo=MO_TZ),
-        "end": None,
-    }
