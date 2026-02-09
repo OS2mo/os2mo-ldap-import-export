@@ -571,22 +571,21 @@ class SyncTool:
             loaded_object=loaded_object,
         )
 
-        try:
-
-            def convert_value(value: Any) -> Any:
-                if not is_list(value):
-                    return value
-                # If the value is a single element list, return the contents
-                if len(value) == 1:
-                    return one(value)
-                # Otherwise simply return the list
+        def convert_value(value: Any) -> Any:
+            if not is_list(value):
                 return value
+            # If the value is a single element list, return the contents
+            if len(value) == 1:
+                return one(value)
+            # Otherwise simply return the list
+            return value
 
-            ldap_dict = {
-                key: convert_value(value) for key, value in loaded_object.dict().items()
-            }
-            context = {"ldap": ldap_dict, **template_context}
+        ldap_dict = {
+            key: convert_value(value) for key, value in loaded_object.dict().items()
+        }
+        context = {"ldap": ldap_dict, **template_context}
 
+        try:
             # Pydantic validator ensures that uuid is set here
             uuid_str = await self.converter.render_template(
                 "uuid", mapping.uuid, context
@@ -595,8 +594,6 @@ class SyncTool:
 
             mo_class = mapping.as_mo_class()
             mo_object = await self.fetch_uuid_object(uuid, mo_class) if uuid else None
-
-            converted_object: MOBase | Termination | None = None
 
             # Handle termination
             if mapping.terminate:
