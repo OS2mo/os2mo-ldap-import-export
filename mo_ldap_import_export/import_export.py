@@ -658,6 +658,7 @@ class SyncTool:
                 await self.dataloader.moapi.terminate(termination)
                 return
 
+        # Handle updates
         try:
             converted_object = await self._create_converted_object(
                 mapping, context, mo_class
