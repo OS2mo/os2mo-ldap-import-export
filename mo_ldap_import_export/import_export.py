@@ -590,49 +590,54 @@ class SyncTool:
             uuid_str = await self.converter.render_template(
                 "uuid", mapping.uuid, context
             )
-            uuid = UUID(uuid_str) if uuid_str else None
+        except SkipObject:
+            logger.info("Skipping object", field="uuid", dn=dn)
+            return
 
-            mo_class = mapping.as_mo_class()
-            mo_object = await self.fetch_uuid_object(uuid, mo_class) if uuid else None
+        uuid = UUID(uuid_str) if uuid_str else None
 
-            # Handle termination
-            if mapping.terminate:
+        mo_class = mapping.as_mo_class()
+        mo_object = await self.fetch_uuid_object(uuid, mo_class) if uuid else None
+
+        # Handle termination
+        if mapping.terminate:
+            try:
                 terminate_template = mapping.terminate
                 terminate = await self.converter.render_template(
                     "_terminate_", terminate_template, context
                 )
-                if terminate:
-                    # Asked to terminate, but uuid template did not return an uuid, i.e.
-                    # there was no object to actually terminate, so we just skip it.
-                    if not uuid:
-                        message = "Unable to terminate without UUID"
-                        logger.info(message)
-                        raise SkipObject(message)
-                    termination = Termination(
-                        mo_class=mo_class, at=terminate, uuid=uuid
-                    )
-                    logger.info(
-                        "Importing object", verb=Verb.TERMINATE, obj=termination, dn=dn
-                    )
-                    if dry_run:
-                        raise DryRunException(
-                            "Would have uploaded changes to MO",
-                            dn,
-                            details={
-                                "verb": str(Verb.TERMINATE),
-                                "obj": jsonable_encoder(
-                                    termination, exclude={"mo_class"}
-                                ),
-                            },
-                        )
-                    await self.dataloader.moapi.terminate(termination)
-                    return
+            except SkipObject:  # pragma: no cover
+                logger.info("Skipping object", field="_terminate_", dn=dn)
+                return
 
+            if terminate:
+                # Asked to terminate, but uuid template did not return an uuid, i.e.
+                # there was no object to actually terminate, so we just skip it.
+                if not uuid:  # pragma: no cover
+                    message = "Unable to terminate without UUID"
+                    logger.info(message)
+                    return
+                termination = Termination(mo_class=mo_class, at=terminate, uuid=uuid)
+                logger.info(
+                    "Importing object", verb=Verb.TERMINATE, obj=termination, dn=dn
+                )
+                if dry_run:
+                    raise DryRunException(
+                        "Would have uploaded changes to MO",
+                        dn,
+                        details={
+                            "verb": str(Verb.TERMINATE),
+                            "obj": jsonable_encoder(termination, exclude={"mo_class"}),
+                        },
+                    )
+                await self.dataloader.moapi.terminate(termination)
+                return
+
+        try:
             converted_object = await self._create_converted_object(
                 mapping, context, mo_class
             )
-
-        except SkipObject:
+        except SkipObject:  # pragma: no cover
             logger.info("Skipping object", dn=dn)
             return
 
