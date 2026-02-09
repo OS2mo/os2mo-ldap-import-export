@@ -645,7 +645,6 @@ class SyncTool:
         mo_attributes = set(mapping.get_fields().keys())
         assert converted_object is not None
 
-        mo_class = type(converted_object)
         if mo_object is None:
             logger.info(
                 "Importing object", verb=Verb.CREATE, obj=converted_object, dn=dn
