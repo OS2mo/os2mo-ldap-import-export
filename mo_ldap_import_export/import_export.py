@@ -667,7 +667,6 @@ class SyncTool:
             return
 
         mo_attributes = set(mapping.get_fields().keys())
-        assert converted_object is not None
 
         # Convert our objects to dicts
         mo_object_dict_to_upload = mo_object.dict()
