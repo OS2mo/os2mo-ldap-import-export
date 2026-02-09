@@ -13,6 +13,7 @@ from uuid import uuid4
 
 import pytest
 from fastramqpi.context import Context
+from more_itertools import one
 from structlog.testing import capture_logs
 
 from mo_ldap_import_export.config import Settings
@@ -24,7 +25,6 @@ from mo_ldap_import_export.exceptions import RequeueException
 from mo_ldap_import_export.import_export import SyncTool
 from mo_ldap_import_export.ldap_classes import LdapObject
 from mo_ldap_import_export.main import GRAPHQL_VERSION
-from mo_ldap_import_export.moapi import Verb
 from mo_ldap_import_export.moapi import get_primary_engagement
 from mo_ldap_import_export.models import Employee
 from mo_ldap_import_export.models import Engagement
@@ -146,11 +146,10 @@ async def test_import_single_entity_engagement_edit(
         dry_run=False,
     )
 
-    assert dataloader.moapi.create_or_edit_mo_objects.called
-    args, _ = dataloader.moapi.create_or_edit_mo_objects.call_args
-    desired_engagement, verb = args
+    assert dataloader.moapi.edit.called
+    args, _ = dataloader.moapi.edit.call_args
+    desired_engagement = one(args)
 
-    assert verb == Verb.EDIT
     assert isinstance(desired_engagement, Engagement)
     assert desired_engagement.user_key == ldap_engagement.user_key
 
@@ -188,11 +187,10 @@ async def test_import_single_entity_engagement_create(
         dry_run=False,
     )
 
-    assert dataloader.moapi.create_or_edit_mo_objects.called
-    args, _ = dataloader.moapi.create_or_edit_mo_objects.call_args
-    desired_engagement, verb = args
+    assert dataloader.moapi.create.called
+    args, _ = dataloader.moapi.create.call_args
+    desired_engagement = one(args)
 
-    assert verb == Verb.CREATE
     assert isinstance(desired_engagement, Engagement)
     assert desired_engagement.user_key == ldap_engagement.user_key
 
@@ -219,11 +217,10 @@ async def test_import_single_entity_employee_create(
         dry_run=False,
     )
 
-    assert dataloader.moapi.create_or_edit_mo_objects.called
-    args, _ = dataloader.moapi.create_or_edit_mo_objects.call_args
-    desired_employee, verb = args
+    assert dataloader.moapi.create.called
+    args, _ = dataloader.moapi.create.call_args
+    desired_employee = one(args)
 
-    assert verb == Verb.CREATE
     assert isinstance(desired_employee, Employee)
     assert desired_employee.user_key == employee.user_key
 
