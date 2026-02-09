@@ -562,16 +562,6 @@ class MOAPI:
         output = [obj for obj in output if obj is not None]
         return cast(list[ITUser], output)
 
-    async def create_or_edit_mo_objects(
-        self, obj: MOBase | Termination, verb: Verb
-    ) -> None:
-        if verb == Verb.CREATE:
-            await self.create(cast(MOBase, obj))
-        elif verb == Verb.EDIT:
-            await self.edit(cast(MOBase, obj))
-        elif verb == Verb.TERMINATE:
-            await self.terminate(cast(Termination, obj))
-
     async def create(self, obj: MOBase) -> UUID:
         if isinstance(obj, Address):
             return await self.create_address(obj)

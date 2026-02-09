@@ -58,12 +58,8 @@ from mo_ldap_import_export.ldap_classes import LdapObject
 from mo_ldap_import_export.ldapapi import LDAPAPI
 from mo_ldap_import_export.main import GRAPHQL_VERSION
 from mo_ldap_import_export.moapi import MOAPI
-from mo_ldap_import_export.moapi import Verb
 from mo_ldap_import_export.moapi import extract_current_or_latest_validity
-from mo_ldap_import_export.models import Address
 from mo_ldap_import_export.models import Employee
-from mo_ldap_import_export.models import MOBase
-from mo_ldap_import_export.models import Termination
 from mo_ldap_import_export.routes import load_all_current_it_users
 from mo_ldap_import_export.types import LDAPUUID
 from tests.graphql_mocker import GraphQLMocker
@@ -1168,44 +1164,6 @@ def test_extract_latest_object(
 def test_extract_latest_object_empty() -> None:
     result = extract_current_or_latest_validity([])
     assert result is None
-
-
-async def test_create_or_edit_mo_objects(dataloader: DataLoader) -> None:
-    moapi = dataloader.moapi
-
-    # One object is created and another is edited
-    person = uuid4()
-    address_type = uuid4()
-    create = Address(
-        value="foo",
-        address_type=address_type,
-        validity={"start": "2021-01-01T00:00:00"},
-        person=person,
-    )
-    edit = Address(
-        value="bar",
-        address_type=address_type,
-        validity={"start": "2021-01-01T00:00:00"},
-        person=person,
-    )
-    terminate = Termination(mo_class=Address, uuid=uuid4(), at=datetime.datetime.now())
-
-    objs: list[tuple[MOBase | Termination, Verb]] = [
-        (create, Verb.CREATE),
-        (edit, Verb.EDIT),
-        (terminate, Verb.TERMINATE),
-    ]
-
-    moapi.create = AsyncMock()  # type: ignore
-    moapi.edit = AsyncMock()  # type: ignore
-    moapi.terminate = AsyncMock()  # type: ignore
-
-    for obj, verb in objs:
-        await moapi.create_or_edit_mo_objects(obj, verb)
-
-    moapi.create.assert_called_once_with(create)
-    moapi.edit.assert_called_once_with(edit)
-    moapi.terminate.assert_called_once_with(terminate)
 
 
 @pytest.mark.parametrize(
