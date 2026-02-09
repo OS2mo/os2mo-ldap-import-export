@@ -34,12 +34,12 @@ from .customer_specific_checks import ExportChecks
 from .dataloaders import DN
 from .dataloaders import DataLoader
 from .dataloaders import NoGoodLDAPAccountFound
-from .exceptions import AcknowledgeException
 from .exceptions import DryRunException
 from .exceptions import EmptyFieldsToSynchronise
 from .exceptions import IncorrectMapping
 from .exceptions import InvalidCPR
 from .exceptions import NoObjectsReturnedException
+from .exceptions import SingleDayIntervalException
 from .exceptions import SkipObject
 from .ldap import apply_discriminator
 from .ldap import filter_dns
@@ -598,13 +598,17 @@ class SyncTool:
                 logger.info("Skipping object", field="terminate", dn=dn)
                 return
             if termination_date_str:
-                termination_date = datetime.fromisoformat(termination_date_str)
-                # MO requires dates to be at midnight :)
+                # The template's termination date can be any timezone, but MO
+                # requires dates to be at midnight in Danish time. If the
+                # template does not specify a timezone, this will assume Danish
+                # time.
+                # TODO: enforce explicit timezone from template string.
+                template_termination_date = datetime.fromisoformat(termination_date_str)
+                danish_termination_date = template_termination_date.astimezone(MO_TZ)
                 termination_date = datetime.combine(
-                    date=termination_date,
+                    date=danish_termination_date,
                     time=time.min,
-                    # TODO: enforce timezone from template
-                    tzinfo=termination_date.tzinfo or MO_TZ,
+                    tzinfo=danish_termination_date.tzinfo,
                 )
 
         # Handle creates
@@ -615,6 +619,9 @@ class SyncTool:
                 )
             except SkipObject:
                 logger.info("Skipping object", dn=dn)
+                return
+            except SingleDayIntervalException:
+                logger.info("SingleDayIntervalException", dn=dn)
                 return
 
             logger.info(
@@ -665,6 +672,9 @@ class SyncTool:
             raise
         except SkipObject:  # pragma: no cover
             logger.info("Skipping object", dn=dn)
+            return
+        except SingleDayIntervalException:
+            logger.info("SingleDayIntervalException", dn=dn)
             return
 
         mo_attributes = set(mapping.get_fields().keys())
@@ -749,7 +759,7 @@ class SyncTool:
             # TODO(#61435): MO does not support objects with a validity less
             # than a day.
             if termination_date and termination_date - mo_today() <= timedelta(days=1):
-                raise AcknowledgeException(
+                raise SingleDayIntervalException(
                     "MO does not support objects with a validity less than a day"
                 )
 

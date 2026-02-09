@@ -15,6 +15,11 @@ class AcknowledgeException(HTTPException):
         super().__init__(status_code=200, detail=message)
 
 
+class SingleDayIntervalException(HTTPException):
+    def __init__(self, message: str) -> None:
+        super().__init__(status_code=200, detail=message)
+
+
 class RequeueException(HTTPException):
     def __init__(self, message: str) -> None:
         super().__init__(status_code=409, detail=message)
