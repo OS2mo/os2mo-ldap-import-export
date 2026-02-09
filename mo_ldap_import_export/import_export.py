@@ -587,6 +587,9 @@ class SyncTool:
             }
             context = {"ldap": ldap_dict, **template_context}
 
+            # Pydantic validator ensures that uuid is set here
+            uuid = await self.converter.render_template("uuid", mapping.uuid, context)
+
             mo_class = mapping.as_mo_class()
 
             converted_object: MOBase | Termination | None = None
@@ -598,12 +601,6 @@ class SyncTool:
                     "_terminate_", terminate_template, context
                 )
                 if terminate:
-                    # Pydantic validator ensures that uuid is set here
-                    uuid_template = mapping.uuid
-
-                    uuid = await self.converter.render_template(
-                        "uuid", uuid_template, context
-                    )
                     # Asked to terminate, but uuid template did not return an uuid, i.e.
                     # there was no object to actually terminate, so we just skip it.
                     if not uuid:
