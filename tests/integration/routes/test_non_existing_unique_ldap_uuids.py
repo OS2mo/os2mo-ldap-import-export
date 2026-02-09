@@ -30,7 +30,7 @@ conversion_mapping_with_aduuid_itsystem = {
             "objectClass": "ITUser",
             "_import_to_mo_": "true",
             "_ldap_attributes_": ["entryUUID"],
-            "uuid": "{{ get_ituser_uuid({'itsystem': {'user_keys': ['ADUUID']}, 'employee': {'uuids': [employee_uuid]}}) or uuid4() }}",
+            "uuid": "{{ get_ituser_uuid({'itsystem': {'user_keys': ['ADUUID']}, 'employee': {'uuids': [employee_uuid]}}) }}",
             "user_key": "{{ ldap.entryUUID }}",
             "itsystem": "{{ get_it_system_uuid('ADUUID') }}",
             "person": "{{ employee_uuid or '' }}",
