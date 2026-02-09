@@ -33,6 +33,7 @@ def address_mapping(minimal_mapping: dict) -> dict:
                     "objectClass": "Address",
                     "_import_to_mo_": "true",
                     "_ldap_attributes_": ["mail"],
+                    "uuid": "{{ employee_uuid or '' }}",
                     "value": "{{ldap.mail or ''}}",
                     "address_type": "{{ get_employee_address_type_uuid('EmailEmployee') }}",
                     "person": "{{ employee_uuid or '' }}",
@@ -90,16 +91,23 @@ def test_can_terminate_address(address_mapping: dict) -> None:
     parse_obj_as(ConversionMapping, new_mapping)
 
 
-def test_terminate_address_no_uuid(address_mapping: dict) -> None:
+def test_terminate_address_no_uuid(minimal_mapping: dict) -> None:
     new_mapping = overlay(
-        address_mapping,
+        minimal_mapping,
         {
-            "ldap_to_mo": {"EmailEmployee": {"_terminate_": "whatever"}},
+            "ldap_to_mo": {
+                "EmailEmployee": {
+                    "objectClass": "Address",
+                    "_import_to_mo_": "true",
+                    "_ldap_attributes_": ["mail"],
+                    "_terminate_": "whatever",
+                }
+            }
         },
     )
     with pytest.raises(ValidationError) as exc_info:
         parse_obj_as(ConversionMapping, new_mapping)
-    assert "UUID must be set if _terminate_ is set" in str(exc_info.value)
+    assert "uuid\n  field required" in str(exc_info.value)
 
 
 def test_terminate_address_empty_uuid(address_mapping: dict) -> None:
@@ -109,9 +117,8 @@ def test_terminate_address_empty_uuid(address_mapping: dict) -> None:
             "ldap_to_mo": {"EmailEmployee": {"_terminate_": "whatever", "uuid": ""}},
         },
     )
-    with pytest.raises(ValidationError) as exc_info:
-        parse_obj_as(ConversionMapping, new_mapping)
-    assert "UUID must not be empty if _terminate_ is set" in str(exc_info.value)
+    # This now fails during field validation because uuid is mandatory
+    parse_obj_as(ConversionMapping, new_mapping)
 
 
 @pytest.mark.usefixtures("minimal_valid_environmental_variables")
@@ -206,6 +213,7 @@ async def test_check_for_validity(object_class: str) -> None:
             LDAP2MOMapping,
             {
                 "objectClass": object_class,
+                "uuid": "whatever",
                 "validity": "{{ dict(from_date=now()|mo_datestring) }}",
             },
         )
@@ -226,7 +234,11 @@ async def test_check_for_superfluous_attributes(object_class: str) -> None:
     with pytest.raises(ValidationError) as exc_info:
         parse_obj_as(
             LDAP2MOMapping,
-            {"objectClass": object_class, "non_existing_attribute": "failure"},
+            {
+                "objectClass": object_class,
+                "uuid": "whatever",
+                "non_existing_attribute": "failure",
+            },
         )
 
     assert "Attributes {'non_existing_attribute'} are not allowed" in str(
@@ -240,6 +252,7 @@ async def test_check_for_engagement_primary_specialcase():
             LDAP2MOMapping,
             {
                 "objectClass": "Engagement",
+                "uuid": "whatever",
                 "org_unit": "val",
                 "job_function": "val",
                 "user_key": "val",

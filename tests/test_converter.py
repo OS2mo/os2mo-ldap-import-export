@@ -60,6 +60,7 @@ def converter_mapping() -> dict[str, Any]:
                 "objectClass": "Address",
                 "_import_to_mo_": "True",
                 "_ldap_attributes_": ["mail"],
+                "uuid": "{{ employee_uuid or '' }}",
                 "value": "{{ldap.mail}}",
                 "address_type": "{{ 'f376deb8-4743-4ca6-a047-3241de8fe9d2' }}",
                 "person": "{{ employee_uuid or '' }}",
@@ -68,6 +69,7 @@ def converter_mapping() -> dict[str, Any]:
                 "objectClass": "ITUser",
                 "_import_to_mo_": "True",
                 "_ldap_attributes_": ["msSFU30Name"],
+                "uuid": "{{ employee_uuid or '' }}",
                 "user_key": "{{ ldap.msSFU30Name or '' }}",
                 "itsystem": "{{ get_it_system_uuid(ldap.itSystemName) }}",
                 "person": "{{ employee_uuid or '' }}",
@@ -364,6 +366,7 @@ def test_check_uuid_refs_in_mo_objects(converter_mapping: dict[str, Any]) -> Non
         "objectClass": "Address",
         "_import_to_mo_": "true",
         "_ldap_attributes_": [],
+        "uuid": "whatever",
         "value": "val",
         "validity": "val",
         "address_type": "val",
@@ -406,11 +409,12 @@ def test_check_uuid_refs_in_mo_objects(converter_mapping: dict[str, Any]) -> Non
                 "Employee": {
                     "objectClass": "Employee",
                     "_import_to_mo_": "true",
+                    "_ldap_attributes_": [],
                 }
             }
         }
     )
-    with pytest.raises(ValidationError, match="Needs to contain a key called 'uuid'"):
+    with pytest.raises(ValidationError, match="uuid\n  field required"):
         parse_obj_as(ConversionMapping, converter_mapping)
 
 
