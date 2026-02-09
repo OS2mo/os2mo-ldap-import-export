@@ -588,9 +588,13 @@ class SyncTool:
             context = {"ldap": ldap_dict, **template_context}
 
             # Pydantic validator ensures that uuid is set here
-            uuid = await self.converter.render_template("uuid", mapping.uuid, context)
+            uuid_str = await self.converter.render_template(
+                "uuid", mapping.uuid, context
+            )
+            uuid = UUID(uuid_str) if uuid_str else None
 
             mo_class = mapping.as_mo_class()
+            mo_object = await self.fetch_uuid_object(uuid, mo_class) if uuid else None
 
             converted_object: MOBase | Termination | None = None
 
@@ -645,7 +649,6 @@ class SyncTool:
         assert converted_object is not None
 
         mo_class = type(converted_object)
-        mo_object = await self.fetch_uuid_object(converted_object.uuid, mo_class)
         if mo_object is None:
             logger.info(
                 "Importing object", verb=Verb.CREATE, obj=converted_object, dn=dn
