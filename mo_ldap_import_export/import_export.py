@@ -666,12 +666,6 @@ class SyncTool:
             logger.info("Skipping object", dn=dn)
             return
 
-        logger.info(
-            "Converted 'n' objects ",
-            n=1,
-            dn=dn,
-        )
-
         mo_attributes = set(mapping.get_fields().keys())
         assert converted_object is not None
 
