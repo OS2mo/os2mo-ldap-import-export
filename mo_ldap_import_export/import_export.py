@@ -26,7 +26,6 @@ from .config import Settings
 from .config import get_required_attributes
 from .converters import LdapConverter
 from .customer_specific_checks import ExportChecks
-from .customer_specific_checks import ImportChecks
 from .dataloaders import DN
 from .dataloaders import DataLoader
 from .dataloaders import NoGoodLDAPAccountFound
@@ -89,14 +88,12 @@ class SyncTool:
         dataloader: DataLoader,
         converter: LdapConverter,
         export_checks: ExportChecks,
-        import_checks: ImportChecks,
         settings: Settings,
         ldap_connection: Connection,
     ) -> None:
         self.dataloader: DataLoader = dataloader
         self.converter: LdapConverter = converter
         self.export_checks: ExportChecks = export_checks
-        self.import_checks: ImportChecks = import_checks
         self.settings: Settings = settings
         self.ldap_connection: Connection = ldap_connection
 
@@ -111,15 +108,6 @@ class SyncTool:
             employee_uuid,
             self.settings.it_user_to_check,
         )
-
-    async def perform_import_checks(self, dn: DN, json_key: str) -> bool:
-        if self.settings.check_holstebro_ou_issue_57426:  # pragma: no cover
-            return await self.import_checks.check_holstebro_ou_is_externals_issue_57426(
-                self.settings.check_holstebro_ou_issue_57426,
-                dn,
-                json_key,
-            )
-        return True
 
     async def render_ldap2mo(
         self, uuid: EmployeeUUID, dn: DN | None
@@ -481,13 +469,6 @@ class SyncTool:
             != "false"
         ]
         logger.info("Import to MO filtered", json_keys=json_keys)
-
-        json_keys = [
-            json_key
-            for json_key in json_keys
-            if await self.perform_import_checks(best_object.dn, json_key)
-        ]
-        logger.info("Import checks executed", json_keys=json_keys)
 
         template_context = {
             "employee_uuid": str(employee_uuid),

@@ -7,7 +7,6 @@ from random import randint
 from typing import Any
 from unittest.mock import AsyncMock
 from unittest.mock import MagicMock
-from unittest.mock import patch
 from uuid import UUID
 from uuid import uuid4
 
@@ -38,7 +37,6 @@ def context(
     dataloader: AsyncMock,
     converter: MagicMock,
     export_checks: AsyncMock,
-    import_checks: AsyncMock,
     settings_mock: MagicMock,
 ) -> Context:
     settings_mock.discriminator_fields = []
@@ -49,7 +47,6 @@ def context(
             "dataloader": dataloader,
             "converter": converter,
             "export_checks": export_checks,
-            "import_checks": import_checks,
             "settings": settings_mock,
             "ldap_connection": ldap_connection,
         },
@@ -334,26 +331,6 @@ async def test_import_single_object_from_LDAP_but_import_equals_false(
         messages = [w["event"] for w in cap_logs if w["log_level"] == "info"]
         assert "Import to MO filtered" in messages
         assert "Loading object" not in messages
-
-
-async def test_perform_import_checks_noop(sync_tool: SyncTool) -> None:
-    """Test that perform_import_checks returns True when nothing is checked."""
-    sync_tool.settings.check_holstebro_ou_issue_57426 = False  # type: ignore
-    result = await sync_tool.perform_import_checks("CN=foo", "Employee")
-    assert result is True
-
-
-@pytest.mark.usefixtures("fake_find_mo_employee_dn")
-async def test_holstebro_import_checks(sync_tool: SyncTool, fake_dn: DN) -> None:
-    with (
-        patch(
-            "mo_ldap_import_export.import_export.SyncTool.perform_import_checks",
-            return_value=False,
-        ),
-        capture_logs() as cap_logs,
-    ):
-        await sync_tool.import_single_user(LdapObject(dn=fake_dn))
-        assert "Import checks executed" in str(cap_logs)
 
 
 engagement_uuid1 = uuid4()

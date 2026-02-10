@@ -9,7 +9,6 @@ import pytest
 from fastramqpi.context import Context
 
 from mo_ldap_import_export.customer_specific_checks import ExportChecks
-from mo_ldap_import_export.customer_specific_checks import ImportChecks
 from mo_ldap_import_export.import_export import SyncTool
 from mo_ldap_import_export.ldap_classes import LdapObject
 
@@ -62,7 +61,6 @@ async def test_template_strictness(
         dataloader=dataloader,
         converter=user_context["converter"],
         export_checks=ExportChecks(dataloader),
-        import_checks=ImportChecks(),
         settings=user_context["settings"],
         ldap_connection=user_context["ldap_connection"],
     )

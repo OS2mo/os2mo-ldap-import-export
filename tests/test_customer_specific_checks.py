@@ -11,7 +11,6 @@ import pytest
 from fastramqpi.context import Context
 
 from mo_ldap_import_export.customer_specific_checks import ExportChecks
-from mo_ldap_import_export.customer_specific_checks import ImportChecks
 from mo_ldap_import_export.dataloaders import DataLoader
 from mo_ldap_import_export.depends import GraphQLClient
 from mo_ldap_import_export.depends import Settings
@@ -33,36 +32,6 @@ def context(dataloader: MagicMock) -> Context:
 @pytest.fixture
 def export_checks(dataloader: MagicMock) -> ExportChecks:
     return ExportChecks(dataloader)
-
-
-@pytest.fixture
-def import_checks() -> ImportChecks:
-    return ImportChecks()
-
-
-async def test_check_holstebro_ou_is_externals_no_error(import_checks: ImportChecks):
-    result = await import_checks.check_holstebro_ou_is_externals_issue_57426(
-        ["OU=External consultants,OU=HK"],
-        "OU=Magenta,OU=External consultants,OU=HK,DC=test",
-        "Test",
-    )
-    assert result is True
-
-
-async def test_check_holstebro_ou_is_externals_error(import_checks: ImportChecks):
-    result = await import_checks.check_holstebro_ou_is_externals_issue_57426(
-        ["OU=Nothing Here", "OU=Also,OU=Nothing Here"], "OU=HK,DC=test", "Test"
-    )
-    assert result is False
-
-
-async def test_check_holstebro_ou_is_externals_error2(import_checks: ImportChecks):
-    result = await import_checks.check_holstebro_ou_is_externals_issue_57426(
-        ["OU=Nothing Here", "OU=hierarchy,OU=HK Eksterne,OU=HK"],
-        "OU=HK,DC=test",
-        "Test",
-    )
-    assert result is False
 
 
 @pytest.mark.usefixtures("minimal_valid_environmental_variables")
