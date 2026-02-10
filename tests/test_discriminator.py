@@ -22,7 +22,6 @@ from structlog.testing import capture_logs
 from mo_ldap_import_export.config import Settings
 from mo_ldap_import_export.converters import LdapConverter
 from mo_ldap_import_export.customer_specific_checks import ExportChecks
-from mo_ldap_import_export.customer_specific_checks import ImportChecks
 from mo_ldap_import_export.dataloaders import DataLoader
 from mo_ldap_import_export.depends import GraphQLClient
 from mo_ldap_import_export.environments.main import construct_environment
@@ -488,10 +487,9 @@ async def sync_tool_and_context(
     context["user_context"]["converter"] = converter
 
     export_checks = ExportChecks(dataloader)
-    import_checks = ImportChecks()
 
     sync_tool = SyncTool(
-        dataloader, converter, export_checks, import_checks, settings, ldap_connection
+        dataloader, converter, export_checks, settings, ldap_connection
     )
     context["user_context"]["synctool"] = sync_tool
 
@@ -516,7 +514,6 @@ async def context(sync_tool_and_context: tuple[SyncTool, Context]) -> Context:
             False,
             [
                 "Import to MO filtered",
-                "Import checks executed",
             ],
             marks=pytest.mark.envvar({}),
         ),
@@ -542,7 +539,6 @@ async def context(sync_tool_and_context: tuple[SyncTool, Context]) -> Context:
                 "Found DN",
                 "Found DN",
                 "Import to MO filtered",
-                "Import checks executed",
             ],
             marks=pytest.mark.envvar(
                 {
@@ -560,7 +556,6 @@ async def context(sync_tool_and_context: tuple[SyncTool, Context]) -> Context:
                 "Found better DN for employee",
                 "Found DN",
                 "Import to MO filtered",
-                "Import checks executed",
             ],
             marks=pytest.mark.envvar(
                 {

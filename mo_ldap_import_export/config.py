@@ -509,11 +509,6 @@ class Settings(BaseSettings):
         ),
     )
 
-    check_holstebro_ou_issue_57426: list[str] = Field(
-        [],
-        description="Check that OU is below or equal one of these, see #57426",
-    )
-
     ldap_to_mo_legacy_skip_invalid_cpr_accounts: bool = Field(
         False,
         description="Skip LDAP accounts with invalid CPR number.",

@@ -315,11 +315,6 @@ def export_checks() -> AsyncMock:
 
 
 @pytest.fixture
-def import_checks() -> AsyncMock:
-    return AsyncMock()
-
-
-@pytest.fixture
 async def fastramqpi(load_marked_envvars: None) -> FastRAMQPI:
     return create_fastramqpi()
 
