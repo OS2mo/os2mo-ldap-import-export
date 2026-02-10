@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
-import asyncio
 from contextlib import suppress
 from typing import Any
 
@@ -10,6 +9,8 @@ from ldap3 import MODIFY_REPLACE
 from ldap3 import Connection
 from ldap3.core.exceptions import LDAPInvalidValueError
 from ldap3.core.exceptions import LDAPNoSuchObjectResult
+from ldap3.utils.conv import escape_bytes
+from ldap3.utils.conv import escape_filter_chars
 from ldap3.utils.dn import escape_rdn
 from ldap3.utils.dn import parse_dn
 from ldap3.utils.dn import safe_dn
@@ -282,19 +283,58 @@ class LDAPAPI:
             )
         return LDAPUUID(uuid)
 
+    def _construct_object_uuid_filter(self, uuid: LDAPUUID) -> str:
+        if self.settings.ldap_unique_id_field == "objectGUID":
+            # For AD, use the raw bytes escaped
+            return f"({self.settings.ldap_unique_id_field}={escape_bytes(uuid.bytes)})"
+
+        # For standard LDAP, use the string representation
+        return (
+            f"({self.settings.ldap_unique_id_field}={escape_filter_chars(str(uuid))})"
+        )
+
     async def convert_ldap_uuids_to_dns(
         self, ldap_uuids: set[LDAPUUID], attributes: set[str]
     ) -> dict[LDAPUUID, LdapObject | None]:
+        if not ldap_uuids:
+            return {}
+
+        attributes = set(attributes)
+        attributes.add(self.settings.ldap_unique_id_field)
+
+        filters = [self._construct_object_uuid_filter(uuid) for uuid in ldap_uuids]
+        combined_filter = "".join(filters)
+        search_filter = f"(&(objectClass=*)(|{combined_filter}))"
+
+        searchParameters = {
+            "search_base": self.settings.ldap_search_base,
+            "search_filter": search_filter,
+            "attributes": list(attributes),
+        }
+
         try:
-            async with asyncio.TaskGroup() as tg:
-                tasks = {
-                    uuid: tg.create_task(self.get_object_by_uuid(uuid, attributes))
-                    for uuid in ldap_uuids
-                }
+            search_results = await object_search(searchParameters, self.connection)
         except Exception as e:
             raise ValueError("Exceptions during UUID2DN translation") from e
 
-        return {uuid: task.result() for uuid, task in tasks.items()}
+        # Map results back
+        results: dict[LDAPUUID, LdapObject | None] = {uuid: None for uuid in ldap_uuids}
+
+        for result in search_results:
+            obj = LdapObject(dn=result["dn"], **result["attributes"])
+            raw_uuid = result["attributes"].get(self.settings.ldap_unique_id_field)
+
+            if raw_uuid:
+                if isinstance(raw_uuid, list):
+                    raw_uuid = raw_uuid[0]
+
+                found_uuid = LDAPUUID(raw_uuid)
+                if found_uuid in results:
+                    results[found_uuid] = obj
+                else:
+                    logger.warning("Found UUID not in requested set", uuid=found_uuid)
+
+        return results
 
     async def dn2cpr(self, dn: DN) -> CPRNumber | None:
         if self.settings.ldap_cpr_attribute is None:  # pragma: no cover

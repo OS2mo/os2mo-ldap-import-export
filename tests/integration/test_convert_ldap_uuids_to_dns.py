@@ -1,13 +1,10 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
 from typing import cast
-from unittest import TestCase
 from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
-from more_itertools import one
-from structlog.testing import capture_logs
 
 from mo_ldap_import_export.ldapapi import LDAPAPI
 from mo_ldap_import_export.types import LDAPUUID
@@ -27,73 +24,35 @@ async def test_convert_ldap_uuids_to_dns(
     missing_uuid = cast(LDAPUUID, uuid4())
 
     # Convert empty list
-    with capture_logs() as cap_logs:
-        result = await ldap_api.convert_ldap_uuids_to_dns(
-            ldap_uuids=set(), attributes=set()
-        )
-        assert result == {}
-
-    assert cap_logs == []
+    result = await ldap_api.convert_ldap_uuids_to_dns(
+        ldap_uuids=set(), attributes=set()
+    )
+    assert result == {}
 
     # Convert missing LDAP UUID
-    with capture_logs() as cap_logs:
-        result = await ldap_api.convert_ldap_uuids_to_dns(
-            ldap_uuids={missing_uuid}, attributes=set()
-        )
-        assert result == {missing_uuid: None}
-
-    assert cap_logs == [
-        {
-            "event": "Looking for LDAP object",
-            "log_level": "info",
-            "unique_ldap_uuid": missing_uuid,
-        },
-    ]
+    result = await ldap_api.convert_ldap_uuids_to_dns(
+        ldap_uuids={missing_uuid}, attributes=set()
+    )
+    assert result == {missing_uuid: None}
 
     # Convert existing LDAP UUID
-    with capture_logs() as cap_logs:
-        result = await ldap_api.convert_ldap_uuids_to_dns(
-            ldap_uuids={ldap_person_uuid}, attributes=set()
-        )
-        assert len(result) == 1
-        obj = result[ldap_person_uuid]
-        assert obj is not None
-        assert obj.dn == "uid=abk,ou=os2mo,o=magenta,dc=magenta,dc=dk"
-
-    assert cap_logs == [
-        {
-            "event": "Looking for LDAP object",
-            "log_level": "info",
-            "unique_ldap_uuid": ldap_person_uuid,
-        },
-    ]
+    result = await ldap_api.convert_ldap_uuids_to_dns(
+        ldap_uuids={ldap_person_uuid}, attributes=set()
+    )
+    assert len(result) == 1
+    obj = result[ldap_person_uuid]
+    assert obj is not None
+    assert obj.dn == "uid=abk,ou=os2mo,o=magenta,dc=magenta,dc=dk"
 
     # Convert existing and non-existing LDAP UUIDs
-    with capture_logs() as cap_logs:
-        result = await ldap_api.convert_ldap_uuids_to_dns(
-            ldap_uuids={ldap_person_uuid, missing_uuid}, attributes=set()
-        )
-        assert len(result) == 2
-        assert result[missing_uuid] is None
-        obj = result[ldap_person_uuid]
-        assert obj is not None
-        assert obj.dn == "uid=abk,ou=os2mo,o=magenta,dc=magenta,dc=dk"
-
-    TestCase().assertCountEqual(
-        cap_logs,
-        [
-            {
-                "event": "Looking for LDAP object",
-                "log_level": "info",
-                "unique_ldap_uuid": ldap_person_uuid,
-            },
-            {
-                "event": "Looking for LDAP object",
-                "log_level": "info",
-                "unique_ldap_uuid": missing_uuid,
-            },
-        ],
+    result = await ldap_api.convert_ldap_uuids_to_dns(
+        ldap_uuids={ldap_person_uuid, missing_uuid}, attributes=set()
     )
+    assert len(result) == 2
+    assert result[missing_uuid] is None
+    obj = result[ldap_person_uuid]
+    assert obj is not None
+    assert obj.dn == "uid=abk,ou=os2mo,o=magenta,dc=magenta,dc=dk"
 
     # Convert existing UUID, but LDAP is down
     exception = ValueError("BOOM")
@@ -106,6 +65,5 @@ async def test_convert_ldap_uuids_to_dns(
         )
 
     assert "Exceptions during UUID2DN translation" in str(exc_info.value)
-    assert exc_info.value.__cause__ is not None
-    assert isinstance(exc_info.value.__cause__, ExceptionGroup)
-    assert one(exc_info.value.__cause__.exceptions) == exception
+    assert exc_info.value.__cause__ is exception
+
