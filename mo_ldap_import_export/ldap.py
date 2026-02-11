@@ -44,7 +44,6 @@ from .config import Settings
 from .exceptions import MultipleObjectsReturnedException
 from .exceptions import NoObjectsReturnedException
 from .exceptions import ReadOnlyException
-from .exceptions import RequeueException
 from .ldap_classes import LdapObject
 from .moapi import MOAPI
 from .types import DN
@@ -109,7 +108,7 @@ def get_client_strategy():
 
 
 def construct_server_pool(settings: Settings) -> ServerPool:
-    servers = list(map(construct_server, settings.ldap_controllers))
+    servers = [construct_server(c) for c in settings.ldap_controllers]
     # Pick the next server to use at random, retry connections 10 times,
     # discard non-active servers.
     server_pool = ServerPool(
@@ -346,56 +345,11 @@ def ldapobject2discriminator(
         return value
     # If it is a list, we assume it is
     unpacked_value = only(value)
-    if unpacked_value is None:
+    if unpacked_value is None:  # pragma: no cover
         logger.debug("Discriminator value is None", dn=ldap_object.dn)
         return None
     assert isinstance(unpacked_value, str)
     return unpacked_value
-
-
-async def fetch_field_mapping(
-    ldap_connection: Connection, discriminator_fields: list[str], dn: DN
-) -> dict[str, str | int | None]:
-    # Fetch the discriminator attributes for all the given DN
-    # NOTE: While it is possible to fetch multiple DNs in a single operation
-    #       (by doing a complex search operation), some "guy on the internet" claims
-    #       that it is better to lookup DNs individually using the READ operation.
-    #       See: https://stackoverflow.com/a/58834059
-    try:
-        ldap_object = await get_ldap_object(
-            ldap_connection, dn, attributes=set(discriminator_fields)
-        )
-    except NoObjectsReturnedException as exc:
-        # There could be multiple reasons why our DNs cannot be read.
-        # * The DNs could have been found by CPR number and changed since then.
-        #
-        # In this case, we wish to retry the message, so we can refetch by CPR.
-        #
-        # * The DNs could have been found by ITUsers and those could be wrong in MO
-        #
-        # In this case, we wish to retry the message until someone has fixed the
-        # problem in MO itself, and thus we will be retrying for a long time, likely
-        # raising an alarm due to messages not being processed, and thus ensuring that
-        # someone will look into the issue.
-        raise RequeueException("Unable to lookup DN(s)") from exc
-
-    return {
-        discriminator_field: ldapobject2discriminator(ldap_object, discriminator_field)
-        for discriminator_field in discriminator_fields
-    }
-
-
-async def fetch_dn_mapping(
-    ldap_connection: Connection, discriminator_fields: list[str], dns: set[DN]
-) -> dict[DN, dict[str, str | int | None]]:
-    dn_list = list(dns)
-    mappings = await asyncio.gather(
-        *(
-            fetch_field_mapping(ldap_connection, discriminator_fields, dn)
-            for dn in dn_list
-        )
-    )
-    return dict(zip(dn_list, mappings, strict=True))
 
 
 @cache
@@ -423,6 +377,31 @@ async def evaluate_template(
     return result.strip() == "True"
 
 
+def calculate_discriminator_mapping(
+    ldap_objects: list[LdapObject], discriminator_fields: list[str]
+) -> dict[DN, dict[str, str | int | None]]:
+    required_fields = set(discriminator_fields)
+    objs_missing_fields = {
+        obj.dn: required_fields - set(obj.dict().keys()) for obj in ldap_objects
+    }
+    objs_missing_fields = {
+        dn: missing_fields
+        for dn, missing_fields in objs_missing_fields.items()
+        if missing_fields
+    }
+    assert (
+        not objs_missing_fields
+    ), "LDAP object(s) missing required discriminator fields"
+
+    return {
+        obj.dn: {
+            field: ldapobject2discriminator(obj, field)
+            for field in discriminator_fields
+        }
+        for obj in ldap_objects
+    }
+
+
 async def filter_dns(
     settings: Settings, ldap_objects: list[LdapObject]
 ) -> list[LdapObject]:
@@ -439,32 +418,7 @@ async def filter_dns(
     discriminator_fields = settings.discriminator_fields
     assert discriminator_fields, "discriminator_fields must be set"
 
-    # Check if any fields are missing on any ldap_objects
-    def calculate_missing_fields(obj: LdapObject) -> set[str]:
-        required_fields = set(discriminator_fields)
-        available_attributes = set(obj.dict().keys())
-        missing_fields = required_fields - available_attributes
-        return missing_fields
-
-    objs_missing_fields = {
-        obj.dn: calculate_missing_fields(obj) for obj in ldap_objects
-    }
-    objs_missing_fields = {
-        dn: missing_fields
-        for dn, missing_fields in objs_missing_fields.items()
-        if missing_fields
-    }
-    assert (
-        not objs_missing_fields
-    ), "LDAP object(s) missing required discriminator fields"
-
-    mapping = {
-        obj.dn: {
-            field: ldapobject2discriminator(obj, field)
-            for field in discriminator_fields
-        }
-        for obj in ldap_objects
-    }
+    mapping = calculate_discriminator_mapping(ldap_objects, discriminator_fields)
 
     dns_passing_template = {
         dn
@@ -577,7 +531,7 @@ async def apply_discriminator(
     # But no guarantees are given as pydantic is lenient with run validators
     assert settings.discriminator_values != []
 
-    mapping = await fetch_dn_mapping(ldap_connection, discriminator_fields, dns)
+    mapping = calculate_discriminator_mapping(ldap_objects, discriminator_fields)
 
     # If the discriminator_function is template, discriminator values will be a
     # prioritized list of jinja templates (first meaning most important), and we will
