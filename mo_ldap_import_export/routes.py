@@ -736,7 +736,6 @@ def construct_router(settings: Settings) -> APIRouter:
     @router.get("/SD", status_code=200, tags=["LDAP"])
     async def load_sd_data(
         settings: depends.Settings,
-        ldap_connection: depends.Connection,
         dataloader: depends.DataLoader,
         cpr_number: CPRNumber,
     ) -> dict[str, str]:  # pragma: no cover
@@ -747,22 +746,26 @@ def construct_router(settings: Settings) -> APIRouter:
         # Setting for UUID field to handle ADs non-standard entryUUID field
         attributes = {settings.ldap_unique_id_field, account_name}
 
+        # Fetch discriminator fields
+        if settings.discriminator_fields:  # pragma: no cover
+            attributes.update(settings.discriminator_fields)
+
         ldapapi = dataloader.ldapapi
 
-        ldap_objects = await ldapapi.cpr2dns(cpr_number, set())
+        ldap_objects = await ldapapi.cpr2dns(cpr_number, attributes)
         if not ldap_objects:
             logger.info("Found no DNs for cpr_number")
             raise HTTPException(status_code=404, detail="No DNs found for CPR number")
 
         ldap_objects = await filter_dns(settings, ldap_objects)
-        dns = {obj.dn for obj in ldap_objects}
+        dn_map = {obj.dn: obj for obj in ldap_objects}
 
         # SD-changed-at only calls this endpoint when creating users in MO (to
         # know which UUID to use), but apply_discriminator requires a MO person
         # UUID. Therefore, we cannot apply discriminator here, but must assume
         # only a single DN exists.
         best_dn = only(
-            dns,
+            dn_map,
             too_long=HTTPException(
                 status_code=501,
                 detail="Multiple DNs found, but unable to apply_discriminator",
@@ -772,14 +775,13 @@ def construct_router(settings: Settings) -> APIRouter:
             logger.info("No DNs found")
             raise HTTPException(status_code=404, detail="No DNs found")
 
-        # Note: get_ldap_object handles ADs non-standard entryUUID lookup format
-        ldap_object = await get_ldap_object(ldap_connection, best_dn, attributes)
+        best_object = dn_map[best_dn]
         return {
-            "dn": ldap_object.dn,
+            "dn": best_object.dn,
             # UUID parsed and then stringifed to handle ADs non-standard UUID formatting
-            "uuid": str(UUID(getattr(ldap_object, settings.ldap_unique_id_field))),
+            "uuid": str(UUID(getattr(best_object, settings.ldap_unique_id_field))),
             # Username list shenanigans to handle ADs non-standard list formatting
-            "username": one(ensure_list(getattr(ldap_object, account_name))),
+            "username": one(ensure_list(getattr(best_object, account_name))),
         }
 
     # Transitory endpoint to reimplementing cpr_uuid.py using this integration
@@ -798,6 +800,10 @@ def construct_router(settings: Settings) -> APIRouter:
         # Setting for UUID field to handle ADs non-standard entryUUID field
         attributes = {settings.ldap_unique_id_field, account_name}
 
+        # Fetch discriminator fields
+        if settings.discriminator_fields:  # pragma: no cover
+            attributes.update(settings.discriminator_fields)
+
         ldap_objects = await dataloader.find_mo_employee_dn(uuid, attributes)
         ldap_objects = await filter_dns(settings, ldap_objects)
         dns = {obj.dn for obj in ldap_objects}
@@ -812,14 +818,12 @@ def construct_router(settings: Settings) -> APIRouter:
             logger.info("No DNs survived discriminator")
             raise HTTPException(status_code=404, detail="No DNs survived discriminator")
 
-        # Note: get_ldap_object handles ADs non-standard entryUUID lookup format
-        ldap_object = await get_ldap_object(ldap_connection, best_object.dn, attributes)
         return {
-            "dn": ldap_object.dn,
+            "dn": best_object.dn,
             # UUID parsed and then stringifed to handle ADs non-standard UUID formatting
-            "uuid": str(UUID(getattr(ldap_object, settings.ldap_unique_id_field))),
+            "uuid": str(UUID(getattr(best_object, settings.ldap_unique_id_field))),
             # Username list shenanigans to handle ADs non-standard list formatting
-            "username": one(ensure_list(getattr(ldap_object, account_name))),
+            "username": one(ensure_list(getattr(best_object, account_name))),
         }
 
     @router.delete("/danger/purge_addresses")
