@@ -3,6 +3,7 @@
 # pylint: disable=redefined-outer-name
 # pylint: disable=unused-argument
 # pylint: disable=protected-access
+import json
 import os
 from collections.abc import Iterator
 from typing import Any
@@ -17,9 +18,7 @@ from fastapi.testclient import TestClient
 from fastramqpi.main import FastRAMQPI
 from fastramqpi.ramqp.depends import Context
 from fastramqpi.ramqp.depends import get_context
-from pydantic import parse_obj_as
 
-from mo_ldap_import_export.config import ConversionMapping
 from mo_ldap_import_export.main import create_app
 from mo_ldap_import_export.main import create_fastramqpi
 from mo_ldap_import_export.models import Address
@@ -34,23 +33,20 @@ def settings_overrides() -> Iterator[dict[str, str]]:
     Yields:
         Minimal set of overrides.
     """
-    conversion_mapping_dict = {
-        "ldap_to_mo": {
-            "Employee": {
-                "objectClass": "Employee",
-                "_import_to_mo_": "false",
-                "_ldap_attributes_": [],
-                "uuid": "{{ employee_uuid or '' }}",
-            }
-        }
-    }
-    conversion_mapping = parse_obj_as(ConversionMapping, conversion_mapping_dict)
-    conversion_mapping_setting = conversion_mapping.json(
-        exclude_unset=True, by_alias=True
-    )
     # TODO: This seems duplicated with the version in conftest
     overrides = {
-        "CONVERSION_MAPPING": conversion_mapping_setting,
+        "CONVERSION_MAPPING": json.dumps(
+            {
+                "ldap_to_mo": {
+                    "Employee": {
+                        "objectClass": "Employee",
+                        "_import_to_mo_": "false",
+                        "_ldap_attributes_": [],
+                        "uuid": "{{ employee_uuid or '' }}",
+                    }
+                }
+            }
+        ),
         "CLIENT_ID": "Foo",
         "CLIENT_SECRET": "bar",
         "LDAP_CONTROLLERS": '[{"host": "localhost"}]',
@@ -133,8 +129,8 @@ def dataloader(
 @pytest.fixture
 def converter() -> MagicMock:
     converter = MagicMock()
-    converter._import_to_mo_ = MagicMock()
-    converter._import_to_mo_.return_value = True
+    converter.import_to_mo = MagicMock()
+    converter.import_to_mo.return_value = True
 
     converter.load_info_dicts = AsyncMock()
     converter._init = AsyncMock()

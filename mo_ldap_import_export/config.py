@@ -132,7 +132,6 @@ class LDAP2MOMapping(MappingBaseModel):
     def get_fields(self) -> dict[str, Any]:
         return self.dict(
             exclude={"objectClass", "import_to_mo", "terminate", "ldap_attributes"},
-            by_alias=True,
             exclude_unset=True,
         )
 

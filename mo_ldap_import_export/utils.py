@@ -154,7 +154,7 @@ def get_delete_flag(mo_object: dict[str, Any]) -> bool:
     # timezone-aware, so we can delete all parsing logic from here when we rid
     # ourselves of the ramodels infestation.
     now = datetime.utcnow()
-    validity_to = mo_datestring_to_utc(mo_object["validity"]["to"])
+    validity_to = mo_datestring_to_utc(mo_object["validity"]["end"])
     if validity_to and validity_to <= now:
         logger.info(
             "Returning delete=True because to_date <= current_date",

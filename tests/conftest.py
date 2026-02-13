@@ -283,8 +283,8 @@ def converter() -> AsyncMock:
         "Address",
         "EmailEmployee",
     ]
-    converter._import_to_mo_ = MagicMock()
-    converter._import_to_mo_.return_value = True
+    converter.import_to_mo = MagicMock()
+    converter.import_to_mo.return_value = True
 
     converter.to_ldap = AsyncMock()
     converter.to_ldap.return_value = LdapObject(dn="CN=foo", name="Angus")
