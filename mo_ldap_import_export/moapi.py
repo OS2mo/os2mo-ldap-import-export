@@ -13,7 +13,6 @@ from typing import cast
 from uuid import UUID
 
 import structlog
-from fastapi.encoders import jsonable_encoder
 from more_itertools import one
 from more_itertools import only
 
@@ -280,10 +279,10 @@ def read_engagement_to_engagement(
         extension_8=validity.extension_8,
         extension_9=validity.extension_9,
         extension_10=validity.extension_10,
-        validity={
-            "start": validity.validity.from_,
-            "end": validity.validity.to,
-        },
+        validity=models.Validity(
+            start=validity.validity.from_,
+            end=validity.validity.to,
+        ),
         fraction=validity.fraction,
     )
 
@@ -323,12 +322,19 @@ class MOAPI:
         result = only(results.objects)
         if result is None:
             return None
-        result_entry = extract_current_or_latest_validity(result.validities)
-        if result_entry is None:
+        entry = extract_current_or_latest_validity(result.validities)
+        if entry is None:
             return None
-        entry = jsonable_encoder(result_entry)
-        entry.pop("validity")
-        return Employee(**entry)
+        return Employee(
+            uuid=entry.uuid,
+            user_key=entry.user_key,
+            given_name=entry.given_name,
+            surname=entry.surname,
+            cpr_number=entry.cpr_number,
+            seniority=None,
+            nickname_given_name=entry.nickname_given_name or "",
+            nickname_surname=entry.nickname_surname or "",
+        )
 
     async def load_mo_org_unit(
         self, uuid: UUID, current_objects_only=True
@@ -427,18 +433,21 @@ class MOAPI:
         result = only(results.objects)
         if result is None:  # pragma: no cover
             return None
-        result_entry = extract_current_or_latest_validity(result.validities)
-        if result_entry is None:  # pragma: no cover
+        entry = extract_current_or_latest_validity(result.validities)
+        if entry is None:  # pragma: no cover
             return None
-        entry = jsonable_encoder(result_entry)
         it_user = ITUser(
             uuid=uuid,
-            user_key=entry["user_key"],
-            external_id=entry["external_id"],
-            itsystem=entry["itsystem_uuid"],
-            person=entry["employee_uuid"],
-            engagements=entry["engagement_uuids"],
-            validity=entry["validity"],
+            user_key=entry.user_key,
+            external_id=entry.external_id,
+            itsystem=entry.itsystem_uuid,
+            person=entry.employee_uuid,
+            org_unit=None,
+            engagements=entry.engagement_uuids,
+            validity=models.Validity(
+                start=entry.validity.from_,
+                end=entry.validity.to,
+            ),
         )
         return it_user
 
@@ -507,21 +516,24 @@ class MOAPI:
         result = only(results.objects)
         if result is None:  # pragma: no cover
             return None
-        result_entry = extract_current_or_latest_validity(result.validities)
-        if result_entry is None:  # pragma: no cover
+        entry = extract_current_or_latest_validity(result.validities)
+        if entry is None:  # pragma: no cover
             return None
-        entry = jsonable_encoder(result_entry)
+        assert entry.value is not None
         return Address(
-            uuid=entry["uuid"],
-            value=entry["value"],
-            value2=entry["value2"],
-            address_type=entry["address_type"]["uuid"],
-            person=entry["employee_uuid"],
-            org_unit=entry["org_unit_uuid"],
-            engagement=entry["engagement_uuid"],
-            ituser=entry["ituser_uuid"],
-            visibility=entry["visibility_uuid"],
-            validity=entry["validity"],
+            uuid=entry.uuid,
+            value=entry.value,
+            value2=entry.value2,
+            address_type=entry.address_type.uuid,
+            person=entry.employee_uuid,
+            org_unit=entry.org_unit_uuid,
+            engagement=entry.engagement_uuid,
+            ituser=entry.ituser_uuid,
+            visibility=entry.visibility_uuid,
+            validity=models.Validity(
+                start=entry.validity.from_,
+                end=entry.validity.to,
+            ),
         )
 
     async def load_mo_engagement(
@@ -540,10 +552,10 @@ class MOAPI:
         result = only(results.objects)
         if result is None:
             return None
-        result_entry = extract_current_or_latest_validity(result.validities)
-        if result_entry is None:
+        entry = extract_current_or_latest_validity(result.validities)
+        if entry is None:
             return None
-        return read_engagement_to_engagement(result_entry)
+        return read_engagement_to_engagement(entry)
 
     async def load_mo_employee_it_users(
         self,
