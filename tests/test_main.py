@@ -24,6 +24,7 @@ from mo_ldap_import_export.main import create_fastramqpi
 from mo_ldap_import_export.models import Address
 from mo_ldap_import_export.models import Employee
 from mo_ldap_import_export.models import ITUser
+from mo_ldap_import_export.models import Validity
 
 
 @pytest.fixture
@@ -92,7 +93,7 @@ def load_settings_overrides(
 
 @pytest.fixture
 def dataloader(
-    sync_dataloader: MagicMock, test_mo_address: Address, test_mo_objects: list
+    sync_dataloader: MagicMock, test_mo_address: Address
 ) -> Iterator[AsyncMock]:
     test_mo_employee = Employee(
         cpr_number="1212121234", given_name="Foo", surname="Bar"
@@ -101,7 +102,7 @@ def dataloader(
     test_mo_it_user = ITUser(
         user_key="foo",
         itsystem=uuid4(),
-        validity={"start": "2021-01-01T00:00:00"},
+        validity=Validity(start="2021-01-01T00:00:00"),
     )
 
     dataloader = AsyncMock()
@@ -117,8 +118,6 @@ def dataloader(
     dataloader.load_mo_it_systems.return_value = None
     dataloader.load_mo_primary_types.return_value = None
     dataloader.load_mo_employee_addresses.return_value = [test_mo_address] * 2
-    dataloader.load_all_mo_objects.return_value = test_mo_objects
-    dataloader.load_mo_object.return_value = test_mo_objects[0]
     dataloader.load_ldap_attribute_values = sync_dataloader
     dataloader.modify_ldap_object.return_value = [{"description": "success"}]
     dataloader.get_ldap_unique_ldap_uuid = AsyncMock()
