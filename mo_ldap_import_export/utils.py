@@ -55,22 +55,6 @@ def import_class(name: str) -> type[MOBase]:
     return clazz
 
 
-# TODO: this doesn't work in any possible definition of the word "work". Delete
-# as soon as we pass GraphQL objects around.
-def mo_datestring_to_utc(datestring: str | None) -> datetime | None:
-    """
-    Returns datetime object at UTC+0
-
-    Notes
-    ------
-    Mo datestrings are formatted like this: "2023-02-27T00:00:00+01:00"
-    This function essentially removes the "+01:00" part, which gives a UTC+0 timestamp.
-    """
-    if datestring is None:
-        return None
-    return datetime.fromisoformat(datestring).replace(tzinfo=None)
-
-
 def combine_dn_strings(rdns: list[RDN]) -> DN:
     """Combine LDAP RDN strings, skipping empty RDNs.
 
