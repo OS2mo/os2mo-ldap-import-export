@@ -19,7 +19,6 @@ from uuid import UUID
 from uuid import uuid4
 
 import structlog
-from fastapi.encoders import jsonable_encoder
 from jinja2 import Environment
 from jinja2 import StrictUndefined
 from jinja2 import TemplateRuntimeError
@@ -394,7 +393,7 @@ async def load_primary_engagement(
     # we simply return whatever we found and use that
     if return_terminated:
         return fetched_engagement
-    delete = get_delete_flag(jsonable_encoder(fetched_engagement))
+    delete = get_delete_flag(fetched_engagement)
     if delete:
         logger.debug("Primary engagement is terminated", uuid=primary_engagement_uuid)
         return None
@@ -482,7 +481,7 @@ async def load_engagement(moapi: MOAPI, uuid: UUID) -> Engagement | None:
     if fetched_engagement is None:  # pragma: no cover
         logger.error("Unable to load mo engagement", uuid=uuid)
         raise RequeueException("Unable to load mo engagement")
-    delete = get_delete_flag(jsonable_encoder(fetched_engagement))
+    delete = get_delete_flag(fetched_engagement)
     if delete:
         logger.debug("Engagement is terminated", uuid=uuid)
         return None
@@ -494,7 +493,7 @@ async def load_org_unit(moapi: MOAPI, uuid: UUID) -> OrganisationUnit | None:
     if fetched_org_unit is None:  # pragma: no cover
         logger.error("Unable to load mo org_unit", uuid=uuid)
         raise RequeueException("Unable to load mo org_unit")
-    delete = get_delete_flag(jsonable_encoder(fetched_org_unit))
+    delete = get_delete_flag(fetched_org_unit)
     if delete:
         logger.debug("Org unit is terminated", uuid=uuid)
         return None
@@ -527,7 +526,7 @@ async def load_it_user(
     # we simply return whatever we found and use that
     if return_terminated:
         return fetched_ituser
-    delete = get_delete_flag(jsonable_encoder(fetched_ituser))
+    delete = get_delete_flag(fetched_ituser)
     if delete:
         logger.debug("IT-user is terminated", uuid=validity.uuid)
         return None
@@ -596,7 +595,7 @@ async def load_address(
     if fetched_address is None:  # pragma: no cover
         logger.error("Unable to load employee address", uuid=validity.uuid)
         raise RequeueException("Unable to load employee address")
-    delete = get_delete_flag(jsonable_encoder(fetched_address))
+    delete = get_delete_flag(fetched_address)
     if delete:
         logger.debug("Employee address is terminated", uuid=validity.uuid)
         return None
@@ -649,7 +648,7 @@ async def load_org_unit_address(
     if fetched_address is None:  # pragma: no cover
         logger.error("Unable to load org-unit address", uuid=validity.uuid)
         raise RequeueException("Unable to load org-unit address")
-    delete = get_delete_flag(jsonable_encoder(fetched_address))
+    delete = get_delete_flag(fetched_address)
     if delete:
         logger.debug("Org-unit address is terminated", uuid=validity.uuid)
         return None
