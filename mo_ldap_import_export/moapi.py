@@ -462,6 +462,10 @@ class MOAPI:
         entry = extract_current_or_latest_validity(result.validities)
         if entry is None:  # pragma: no cover
             return None
+        # Facets and Classes are allowed a None start date according to MOs
+        # GraphQL schema. If that actually ever happens we should fix the
+        # typing of our internal Validity model.
+        assert entry.validity.from_ is not None
         return ITSystem(
             uuid=entry.uuid,
             user_key=entry.user_key,
@@ -483,6 +487,10 @@ class MOAPI:
         entry = extract_current_or_latest_validity(result.validities)
         if entry is None:  # pragma: no cover
             return None
+        # Facets and Classes are allowed a None start date according to MOs
+        # GraphQL schema. If that actually ever happens we should fix the
+        # typing of our internal Validity model.
+        assert entry.validity.from_ is not None
         return Class(
             uuid=entry.uuid,
             user_key=entry.user_key,
