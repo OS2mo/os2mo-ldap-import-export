@@ -630,6 +630,11 @@ class MOAPI:
         return person.uuid
 
     async def create_engagement(self, obj: Engagement) -> UUID:  # pragma: no cover
+        def sanitize_extension(extension: str | None) -> str | None:
+            if extension == models.UNSET:
+                return None
+            return extension
+
         engagement = await self.graphql_client.engagement_create(
             input=EngagementCreateInput(
                 uuid=obj.uuid,
@@ -639,16 +644,16 @@ class MOAPI:
                 job_function=obj.job_function,
                 engagement_type=obj.engagement_type,
                 primary=obj.primary,
-                extension_1=obj.extension_1,
-                extension_2=obj.extension_2,
-                extension_3=obj.extension_3,
-                extension_4=obj.extension_4,
-                extension_5=obj.extension_5,
-                extension_6=obj.extension_6,
-                extension_7=obj.extension_7,
-                extension_8=obj.extension_8,
-                extension_9=obj.extension_9,
-                extension_10=obj.extension_10,
+                extension_1=sanitize_extension(obj.extension_1),
+                extension_2=sanitize_extension(obj.extension_2),
+                extension_3=sanitize_extension(obj.extension_3),
+                extension_4=sanitize_extension(obj.extension_4),
+                extension_5=sanitize_extension(obj.extension_5),
+                extension_6=sanitize_extension(obj.extension_6),
+                extension_7=sanitize_extension(obj.extension_7),
+                extension_8=sanitize_extension(obj.extension_8),
+                extension_9=sanitize_extension(obj.extension_9),
+                extension_10=sanitize_extension(obj.extension_10),
                 validity=RAValidityInput(
                     from_=obj.validity.start,
                     to=obj.validity.end,
@@ -776,6 +781,22 @@ class MOAPI:
         return await self.create_employee(obj)
 
     async def edit_engagement(self, obj: Engagement) -> UUID:
+        def to_mo_extension_patch_semantics(extension: str | None) -> str | None:
+            # The default value for extension attributes on
+            # EngagementUpdateInput is `null`, so MO cannot tell the difference
+            # between a null and unset field. Therefore, if a field is null, MO
+            # assumes it should be left as-is.
+            # Therefore, there is no way to set a field null.. except,
+            # actually, if you set it to an empty string (falsy), that will,
+            # for some reason, null the field. This is definitely not intended,
+            # but since we rely on it, it is now part of the official OS2mo
+            # API.
+            if extension == models.UNSET:
+                return None
+            if extension is None:
+                return ""
+            return extension
+
         engagement = await self.graphql_client.engagement_update(
             input=EngagementUpdateInput(
                 uuid=obj.uuid,
@@ -785,16 +806,16 @@ class MOAPI:
                 job_function=obj.job_function,
                 engagement_type=obj.engagement_type,
                 primary=obj.primary,
-                extension_1=obj.extension_1,
-                extension_2=obj.extension_2,
-                extension_3=obj.extension_3,
-                extension_4=obj.extension_4,
-                extension_5=obj.extension_5,
-                extension_6=obj.extension_6,
-                extension_7=obj.extension_7,
-                extension_8=obj.extension_8,
-                extension_9=obj.extension_9,
-                extension_10=obj.extension_10,
+                extension_1=to_mo_extension_patch_semantics(obj.extension_1),
+                extension_2=to_mo_extension_patch_semantics(obj.extension_2),
+                extension_3=to_mo_extension_patch_semantics(obj.extension_3),
+                extension_4=to_mo_extension_patch_semantics(obj.extension_4),
+                extension_5=to_mo_extension_patch_semantics(obj.extension_5),
+                extension_6=to_mo_extension_patch_semantics(obj.extension_6),
+                extension_7=to_mo_extension_patch_semantics(obj.extension_7),
+                extension_8=to_mo_extension_patch_semantics(obj.extension_8),
+                extension_9=to_mo_extension_patch_semantics(obj.extension_9),
+                extension_10=to_mo_extension_patch_semantics(obj.extension_10),
                 validity=RAValidityInput(
                     from_=obj.validity.start,
                     to=obj.validity.end,
