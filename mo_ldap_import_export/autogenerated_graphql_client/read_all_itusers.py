@@ -21,6 +21,7 @@ class ReadAllItusersItusersObjectsValidities(BaseModel):
     itsystem_uuid: UUID
     employee_uuid: UUID | None
     user_key: str
+    external_id: str | None
     uuid: UUID
 
 
