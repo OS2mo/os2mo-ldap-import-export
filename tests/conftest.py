@@ -34,8 +34,8 @@ from mo_ldap_import_export.moapi import MOAPI
 from mo_ldap_import_export.models import Address
 from mo_ldap_import_export.models import Employee
 from mo_ldap_import_export.models import ITUser
+from mo_ldap_import_export.models import Validity
 from mo_ldap_import_export.types import DN
-from mo_ldap_import_export.utils import mo_today
 from tests.graphql_mocker import GraphQLMocker
 
 
@@ -170,64 +170,12 @@ def test_mo_address() -> Address:
     return Address(
         value="foo@bar.dk",
         address_type=uuid4(),
-        validity={"start": "2021-01-01T00:00:00"},
+        validity=Validity(start="2021-01-01T00:00:00"),
     )
 
 
 @pytest.fixture
-def test_mo_objects() -> list:
-    return [
-        {
-            "uuid": uuid4(),
-            "service_type": "employee",
-            "payload": uuid4(),
-            "parent_uuid": uuid4(),
-            "object_type": "person",
-            "validity": {
-                "from": mo_today().isoformat(),
-                "to": None,
-            },
-        },
-        {
-            "uuid": uuid4(),
-            "service_type": "employee",
-            "payload": uuid4(),
-            "parent_uuid": uuid4(),
-            "object_type": "person",
-            "validity": {
-                "from": "2021-01-01",
-                "to": mo_today().isoformat(),
-            },
-        },
-        {
-            "uuid": uuid4(),
-            "service_type": "employee",
-            "payload": uuid4(),
-            "parent_uuid": uuid4(),
-            "object_type": "person",
-            "validity": {
-                "from": "2021-01-01",
-                "to": "2021-05-01",
-            },
-        },
-        {
-            "uuid": uuid4(),
-            "service_type": "employee",
-            "payload": uuid4(),
-            "parent_uuid": uuid4(),
-            "object_type": "person",
-            "validity": {
-                "from": mo_today().isoformat(),
-                "to": mo_today().isoformat(),
-            },
-        },
-    ]
-
-
-@pytest.fixture
-def dataloader(
-    sync_dataloader: MagicMock, test_mo_address: Address, test_mo_objects: list
-) -> AsyncMock:
+def dataloader(sync_dataloader: MagicMock, test_mo_address: Address) -> AsyncMock:
     test_mo_employee = Employee(
         cpr_number="1212121234", given_name="Foo", surname="Bar"
     )
@@ -235,7 +183,7 @@ def dataloader(
     test_mo_it_user = ITUser(
         user_key="foo",
         itsystem=uuid4(),
-        validity={"start": "2021-01-01T00:00:00"},
+        validity=Validity(start="2021-01-01T00:00:00"),
     )
 
     dataloader = AsyncMock()
@@ -250,8 +198,6 @@ def dataloader(
     dataloader.load_mo_it_systems.return_value = {}
     dataloader.load_mo_primary_types.return_value = {}
     dataloader.load_mo_employee_addresses.return_value = [test_mo_address]
-    dataloader.load_all_mo_objects.return_value = test_mo_objects
-    dataloader.load_mo_object.return_value = test_mo_objects[0]
     dataloader.load_ldap_attribute_values = AsyncMock()
     dataloader.modify_ldap_object.return_value = [{"description": "success"}]
     dataloader.get_ldap_objectGUID = sync_dataloader
@@ -283,8 +229,8 @@ def converter() -> AsyncMock:
         "Address",
         "EmailEmployee",
     ]
-    converter._import_to_mo_ = MagicMock()
-    converter._import_to_mo_.return_value = True
+    converter.import_to_mo = MagicMock()
+    converter.import_to_mo.return_value = True
 
     converter.to_ldap = AsyncMock()
     converter.to_ldap.return_value = LdapObject(dn="CN=foo", name="Angus")

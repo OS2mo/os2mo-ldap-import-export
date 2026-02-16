@@ -23,7 +23,6 @@ from httpx import Response
 from ldap3.core.exceptions import LDAPInvalidValueError
 from more_itertools import one
 from pydantic import BaseModel
-from pydantic import Field
 from pydantic import parse_obj_as
 from structlog.testing import capture_logs
 
@@ -1019,21 +1018,21 @@ uuid_obj3 = uuid4()
             [
                 {
                     "validity": {
-                        "from": "2022-08-01T00:00:00+02:00",
+                        "from_": "2022-08-01T00:00:00+02:00",
                         "to": "2022-08-02T00:00:00+02:00",
                     },
                     "uuid": uuid_obj1,
                 },
                 {
                     "validity": {
-                        "from": "2022-08-02T00:00:00+02:00",
+                        "from_": "2022-08-02T00:00:00+02:00",
                         "to": "2022-08-15T00:00:00+02:00",
                     },
                     "uuid": uuid_obj2,
                 },
                 {
                     "validity": {
-                        "from": "2022-08-15T00:00:00+02:00",
+                        "from_": "2022-08-15T00:00:00+02:00",
                         "to": None,
                     },
                     "uuid": uuid_obj3,
@@ -1047,14 +1046,14 @@ uuid_obj3 = uuid4()
                 # NOTE: This combination should never exist, but we wanna test the codepath
                 {
                     "validity": {
-                        "from": "2022-08-01T00:00:00+02:00",
+                        "from_": "2022-08-01T00:00:00+02:00",
                         "to": "2022-08-02T00:00:00+02:00",
                     },
                     "uuid": uuid_obj1,
                 },
                 {
                     "validity": {
-                        "from": None,
+                        "from_": None,
                         "to": None,
                     },
                     "uuid": uuid_obj3,
@@ -1067,14 +1066,14 @@ uuid_obj3 = uuid4()
             [
                 {
                     "validity": {
-                        "from": "2022-08-01T00:00:00+02:00",
+                        "from_": "2022-08-01T00:00:00+02:00",
                         "to": "2022-08-02T00:00:00+02:00",
                     },
                     "uuid": uuid_obj1,
                 },
                 {
                     "validity": {
-                        "from": "2022-08-15T00:00:00+02:00",
+                        "from_": "2022-08-15T00:00:00+02:00",
                         "to": None,
                     },
                     "uuid": uuid_obj3,
@@ -1087,14 +1086,14 @@ uuid_obj3 = uuid4()
             [
                 {
                     "validity": {
-                        "from": "2022-08-01T00:00:00+02:00",
+                        "from_": "2022-08-01T00:00:00+02:00",
                         "to": "2022-08-02T00:00:00+02:00",
                     },
                     "uuid": uuid_obj1,
                 },
                 {
                     "validity": {
-                        "from": "2022-08-15T00:00:00+02:00",
+                        "from_": "2022-08-15T00:00:00+02:00",
                         "to": "2022-08-20T00:00:00+02:00",
                     },
                     "uuid": uuid_obj2,
@@ -1107,14 +1106,14 @@ uuid_obj3 = uuid4()
             [
                 {
                     "validity": {
-                        "from": "2022-08-01T00:00:00+02:00",
+                        "from_": "2022-08-01T00:00:00+02:00",
                         "to": "2022-08-02T00:00:00+02:00",
                     },
                     "uuid": uuid_obj1,
                 },
                 {
                     "validity": {
-                        "from": "2022-08-02T00:00:00+02:00",
+                        "from_": "2022-08-02T00:00:00+02:00",
                         "to": None,
                     },
                     "uuid": uuid_obj2,
@@ -1127,14 +1126,14 @@ uuid_obj3 = uuid4()
             [
                 {
                     "validity": {
-                        "from": None,
+                        "from_": None,
                         "to": "2022-08-15T00:00:00+02:00",
                     },
                     "uuid": uuid_obj2,
                 },
                 {
                     "validity": {
-                        "from": "2022-08-15T00:00:00+02:00",
+                        "from_": "2022-08-15T00:00:00+02:00",
                         "to": None,
                     },
                     "uuid": uuid_obj3,
@@ -1148,7 +1147,7 @@ def test_extract_latest_object(
     validities: list[dict[str, Any]], expected: UUID
 ) -> None:
     class Validity(BaseModel):
-        from_: datetime.datetime | None = Field(alias="from")
+        from_: datetime.datetime | None
         to: datetime.datetime | None
 
     class ValidityUUID(BaseModel):

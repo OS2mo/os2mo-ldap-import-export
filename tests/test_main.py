@@ -3,6 +3,7 @@
 # pylint: disable=redefined-outer-name
 # pylint: disable=unused-argument
 # pylint: disable=protected-access
+import json
 import os
 from collections.abc import Iterator
 from typing import Any
@@ -17,14 +18,13 @@ from fastapi.testclient import TestClient
 from fastramqpi.main import FastRAMQPI
 from fastramqpi.ramqp.depends import Context
 from fastramqpi.ramqp.depends import get_context
-from pydantic import parse_obj_as
 
-from mo_ldap_import_export.config import ConversionMapping
 from mo_ldap_import_export.main import create_app
 from mo_ldap_import_export.main import create_fastramqpi
 from mo_ldap_import_export.models import Address
 from mo_ldap_import_export.models import Employee
 from mo_ldap_import_export.models import ITUser
+from mo_ldap_import_export.models import Validity
 
 
 @pytest.fixture
@@ -34,23 +34,20 @@ def settings_overrides() -> Iterator[dict[str, str]]:
     Yields:
         Minimal set of overrides.
     """
-    conversion_mapping_dict = {
-        "ldap_to_mo": {
-            "Employee": {
-                "objectClass": "Employee",
-                "_import_to_mo_": "false",
-                "_ldap_attributes_": [],
-                "uuid": "{{ employee_uuid or '' }}",
-            }
-        }
-    }
-    conversion_mapping = parse_obj_as(ConversionMapping, conversion_mapping_dict)
-    conversion_mapping_setting = conversion_mapping.json(
-        exclude_unset=True, by_alias=True
-    )
     # TODO: This seems duplicated with the version in conftest
     overrides = {
-        "CONVERSION_MAPPING": conversion_mapping_setting,
+        "CONVERSION_MAPPING": json.dumps(
+            {
+                "ldap_to_mo": {
+                    "Employee": {
+                        "objectClass": "Employee",
+                        "_import_to_mo_": "false",
+                        "_ldap_attributes_": [],
+                        "uuid": "{{ employee_uuid or '' }}",
+                    }
+                }
+            }
+        ),
         "CLIENT_ID": "Foo",
         "CLIENT_SECRET": "bar",
         "LDAP_CONTROLLERS": '[{"host": "localhost"}]',
@@ -96,7 +93,7 @@ def load_settings_overrides(
 
 @pytest.fixture
 def dataloader(
-    sync_dataloader: MagicMock, test_mo_address: Address, test_mo_objects: list
+    sync_dataloader: MagicMock, test_mo_address: Address
 ) -> Iterator[AsyncMock]:
     test_mo_employee = Employee(
         cpr_number="1212121234", given_name="Foo", surname="Bar"
@@ -105,7 +102,7 @@ def dataloader(
     test_mo_it_user = ITUser(
         user_key="foo",
         itsystem=uuid4(),
-        validity={"start": "2021-01-01T00:00:00"},
+        validity=Validity(start="2021-01-01T00:00:00"),
     )
 
     dataloader = AsyncMock()
@@ -121,8 +118,6 @@ def dataloader(
     dataloader.load_mo_it_systems.return_value = None
     dataloader.load_mo_primary_types.return_value = None
     dataloader.load_mo_employee_addresses.return_value = [test_mo_address] * 2
-    dataloader.load_all_mo_objects.return_value = test_mo_objects
-    dataloader.load_mo_object.return_value = test_mo_objects[0]
     dataloader.load_ldap_attribute_values = sync_dataloader
     dataloader.modify_ldap_object.return_value = [{"description": "success"}]
     dataloader.get_ldap_unique_ldap_uuid = AsyncMock()
@@ -133,8 +128,8 @@ def dataloader(
 @pytest.fixture
 def converter() -> MagicMock:
     converter = MagicMock()
-    converter._import_to_mo_ = MagicMock()
-    converter._import_to_mo_.return_value = True
+    converter.import_to_mo = MagicMock()
+    converter.import_to_mo.return_value = True
 
     converter.load_info_dicts = AsyncMock()
     converter._init = AsyncMock()

@@ -610,10 +610,10 @@ class SyncTool:
             try:
                 terminate_template = mapping.terminate
                 terminate = await self.converter.render_template(
-                    "_terminate_", terminate_template, context
+                    "terminate", terminate_template, context
                 )
             except SkipObject:  # pragma: no cover
-                logger.info("Skipping object", field="_terminate_", dn=dn)
+                logger.info("Skipping object", field="terminate", dn=dn)
                 return
 
             if terminate:
@@ -652,10 +652,9 @@ class SyncTool:
 
         # Convert our objects to dicts
         mo_object_dict_to_upload = mo_object.dict()
-        # Need to by_alias=True to extract the terminate_ field as its alias,
-        # _terminate_. Only the *intersection* of attribute names from
+        # Only the *intersection* of attribute names from
         # mo_object_dict_to_upload and converted_mo_object_dict are used.
-        converted_mo_object_dict = converted_object.dict(by_alias=True)
+        converted_mo_object_dict = converted_object.dict()
 
         # Update the existing MO object with the converted values
         # NOTE: UUID cannot be updated as it is used to decide what we update
@@ -716,10 +715,10 @@ class SyncTool:
         # Load our validity default, if it is not set
         if "validity" in required_attributes:
             assert "validity" not in mo_dict, "validity disallowed in ldap2mo mappings"
-            mo_dict["validity"] = {
-                "from": mo_today(),
-                "to": None,
-            }
+            mo_dict["validity"] = Validity(
+                start=mo_today(),
+                end=None,
+            ).dict()
 
         # If any required attributes are missing
         missing_attributes = required_attributes - set(mo_dict.keys())

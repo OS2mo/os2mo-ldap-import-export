@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
 import re
+from datetime import UTC
 from datetime import datetime
 from datetime import time
 from functools import partial
@@ -52,22 +53,6 @@ def import_class(name: str) -> type[MOBase]:
     if clazz is None:
         raise NotImplementedError("Unknown argument to import_class")
     return clazz
-
-
-# TODO: this doesn't work in any possible definition of the word "work". Delete
-# as soon as we pass GraphQL objects around.
-def mo_datestring_to_utc(datestring: str | None) -> datetime | None:
-    """
-    Returns datetime object at UTC+0
-
-    Notes
-    ------
-    Mo datestrings are formatted like this: "2023-02-27T00:00:00+01:00"
-    This function essentially removes the "+01:00" part, which gives a UTC+0 timestamp.
-    """
-    if datestring is None:
-        return None
-    return datetime.fromisoformat(datestring).replace(tzinfo=None)
 
 
 def combine_dn_strings(rdns: list[RDN]) -> DN:
@@ -140,8 +125,7 @@ def ensure_list(x: Any | list[Any]) -> list[Any]:
     return [x]
 
 
-# TODO: Refactor this to use structured object
-def get_delete_flag(mo_object: dict[str, Any]) -> bool:
+def get_delete_flag(mo_object: MOBase) -> bool:
     """Determines if an object should be deleted based on the validity to-date.
 
     Args:
@@ -150,16 +134,17 @@ def get_delete_flag(mo_object: dict[str, Any]) -> bool:
     Returns:
         Whether the object should be deleted or not.
     """
-    # TODO: use timezone-aware datetime for now. GraphQL objects are already
-    # timezone-aware, so we can delete all parsing logic from here when we rid
-    # ourselves of the ramodels infestation.
-    now = datetime.utcnow()
-    validity_to = mo_datestring_to_utc(mo_object["validity"]["to"])
-    if validity_to and validity_to <= now:
+    # Employee doesn't have a validity.. but if it ever does, make you
+    # remember to remove these asserts.
+    assert not isinstance(mo_object, Employee)
+    assert "validity" not in Employee.__fields__
+    now_utc = datetime.now(UTC)
+    validity_to = mo_object.validity.end
+    if validity_to and validity_to <= now_utc:
         logger.info(
             "Returning delete=True because to_date <= current_date",
             to_date=validity_to,
-            current_date=now,
+            current_date=now_utc,
         )
         return True
     return False

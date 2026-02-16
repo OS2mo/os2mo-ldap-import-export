@@ -9,6 +9,7 @@ import pytest
 from mo_ldap_import_export.moapi import MOAPI
 from mo_ldap_import_export.models import Address
 from mo_ldap_import_export.models import ITUser
+from mo_ldap_import_export.models import Validity
 from mo_ldap_import_export.utils import MO_TZ
 
 
@@ -27,7 +28,7 @@ async def test_create_address_read_equivalence(
         person=mo_person,
         address_type=email_employee,
         visibility=public,
-        validity={"from": datetime(1970, 1, 1, tzinfo=MO_TZ)},
+        validity=Validity(start=datetime(1970, 1, 1, tzinfo=MO_TZ)),
     )
     await mo_api.create(address)
     assert await mo_api.load_mo_address(address_uuid) == address
@@ -51,7 +52,7 @@ async def test_create_address_ituser_read_equivalence(
         user_key="1",
         itsystem=adtitle,
         person=mo_person,
-        validity={"from": datetime(1970, 1, 1, tzinfo=MO_TZ)},
+        validity=Validity(start=datetime(1970, 1, 1, tzinfo=MO_TZ)),
     )
     await mo_api.create(ituser1)
 
@@ -61,7 +62,7 @@ async def test_create_address_ituser_read_equivalence(
         user_key="2",
         itsystem=adtitle,
         person=mo_person,
-        validity={"from": datetime(1970, 1, 1, tzinfo=MO_TZ)},
+        validity=Validity(start=datetime(1970, 1, 1, tzinfo=MO_TZ)),
     )
     await mo_api.create(ituser2)
 
@@ -74,7 +75,7 @@ async def test_create_address_ituser_read_equivalence(
         ituser=ituser1_uuid,
         address_type=email_employee,
         visibility=public,
-        validity={"from": datetime(1970, 1, 1, tzinfo=MO_TZ)},
+        validity=Validity(start=datetime(1970, 1, 1, tzinfo=MO_TZ)),
     )
     await mo_api.create(address)
     assert await mo_api.load_mo_address(address_uuid) == address

@@ -11,6 +11,7 @@ from more_itertools import one
 
 from mo_ldap_import_export.dataloaders import extract_unique_ldap_uuids
 from mo_ldap_import_export.models import ITUser
+from mo_ldap_import_export.models import Validity
 from mo_ldap_import_export.types import LDAPUUID
 from tests.integration.conftest import AnyOrder
 
@@ -20,7 +21,7 @@ def create_ituser(user_key: str) -> ITUser:
         user_key=user_key,
         itsystem=uuid4(),
         person=uuid4(),
-        validity={"start": datetime.datetime.today()},
+        validity=Validity(start=datetime.datetime.today()),
     )
 
 

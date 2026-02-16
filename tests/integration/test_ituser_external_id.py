@@ -9,6 +9,7 @@ import pytest
 from mo_ldap_import_export.moapi import MOAPI
 from mo_ldap_import_export.models import Engagement
 from mo_ldap_import_export.models import ITUser
+from mo_ldap_import_export.models import Validity
 from mo_ldap_import_export.utils import MO_TZ
 
 
@@ -24,7 +25,7 @@ async def test_create_ituser_read_equivalence(
         user_key="ava",
         itsystem=adtitle,
         person=mo_person,
-        validity={"from": datetime(1970, 1, 1, tzinfo=MO_TZ)},
+        validity=Validity(start=datetime(1970, 1, 1, tzinfo=MO_TZ)),
     )
     await mo_api.create(ituser)
     assert await mo_api.load_mo_it_user(ituser_uuid) == ituser
@@ -47,7 +48,7 @@ async def test_create_ituser_external_id_read_equivalence(
         itsystem=adtitle,
         person=mo_person,
         external_id="my_external_id",
-        validity={"from": datetime(1970, 1, 1, tzinfo=MO_TZ)},
+        validity=Validity(start=datetime(1970, 1, 1, tzinfo=MO_TZ)),
     )
     await mo_api.create(ituser)
     assert await mo_api.load_mo_it_user(ituser_uuid) == ituser
@@ -76,7 +77,7 @@ async def test_create_ituser_engagements_read_equivalence(
         engagement_type=ansat,
         job_function=jurist,
         primary=primary,
-        validity={"from": datetime(1970, 1, 1, tzinfo=MO_TZ)},
+        validity=Validity(start=datetime(1970, 1, 1, tzinfo=MO_TZ)),
     )
     await mo_api.create(engagement)
 
@@ -87,7 +88,7 @@ async def test_create_ituser_engagements_read_equivalence(
         itsystem=adtitle,
         person=mo_person,
         engagements=[engagement_uuid],
-        validity={"from": datetime(1970, 1, 1, tzinfo=MO_TZ)},
+        validity=Validity(start=datetime(1970, 1, 1, tzinfo=MO_TZ)),
     )
     await mo_api.create(ituser)
     mo_ituser = await mo_api.load_mo_it_user(ituser_uuid)

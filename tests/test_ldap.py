@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
 import asyncio
+import json
 import os
 import time
 from collections.abc import Iterator
@@ -21,11 +22,9 @@ from ldap3.core.exceptions import LDAPInvalidDnError
 from ldap3.utils.dn import parse_dn
 from ldap3.utils.dn import safe_dn
 from more_itertools import collapse
-from pydantic import parse_obj_as
 from structlog.testing import capture_logs
 
 from mo_ldap_import_export.config import AuthBackendEnum
-from mo_ldap_import_export.config import ConversionMapping
 from mo_ldap_import_export.config import ServerConfig
 from mo_ldap_import_export.config import Settings
 from mo_ldap_import_export.exceptions import MultipleObjectsReturnedException
@@ -114,22 +113,19 @@ def settings_overrides() -> Iterator[dict[str, str]]:
     Yields:
         Minimal set of overrides.
     """
-    conversion_mapping_dict = {
-        "ldap_to_mo": {
-            "Employee": {
-                "objectClass": "Employee",
-                "_import_to_mo_": "false",
-                "_ldap_attributes_": [],
-                "uuid": "{{ employee_uuid or '' }}",
-            }
-        },
-    }
-    conversion_mapping = parse_obj_as(ConversionMapping, conversion_mapping_dict)
-    conversion_mapping_setting = conversion_mapping.json(
-        exclude_unset=True, by_alias=True
-    )
     overrides = {
-        "CONVERSION_MAPPING": conversion_mapping_setting,
+        "CONVERSION_MAPPING": json.dumps(
+            {
+                "ldap_to_mo": {
+                    "Employee": {
+                        "objectClass": "Employee",
+                        "_import_to_mo_": "false",
+                        "_ldap_attributes_": [],
+                        "uuid": "{{ employee_uuid or '' }}",
+                    }
+                },
+            }
+        ),
         "LDAP_CONTROLLERS": '[{"host": "111.111.111.111"}]',
         "CLIENT_ID": "foo",
         "CLIENT_SECRET": "bar",

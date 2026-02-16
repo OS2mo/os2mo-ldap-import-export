@@ -27,6 +27,7 @@ from mo_ldap_import_export.main import GRAPHQL_VERSION
 from mo_ldap_import_export.moapi import get_primary_engagement
 from mo_ldap_import_export.models import Employee
 from mo_ldap_import_export.models import Engagement
+from mo_ldap_import_export.models import Validity
 from mo_ldap_import_export.types import DN
 from mo_ldap_import_export.types import EmployeeUUID
 from tests.graphql_mocker import GraphQLMocker
@@ -111,7 +112,7 @@ async def test_import_single_entity_engagement_edit(
         job_function=uuid4(),
         engagement_type=uuid4(),
         user_key="mo",
-        validity={"start": "2021-01-01T00:00:00"},
+        validity=Validity(start="2021-01-01T00:00:00"),
         uuid=mo_engagement_uuid,
     )
 
@@ -121,7 +122,7 @@ async def test_import_single_entity_engagement_edit(
         job_function=uuid4(),
         engagement_type=uuid4(),
         user_key="ldap",
-        validity={"start": "2021-01-01T00:00:00"},
+        validity=Validity(start="2021-01-01T00:00:00"),
         # Templated to match MO engagement
         uuid=mo_engagement_uuid,
     )
@@ -177,7 +178,7 @@ async def test_import_single_entity_engagement_create(
         job_function=uuid4(),
         engagement_type=uuid4(),
         user_key="ldap",
-        validity={"start": "2021-01-01T00:00:00"},
+        validity=Validity(start="2021-01-01T00:00:00"),
         # Unmatched
         uuid=mo_engagement_uuid,
     )

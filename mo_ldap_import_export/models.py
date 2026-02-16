@@ -22,8 +22,8 @@ class StrictBaseModel(BaseModel):
 
 
 class Validity(StrictBaseModel):
-    start: datetime = Field(alias="from")
-    end: datetime | None = Field(alias="to")
+    start: datetime
+    end: datetime | None
 
 
 class Address(StrictBaseModel):
