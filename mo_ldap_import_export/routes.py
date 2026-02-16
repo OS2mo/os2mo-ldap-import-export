@@ -292,6 +292,32 @@ async def get_non_existing_account_names(
     }
 
 
+async def get_non_existing_external_ids(
+    settings: Settings, ldap_connection: Connection, dataloader: DataLoader
+) -> set[ITUserUUID]:  # pragma: no cover
+    itsystem_user_key = (
+        settings.conversion_mapping.username_generator.existing_usernames_itsystem
+    )
+    it_system_uuid = await dataloader.moapi.get_it_system_uuid(itsystem_user_key)
+
+    # Fetch all LDAP UUIDs in LDAP
+    ldap_uuids = await load_ldap_attribute_values(
+        settings, ldap_connection, settings.ldap_unique_id_field
+    )
+    ldap_uuids.discard(tuple())
+    unique_ldap_uuids = {UUID(one(ldap_uuid)) for ldap_uuid in ldap_uuids}
+
+    # Fetch all MO IT-users and extract all external_ids
+    all_mo_it_users = await load_all_current_it_users(
+        dataloader.moapi.graphql_client, UUID(it_system_uuid)
+    )
+    return {
+        ITUserUUID(it_user["uuid"])
+        for it_user in all_mo_it_users
+        if UUID(it_user["external_id"]) not in unique_ldap_uuids
+    }
+
+
 def make_overview_entry(
     ldap_connection: Connection, attributes, superiors, example_value_dict=None
 ):
@@ -617,6 +643,30 @@ def construct_router(settings: Settings) -> APIRouter:
         dry_run: bool = True,
     ) -> set[ITUserUUID]:
         bad_itusers = await get_non_existing_account_names(
+            settings, ldap_connection, dataloader
+        )
+        if dry_run:
+            return bad_itusers
+
+        deleted = set()
+        for uuid in bad_itusers:
+            result = await dataloader.moapi.graphql_client.ituser_terminate(
+                ITUserTerminateInput(uuid=UUID(str(uuid)), to=at)
+            )
+            deleted.add(cast(ITUserUUID, result.uuid))
+        return deleted
+
+    @router.post(
+        "/fixup/delete_non_existing_external_ids", status_code=200, tags=["LDAP"]
+    )
+    async def delete_non_existing_external_ids_from_MO(
+        settings: depends.Settings,
+        ldap_connection: depends.Connection,
+        dataloader: depends.DataLoader,
+        at: datetime,
+        dry_run: bool = True,
+    ) -> set[ITUserUUID]:  # pragma: no cover
+        bad_itusers = await get_non_existing_external_ids(
             settings, ldap_connection, dataloader
         )
         if dry_run:

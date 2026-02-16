@@ -1193,6 +1193,7 @@ class GraphQLClient(AsyncBaseClient):
                     itsystem_uuid
                     employee_uuid
                     user_key
+                    external_id
                     uuid
                   }
                 }

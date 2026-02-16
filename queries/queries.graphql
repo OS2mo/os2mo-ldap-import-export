@@ -312,6 +312,7 @@ query read_all_itusers(
         itsystem_uuid
         employee_uuid
         user_key
+        external_id
         uuid
       }
     }
