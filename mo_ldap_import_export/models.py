@@ -19,6 +19,8 @@ class StrictBaseModel(BaseModel):
         frozen = True
         # TODO: do we want this? grandfathered-in from ramodels
         allow_population_by_field_name = True
+        # Required to support UNSET
+        arbitrary_types_allowed = True
 
 
 class Validity(StrictBaseModel):
@@ -77,6 +79,11 @@ class OrganisationUnit(StrictBaseModel):
     validity: Validity
 
 
+# Because we dump to json all over the place, we cannot really invent our own
+# custom (proper) types.
+UNSET = "LDAP-PLEASE-MAKE-NO-CHANGES (unset sentinel)"
+
+
 class Engagement(StrictBaseModel):
     uuid: UUID = Field(default_factory=uuid4)
     user_key: str
@@ -86,16 +93,16 @@ class Engagement(StrictBaseModel):
     job_function: UUID
     engagement_type: UUID
     primary: UUID | None
-    extension_1: str | None
-    extension_2: str | None
-    extension_3: str | None
-    extension_4: str | None
-    extension_5: str | None
-    extension_6: str | None
-    extension_7: str | None
-    extension_8: str | None
-    extension_9: str | None
-    extension_10: str | None
+    extension_1: str | None = UNSET
+    extension_2: str | None = UNSET
+    extension_3: str | None = UNSET
+    extension_4: str | None = UNSET
+    extension_5: str | None = UNSET
+    extension_6: str | None = UNSET
+    extension_7: str | None = UNSET
+    extension_8: str | None = UNSET
+    extension_9: str | None = UNSET
+    extension_10: str | None = UNSET
     fraction: int | None
     validity: Validity
 
