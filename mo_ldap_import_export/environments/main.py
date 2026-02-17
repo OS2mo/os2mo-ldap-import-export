@@ -9,6 +9,7 @@ from contextlib import suppress
 from datetime import UTC
 from datetime import datetime
 from datetime import time
+from datetime import timedelta
 from functools import partial
 from typing import Any
 from typing import ParamSpec
@@ -1286,6 +1287,7 @@ def construct_default_environment() -> Environment:
     environment.filters["uuid"] = UUID
 
     environment.globals["now"] = lambda: datetime.now(tz=UTC)
+    environment.globals["yesterday"] = lambda: datetime.now(tz=UTC) - timedelta(days=1)
     environment.globals["mo_today"] = mo_today
     environment.globals["skip_if_none"] = skip_if_none
     environment.globals["skip_if_exception"] = skip_if_exception
