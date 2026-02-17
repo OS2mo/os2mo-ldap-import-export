@@ -48,6 +48,7 @@ The development stack MAY be started using `docker compose up --build --detach`
 ## Code style
 
 - Pythonic list comprehensions and generators SHOULD be used instead of `map` / `filter`.
+- Use `one`, `only` or `first` from `more_itertools` instead of `[0]`.
 
 ## Commit instructions
 
