@@ -35,8 +35,10 @@ class LdapConverter:
         #
         # Mapping with {{ldap.mail or ''}} solves both, but let's check
         # for "none" or "[]" strings anyway to be more robust.
-        if value.lower() == "none" or value == "[]":
-            value = ""
+        if value.lower() == "none":
+            return None
+        if value == "[]":
+            return ""
 
         # TODO: Is it possible to render a dictionary directly?
         #       Instead of converting from a string
