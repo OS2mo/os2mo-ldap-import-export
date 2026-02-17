@@ -38,7 +38,7 @@ class LdapConverter:
         if value.lower() == "none":
             return None
         if value == "[]":
-            return ""
+            return []
 
         # TODO: Is it possible to render a dictionary directly?
         #       Instead of converting from a string
