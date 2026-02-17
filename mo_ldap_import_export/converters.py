@@ -40,14 +40,7 @@ class LdapConverter:
         if value == "[]":
             return []
 
-        # TODO: Is it possible to render a dictionary directly?
-        #       Instead of converting from a string
-        looks_like_a_dict = "{" in value and ":" in value and "}" in value
-        looks_like_a_list = value.startswith("[") and value.endswith("]")
-        if looks_like_a_dict or looks_like_a_list:
-            try:
-                value = self.str_to_dict(value)
-            except JSONDecodeError as error:
-                error_string = f"Could not convert {value} in '{field_name}' to dict (context={context!r})"
-                raise IncorrectMapping(error_string) from error
-        return value
+        try:
+            return json.loads(value.replace("'", '"'))
+        except JSONDecodeError:
+            return value
