@@ -1285,7 +1285,7 @@ def construct_default_environment() -> Environment:
     environment.filters["set"] = set
     environment.filters["uuid"] = UUID
 
-    environment.globals["now"] = lambda: datetime.now(tz=UTC)
+    environment.globals["now"] = lambda: datetime.now(tz=MO_TZ)
     environment.globals["mo_today"] = mo_today
     environment.globals["skip_if_none"] = skip_if_none
     environment.globals["skip_if_exception"] = skip_if_exception
