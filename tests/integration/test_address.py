@@ -338,7 +338,7 @@ async def test_to_mo_terminate_without_value(
     ldap_org_unit: list[str],
     trigger_ldap_person: Callable[[], Awaitable[None]],
 ) -> None:
-    async def assert_address(expected: dict) -> None:
+    async def get_address() -> dict[str, Any]:
         addresses = await graphql_client._testing__address_read(
             filter=AddressFilter(
                 employee=EmployeeFilter(uuids=[mo_person]),
@@ -346,7 +346,7 @@ async def test_to_mo_terminate_without_value(
         )
         address = one(addresses.objects)
         validities = one(address.validities)
-        assert validities.dict() == expected
+        return validities.dict()
 
     person_dn = combine_dn_strings(["uid=abk"] + ldap_org_unit)
 
@@ -361,7 +361,7 @@ async def test_to_mo_terminate_without_value(
         "validity": {"from_": mo_today(), "to": None},
     }
     await trigger_ldap_person()
-    await assert_address(mo_address)
+    assert await get_address() == mo_address
 
     # Remove mail from the LDAP entry
     await ldap_api.ldap_connection.ldap_modify(
@@ -375,7 +375,7 @@ async def test_to_mo_terminate_without_value(
         await trigger_ldap_person()
     assert "Missing values in LDAP to synchronize" in str(exc_info.value)
     # We expect that the address was not modified
-    await assert_address(mo_address)
+    assert await get_address() == mo_address
 
     # Terminate the address
     await ldap_api.ldap_connection.ldap_modify(
@@ -390,4 +390,4 @@ async def test_to_mo_terminate_without_value(
         **mo_address,
         "validity": {"from_": mo_today(), "to": mo_today()},
     }
-    await assert_address(mo_address)
+    assert await get_address() == mo_address
