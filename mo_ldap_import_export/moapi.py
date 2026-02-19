@@ -530,6 +530,7 @@ class MOAPI:
         assert entry.value is not None
         return Address(
             uuid=entry.uuid,
+            user_key=entry.user_key,
             value=entry.value,
             value2=entry.value2,
             address_type=entry.address_type.uuid,

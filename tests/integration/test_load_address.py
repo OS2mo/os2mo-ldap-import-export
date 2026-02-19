@@ -56,6 +56,7 @@ async def test_load_address(
         "person": mo_person,
         "value": mail,
         "uuid": ANY,
+        "user_key": "test address",
         "validity": {"start": datetime(2001, 2, 3, 0, 0, tzinfo=MO_TZ)},
     }
 

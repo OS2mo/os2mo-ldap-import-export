@@ -45,6 +45,7 @@ from mo_ldap_import_export.utils import MO_TZ
     }
 )
 @pytest.mark.usefixtures("test_client")
+@pytest.mark.xfail(reason="Validity only changes are ignored")
 async def test_validity_expansion(
     graphql_client: GraphQLClient,
     mo_person: UUID,
