@@ -54,7 +54,6 @@ async def test_load_address(
         "visibility": public,
         "address_type": email_employee,
         "person": mo_person,
-        "user_key": ANY,  # TODO: Why is this not "test_address"??
         "value": mail,
         "uuid": ANY,
         "validity": {"start": datetime(2001, 2, 3, 0, 0, tzinfo=MO_TZ)},

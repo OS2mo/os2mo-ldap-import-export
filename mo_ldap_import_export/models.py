@@ -42,13 +42,6 @@ class Address(StrictBaseModel):
     visibility: UUID | None
     validity: Validity
 
-    @validator("user_key", pre=True, always=True)
-    def set_user_key(cls, user_key: Any | None, values: dict) -> str:
-        # TODO: don't default to useless user-key (grandfathered-in from ramodels)
-        if user_key or isinstance(user_key, str):
-            return user_key
-        return str(values["uuid"])
-
 
 class Employee(StrictBaseModel):
     uuid: UUID = Field(default_factory=uuid4)

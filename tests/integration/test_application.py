@@ -409,7 +409,7 @@ async def test_mismatched_json_key_and_address_type(
         "validities": [
             {
                 "uuid": object_uuid,
-                "user_key": str(object_uuid),
+                "user_key": "abk@ad.kolding.dk",
                 "address_type": {
                     "user_key": "EmailEmployee",
                 },
