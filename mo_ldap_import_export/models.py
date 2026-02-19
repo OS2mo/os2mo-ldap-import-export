@@ -1,14 +1,12 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
 from datetime import datetime
-from typing import Any
 from uuid import UUID
 from uuid import uuid4
 
 from pydantic import BaseModel
 from pydantic import Extra
 from pydantic import Field
-from pydantic import validator
 
 
 class StrictBaseModel(BaseModel):
@@ -53,13 +51,6 @@ class Employee(StrictBaseModel):
     seniority: datetime | None  # TODO: ensure this field is read from MO, #64576
     nickname_given_name: str = ""
     nickname_surname: str = ""
-
-    @validator("user_key", pre=True, always=True)
-    def set_user_key(cls, user_key: Any | None, values: dict) -> str:
-        # TODO: don't default to useless user-key (grandfathered-in from ramodels)
-        if user_key or isinstance(user_key, str):
-            return user_key
-        return str(values["uuid"])
 
 
 class OrganisationUnit(StrictBaseModel):
