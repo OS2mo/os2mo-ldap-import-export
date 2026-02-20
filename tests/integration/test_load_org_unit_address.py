@@ -80,7 +80,6 @@ async def test_load_org_unit_address(
         "visibility": public,
         "address_type": email_unit,
         "org_unit": mo_org_unit,
-        "user_key": ANY,  # TODO: Why is this not "test_address"??
         "value": mail,
         "uuid": ANY,
         "validity": {"start": datetime(2001, 2, 3, 0, 0, tzinfo=MO_TZ)},

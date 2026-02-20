@@ -90,7 +90,7 @@ async def test_fetch_uuid_object_existing_address(
     result = await sync_tool.fetch_uuid_object(mo_address.uuid, Address)
     assert result == Address(
         uuid=mo_address.uuid,
-        user_key=str(mo_address.uuid),
+        user_key=None,
         address_type=email_unit,
         org_unit=mo_org_unit,
         visibility=public,
