@@ -667,7 +667,7 @@ class SyncTool:
             )
         except EmptyFieldsToSynchronise:
             # Empty fields are okay if the template just wanted to terminate
-            if termination_date is not None:
+            if termination_date is not None:  # pragma: no cover
                 return
             raise
         except SkipObject:  # pragma: no cover
