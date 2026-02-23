@@ -3,6 +3,7 @@
 # pylint: disable=too-few-public-methods
 """Settings handling."""
 
+from datetime import time
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -581,4 +582,9 @@ class Settings(BaseSettings):
             "Only create users with primary engagement in the specified MO organization"
             "units or their subtrees, the empty list allows creating all MO users"
         ),
+    )
+
+    disallowed_ldap_intervals: list[tuple[time, time]] = Field(
+        default_factory=list,
+        description="Time intervals in which ldap events may not be consumed.",
     )
