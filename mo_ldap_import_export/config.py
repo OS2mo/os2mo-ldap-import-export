@@ -582,3 +582,8 @@ class Settings(BaseSettings):
             "units or their subtrees, the empty list allows creating all MO users"
         ),
     )
+
+    disallow_ldap_processing_between_7_45_and_8_45: bool = Field(
+        default=False,
+        description="Disallow processing LDAP events between 7:45 and 8:45.",
+    )

@@ -1,10 +1,15 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
+import math
+from datetime import datetime
+from datetime import time
 from typing import Annotated
+from zoneinfo import ZoneInfo
 
 import structlog
 from fastapi import APIRouter
 from fastapi import Depends
+from fastapi import HTTPException
 from fastramqpi.events import Event
 from fastramqpi.ramqp.depends import get_payload_as_type
 from more_itertools import only
@@ -26,7 +31,31 @@ ldap2mo_router = APIRouter(prefix="/ldap2mo")
 PayloadUUID = Annotated[LDAPUUID, Depends(get_payload_as_type(LDAPUUID))]
 
 
-@ldap2mo_router.post("/uuid")
+async def delay_ldap(settings: Settings) -> None:
+    if not settings.disallow_ldap_processing_between_7_45_and_8_45:
+        return
+
+    tz = ZoneInfo("Europe/Copenhagen")
+    now = datetime.now(tz=tz)
+
+    start = time(7, 45)
+    end = time(8, 45)
+
+    disallowed = start <= now.time() < end
+    if not disallowed:
+        return
+
+    end_dt = datetime.combine(now.date(), end, tzinfo=tz)
+    next_opening_seconds = (end_dt - now).total_seconds()
+
+    raise HTTPException(
+        status_code=503,
+        detail="Inside of disallowed interval",
+        headers={"Retry-After": str(math.ceil(next_opening_seconds))},
+    )
+
+
+@ldap2mo_router.post("/uuid", dependencies=[Depends(delay_ldap)])
 async def http_process_uuid(
     settings: Settings,
     sync_tool: SyncTool,
@@ -88,7 +117,7 @@ async def http_process_uuid(
             await sync_tool.import_single_object_class(object_class, ldap_object)
 
 
-@ldap2mo_router.post("/reconcile")
+@ldap2mo_router.post("/reconcile", dependencies=[Depends(delay_ldap)])
 async def http_reconcile_uuid(
     settings: Settings,
     dataloader: DataLoader,
