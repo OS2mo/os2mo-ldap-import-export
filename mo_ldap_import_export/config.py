@@ -3,7 +3,6 @@
 # pylint: disable=too-few-public-methods
 """Settings handling."""
 
-from datetime import time
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -584,7 +583,7 @@ class Settings(BaseSettings):
         ),
     )
 
-    disallowed_ldap_intervals: list[tuple[time, time]] = Field(
-        default_factory=list,
-        description="Time intervals in which ldap events may not be consumed.",
+    disallow_ldap_processing_between_7_45_and_8_45: bool = Field(
+        default=False,
+        description="Disallow processing LDAP events between 7:45 and 8:45.",
     )
