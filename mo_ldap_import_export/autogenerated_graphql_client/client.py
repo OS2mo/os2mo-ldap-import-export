@@ -1147,6 +1147,7 @@ class GraphQLClient(AsyncBaseClient):
                     value: name
                     value2
                     uuid
+                    user_key
                     visibility_uuid
                     employee_uuid
                     org_unit_uuid

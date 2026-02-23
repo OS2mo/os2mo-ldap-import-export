@@ -23,6 +23,7 @@ class ReadAddressesAddressesObjectsValidities(BaseModel):
     value: str | None
     value2: str | None
     uuid: UUID
+    user_key: str
     visibility_uuid: UUID | None
     employee_uuid: UUID | None
     org_unit_uuid: UUID | None

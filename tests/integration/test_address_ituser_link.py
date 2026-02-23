@@ -23,7 +23,7 @@ async def test_create_address_read_equivalence(
     address_uuid = uuid4()
     address = Address(
         uuid=address_uuid,
-        user_key=None,
+        user_key="test@example.com",
         value="test@example.com",
         person=mo_person,
         address_type=email_employee,
@@ -69,7 +69,7 @@ async def test_create_address_ituser_read_equivalence(
     address_uuid = uuid4()
     address = Address(
         uuid=address_uuid,
-        user_key=None,
+        user_key="test@example.com",
         value="test@example.com",
         person=mo_person,
         ituser=ituser1_uuid,

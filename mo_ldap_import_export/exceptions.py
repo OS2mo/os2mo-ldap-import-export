@@ -15,6 +15,11 @@ class AcknowledgeException(HTTPException):
         super().__init__(status_code=200, detail=message)
 
 
+class SingleDayIntervalException(HTTPException):
+    def __init__(self, message: str) -> None:
+        super().__init__(status_code=200, detail=message)
+
+
 class RequeueException(HTTPException):
     def __init__(self, message: str) -> None:
         super().__init__(status_code=409, detail=message)
@@ -32,6 +37,13 @@ class NoObjectsReturnedException(HTTPException):
 
 class IncorrectMapping(HTTPException):
     """Raised when the integration is improperly configured."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(status_code=500, detail=message)
+
+
+class EmptyFieldsToSynchronise(HTTPException):
+    """Raised when ldap-object has empty fields."""
 
     def __init__(self, message: str) -> None:
         super().__init__(status_code=500, detail=message)
