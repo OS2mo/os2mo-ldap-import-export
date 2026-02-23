@@ -61,7 +61,7 @@ from .types import EmployeeUUID
 from .usernames import UserNameGenerator
 from .utils import ensure_list
 
-GRAPHQL_VERSION = 25
+GRAPHQL_VERSION = 29
 
 logger = structlog.stdlib.get_logger()
 

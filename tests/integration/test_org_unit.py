@@ -65,9 +65,11 @@ async def test_to_mo(
     ldap_org: list[str],
     dn2uuid: DN2UUID,
 ) -> None:
-    async def get_org_unit() -> dict[str, Any]:
+    async def get_org_unit() -> dict[str, Any] | None:
         org_units = await graphql_client._testing__org_unit_read()
-        org_unit = one(org_units.objects)
+        org_unit = only(org_units.objects)
+        if org_unit is None:
+            return None
         validities = one(org_unit.validities)
         return validities.dict()
 
@@ -120,13 +122,9 @@ async def test_to_mo(
             "l": [("MODIFY_REPLACE", "EXPIRED")],
         },
     )
-    mo_org_unit = {
-        **mo_org_unit,
-        "validity": {"from_": mo_today(), "to": mo_today()},
-    }
     async for attempt in retrying():
         with attempt:
-            assert await get_org_unit() == mo_org_unit
+            assert await get_org_unit() is None
 
 
 @pytest.mark.integration_test

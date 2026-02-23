@@ -143,7 +143,6 @@ from .input_types import ClassOwnerFilter
 from .input_types import ClassRegistrationFilter
 from .input_types import ClassTerminateInput
 from .input_types import ClassUpdateInput
-from .input_types import ConfigurationFilter
 from .input_types import DescendantParentBoundOrganisationUnitFilter
 from .input_types import EmployeeCreateInput
 from .input_types import EmployeeFilter
@@ -590,7 +589,6 @@ __all__ = [
     "ClassUpdate",
     "ClassUpdateClassUpdate",
     "ClassUpdateInput",
-    "ConfigurationFilter",
     "DeclareEventListener",
     "DeclareEventListenerEventListenerDeclare",
     "DescendantParentBoundOrganisationUnitFilter",

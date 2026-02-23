@@ -20,7 +20,6 @@ from mo_ldap_import_export.types import DN
 from mo_ldap_import_export.types import LDAPUUID
 from mo_ldap_import_export.types import EmployeeUUID
 from mo_ldap_import_export.utils import combine_dn_strings
-from mo_ldap_import_export.utils import mo_today
 from tests.integration.conftest import DN2UUID
 from tests.integration.conftest import AddLdapPerson
 
@@ -162,4 +161,4 @@ async def test_find_mo_employee_dn_by_itsystem_ituser_termination(
 
     # Ensure that the link beteen the mo person and the LDAP account was terminated
     ituser_map = await read_mo_mapping_uuids(mo_person)
-    assert ituser_map == {ldap_uuid: mo_today()}
+    assert ituser_map == {}
