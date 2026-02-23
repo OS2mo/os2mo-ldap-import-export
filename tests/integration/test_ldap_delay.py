@@ -27,7 +27,7 @@ from mo_ldap_import_export.ldap_amqp import delay_ldap
         ("2025-01-01T08:44:30+01:00", True, 503, "30"),
         # Border condition
         ("2025-01-01T07:45:00+01:00", True, 503, str(60 * 60)),
-        ("2025-01-01T08:45:00+01:00", True, 503, "0"),
+        ("2025-01-01T08:45:00+01:00", True, 200, None),
     ],
 )
 @pytest.mark.usefixtures("minimal_valid_environmental_variables")

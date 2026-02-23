@@ -41,7 +41,7 @@ async def delay_ldap(settings: Settings) -> None:
     start = time(7, 45)
     end = time(8, 45)
 
-    disallowed = start <= now.time() <= end
+    disallowed = start <= now.time() < end
     if not disallowed:
         return
 
