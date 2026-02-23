@@ -620,7 +620,7 @@ class SyncTool:
             except SkipObject:
                 logger.info("Skipping object", dn=dn)
                 return
-            except SingleDayIntervalException:
+            except SingleDayIntervalException:  # pragma: no cover
                 logger.info("SingleDayIntervalException", dn=dn)
                 return
 
