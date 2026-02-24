@@ -110,6 +110,20 @@ services:
     networks:
       - default
 
+  samba:
+    container_name: samba
+    image: osixia/openldap:1.5.0
+    command: ["--copy-service", "--loglevel", "debug"]
+    environment:
+      LDAP_ORGANISATION: "samba"
+      LDAP_DOMAIN: "samba.local"
+      LDAP_ADMIN_PASSWORD: "adminpassword"
+      LDAP_CONFIG_PASSWORD: "configpassword"
+    ports:
+      - "3890:389"
+    networks:
+      - default
+
 networks:
   os2mo_default:
     external: true
