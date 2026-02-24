@@ -107,22 +107,22 @@ services:
       POSTGRES_USER: "fastramqpi"
       POSTGRES_PASSWORD: "fastramqpi"
       POSTGRES_DB: "fastramqpi"
-    ports:
-      - "5432:5432"
     networks:
       - default
 
-  samba:
-    container_name: samba
-    image: osixia/openldap:1.5.0
-    command: ["--copy-service", "--loglevel", "debug"]
+  # 389 Directory Server - alternative LDAP implementation for testing
+  ds389:
+    image: quay.io/389ds/dirsrv:latest
     environment:
-      LDAP_ORGANISATION: "magenta"
-      LDAP_DOMAIN: "magenta.dk"
-      LDAP_ADMIN_PASSWORD: "AdminPassword123"
-      LDAP_CONFIG_PASSWORD: "ConfigPassword123"
-    ports:
-      - "3890:389"
+      DS_DM_PASSWORD: "AdminPassword123"
+      DS_SUFFIX_NAME: "dc=magenta,dc=dk"
+    # Create the suffix after startup (DS_SUFFIX_NAME alone doesn't create it)
+    healthcheck:
+      test: ["CMD-SHELL", "dsconf localhost backend suffix list | grep -q 'dc=magenta,dc=dk' || dsconf localhost backend create --suffix 'dc=magenta,dc=dk' --be-name userRoot --create-suffix"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
       - default
 

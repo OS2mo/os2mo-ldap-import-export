@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
+"""Integration tests for 389 Directory Server (alternative LDAP implementation)."""
 import json
 
 import pytest
@@ -12,16 +13,17 @@ from mo_ldap_import_export.ldap_event_generator import LDAPEventGenerator
 from mo_ldap_import_export.ldapapi import LDAPAPI
 from mo_ldap_import_export.utils import combine_dn_strings
 
-SAMBA_HOST = "samba"
-SAMBA_PORT = 389
+DS389_HOST = "ds389"
+DS389_PORT = 3389
 
-SAMBA_ENVVARS = {
-    "LDAP_CONTROLLERS": json.dumps([{"host": SAMBA_HOST, "port": SAMBA_PORT}]),
+DS389_ENVVARS = {
+    "LDAP_CONTROLLERS": json.dumps([{"host": DS389_HOST, "port": DS389_PORT}]),
     "LDAP_DOMAIN": "magenta.dk",
-    "LDAP_USER": "cn=admin,dc=magenta,dc=dk",
+    "LDAP_USER": "cn=Directory Manager",
     "LDAP_PASSWORD": "AdminPassword123",
     "LDAP_SEARCH_BASE": "dc=magenta,dc=dk",
-    "LDAP_OUS_TO_SEARCH_IN": json.dumps(["ou=os2mo,o=magenta"]),
+    # Use same structure as OpenLDAP to reuse conftest fixtures
+    "LDAP_OUS_TO_SEARCH_IN": json.dumps(["o=magenta"]),
     "LDAP_OU_FOR_NEW_USERS": "ou=os2mo,o=magenta",
     "LDAP_DIALECT": "Standard",
     "LDAP_AUTH_METHOD": "simple",
@@ -30,19 +32,24 @@ SAMBA_ENVVARS = {
 
 @pytest.fixture
 async def write_ldap_api(load_marked_envvars: None) -> LDAPAPI:
-    """Override to make ldap_org_unit use the test's envvars (pointing to samba)."""
+    """Override to make ldap_org and ldap_org_unit use the test's envvars (pointing to 389DS).
+
+    The root conftest's write_ldap_api doesn't depend on load_marked_envvars,
+    so it ignores @pytest.mark.envvar and always connects to OpenLDAP.
+    This override ensures the envvars are loaded first, pointing to 389DS.
+    """
     settings = Settings()
     return LDAPAPI(settings, configure_ldap_connection(settings))
 
 
 @pytest.mark.integration_test
-@pytest.mark.envvar(SAMBA_ENVVARS)
+@pytest.mark.envvar(DS389_ENVVARS)
 @pytest.mark.usefixtures("test_client")
-async def test_samba_ldap_create_and_read_persons(
+async def test_389ds_create_and_read_persons(
     context: Context,
     ldap_org_unit: list[str],
 ) -> None:
-    """Test creating persons in Samba LDAP and reading them back."""
+    """Test creating persons in 389DS and reading them back."""
     ldap_connection = context["user_context"]["dataloader"].ldapapi.ldap_connection
 
     persons = [
@@ -94,7 +101,6 @@ async def test_samba_ldap_create_and_read_persons(
             )
 
             entry = response[0]["attributes"]
-            # Attributes may be returned as lists
             assert entry["uid"] == [person["uid"]] or entry["uid"] == person["uid"]
             assert entry["cn"] == [person["cn"]] or entry["cn"] == person["cn"]
             assert entry["sn"] == [person["sn"]] or entry["sn"] == person["sn"]
@@ -110,13 +116,13 @@ async def test_samba_ldap_create_and_read_persons(
 
 
 @pytest.mark.integration_test
-@pytest.mark.envvar(SAMBA_ENVVARS)
+@pytest.mark.envvar(DS389_ENVVARS)
 @pytest.mark.usefixtures("test_client")
-async def test_ldap_event_generator_detects_samba_changes(
+async def test_ldap_event_generator_detects_389ds_changes(
     context: Context,
     ldap_org_unit: list[str],
 ) -> None:
-    """Test that LDAPEventGenerator can detect changes made in Samba."""
+    """Test that LDAPEventGenerator can detect changes made in 389DS."""
     settings = context["user_context"]["settings"]
     search_base = combine_dn_strings(ldap_org_unit)
 
