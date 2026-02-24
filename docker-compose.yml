@@ -110,21 +110,31 @@ services:
     networks:
       - default
 
-  # 389 Directory Server - alternative LDAP implementation for testing
-  ds389:
-    image: quay.io/389ds/dirsrv:latest
+  # Samba AD DC - Active Directory compatible LDAP server for testing DirSync
+  samba:
+    image: nowsci/samba-domain
+    hostname: dc
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+      - SYS_NICE
+      - SYS_RESOURCE
+      - SYS_TIME
     environment:
-      DS_DM_PASSWORD: "AdminPassword123"
-      DS_SUFFIX_NAME: "dc=magenta,dc=dk"
-    # Create the suffix after startup (DS_SUFFIX_NAME alone doesn't create it)
-    healthcheck:
-      test: ["CMD-SHELL", "dsconf localhost backend suffix list | grep -q 'dc=magenta,dc=dk' || dsconf localhost backend create --suffix 'dc=magenta,dc=dk' --be-name userRoot --create-suffix"]
-      interval: 5s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+      DOMAIN: "MAGENTA.DK"
+      DOMAINPASS: "AdminPassword123!"
+      DNSFORWARDER: "8.8.8.8"
+      HOSTIP: "0.0.0.0"
+      INSECURELDAP: "true"
+      NOCOMPLEXITY: "true"
     networks:
       - default
+    healthcheck:
+      test: ["CMD-SHELL", "samba-tool domain info 127.0.0.1 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
 
 networks:
   os2mo_default:
