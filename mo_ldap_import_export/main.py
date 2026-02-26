@@ -43,6 +43,8 @@ from .converters import LdapConverter
 from .customer_specific_checks import ExportChecks
 from .database import Base
 from .dataloaders import DataLoader
+from .dirsync_event_generator import DirSyncEventGenerator
+from .dirsync_event_generator import configure_dirsync_connection
 from .environments.main import construct_environment
 from .exceptions import NoObjectsReturnedException
 from .exceptions import ReadOnlyException
@@ -53,8 +55,6 @@ from .ldap import configure_ldap_connection
 from .ldap import ldap_healthcheck
 from .ldap_amqp import ldap2mo_router
 from .ldap_emit import publish_uuids
-from .dirsync_event_generator import DirSyncEventGenerator
-from .dirsync_event_generator import configure_dirsync_connection
 from .ldap_event_generator import LDAPEventGenerator
 from .ldapapi import LDAPAPI
 from .moapi import MOAPI
@@ -386,6 +386,7 @@ async def lifespan(
         fastramqpi.add_context(sync_tool=sync_tool)
 
         logger.info("Initializing LDAP listener")
+        ldap_event_generator: LDAPEventGenerator | DirSyncEventGenerator
         match settings.ldap_event_generator_type:
             case LDAPEventGeneratorEnum.MODIFYTIMESTAMP:
                 ldap_event_generator = LDAPEventGenerator(

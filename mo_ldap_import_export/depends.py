@@ -19,7 +19,9 @@ from .config import Settings as _Settings
 from .converters import LdapConverter as _LdapConverter
 from .dataloaders import DataLoader as _DataLoader
 from .import_export import SyncTool as _SyncTool
-from .ldap_event_generator_protocol import LDAPEventGeneratorProtocol as _LDAPEventGeneratorProtocol
+from .ldap_event_generator_protocol import (
+    LDAPEventGeneratorProtocol as _LDAPEventGeneratorProtocol,
+)
 
 GraphQLClient = Annotated[_GraphQLClient, Depends(from_context("graphql_client"))]
 SyncTool = Annotated[_SyncTool, Depends(from_user_context("sync_tool"))]

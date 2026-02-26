@@ -72,7 +72,7 @@ async def test_samba_create_and_read_persons(
 
 def _dirsync_entries(conn: ldap3.Connection) -> list[dict]:
     """Extract searchResEntry results from the last DirSync response."""
-    return [e for e in conn.response if e["type"] == "searchResEntry"]
+    return [e for e in (conn.response or []) if e["type"] == "searchResEntry"]
 
 
 def _dirsync_dns(conn: ldap3.Connection) -> set[str]:

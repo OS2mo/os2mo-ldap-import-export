@@ -211,7 +211,9 @@ class DirSyncEventGenerator(AbstractAsyncContextManager):
                 cookie=cookie,
             )
             ds.loop()
-            entries = [e for e in conn.response if e["type"] == "searchResEntry"]
+            entries = [
+                e for e in (conn.response or []) if e["type"] == "searchResEntry"
+            ]
             return entries, ds.cookie
 
         entries, new_cookie = await asyncio.to_thread(_run_dirsync)
@@ -238,17 +240,13 @@ class DirSyncEventGenerator(AbstractAsyncContextManager):
         # Ensure that a singleton state row exists
         # We do creates separately to support update locks in normal operation
         async with self.sessionmaker() as session, session.begin():
-            state = await session.scalar(
-                select(DirSyncState).with_for_update()
-            )
+            state = await session.scalar(select(DirSyncState).with_for_update())
             state = state or DirSyncState()
             session.add(state)
 
         async with self.sessionmaker() as session, session.begin():
             # Get DirSync state from database for updating
-            state = await session.scalar(
-                select(DirSyncState).with_for_update()
-            )
+            state = await session.scalar(select(DirSyncState).with_for_update())
             assert state is not None
 
             # Fetch changes and emit events for them

@@ -152,10 +152,12 @@ class LDAPEventGenerator(AbstractAsyncContextManager):
 
     def encode_poll_state(self, state: Any) -> str:
         search_base, last_search_time = state
-        return json.dumps({
-            "search_base": search_base,
-            "since": last_search_time.isoformat(),
-        })
+        return json.dumps(
+            {
+                "search_base": search_base,
+                "since": last_search_time.isoformat(),
+            }
+        )
 
     def decode_poll_state(self, token: str | None) -> Any:
         if token is None:

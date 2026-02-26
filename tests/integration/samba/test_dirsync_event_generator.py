@@ -178,7 +178,9 @@ async def test_poll_attribute_filtering(
             ldap_connection, ldap_org_unit, "Filter Test", "filter_test"
         )
         user_uuid = await lookup_uuid(
-            ldap_connection, ldap_org_unit, "filter_test",
+            ldap_connection,
+            ldap_org_unit,
+            "filter_test",
             settings.ldap_unique_id_field,
         )
         user_dn = combine_dn_strings(["CN=Filter Test"] + ldap_org_unit)
@@ -200,7 +202,9 @@ async def test_poll_attribute_filtering(
             user_dn, {"givenName": [(ldap3.MODIFY_REPLACE, ["NewGiven"])]}
         )
         changed, cookie = await event_generator.poll(cookie)
-        assert changed == {user_uuid}, "Mapped attribute 'givenName' must trigger an event"
+        assert changed == {
+            user_uuid
+        }, "Mapped attribute 'givenName' must trigger an event"
 
         # -- Unmapped attributes: changes must NOT produce events ------------
 
@@ -209,14 +213,18 @@ async def test_poll_attribute_filtering(
             user_dn, {"description": [(ldap3.MODIFY_REPLACE, ["Some note"])]}
         )
         changed, cookie = await event_generator.poll(cookie)
-        assert changed == set(), "Unmapped attribute 'description' must not trigger an event"
+        assert (
+            changed == set()
+        ), "Unmapped attribute 'description' must not trigger an event"
 
         # 'department' is a common AD attribute that we don't map
         await ldap_connection.ldap_modify(
             user_dn, {"department": [(ldap3.MODIFY_REPLACE, ["Engineering"])]}
         )
         changed, cookie = await event_generator.poll(cookie)
-        assert changed == set(), "Unmapped attribute 'department' must not trigger an event"
+        assert (
+            changed == set()
+        ), "Unmapped attribute 'department' must not trigger an event"
 
         # 'physicalDeliveryOfficeName' (office location) is likewise unmapped
         await ldap_connection.ldap_modify(
@@ -224,18 +232,18 @@ async def test_poll_attribute_filtering(
             {"physicalDeliveryOfficeName": [(ldap3.MODIFY_REPLACE, ["Room 101"])]},
         )
         changed, cookie = await event_generator.poll(cookie)
-        assert changed == set(), (
-            "Unmapped attribute 'physicalDeliveryOfficeName' must not trigger an event"
-        )
+        assert (
+            changed == set()
+        ), "Unmapped attribute 'physicalDeliveryOfficeName' must not trigger an event"
 
         # -- Sanity: a mapped attribute still works after the unmapped ones --
         await ldap_connection.ldap_modify(
             user_dn, {"sn": [(ldap3.MODIFY_REPLACE, ["FinalSurname"])]}
         )
         changed, cookie = await event_generator.poll(cookie)
-        assert changed == {user_uuid}, (
-            "Mapped attribute must still trigger after unmapped changes"
-        )
+        assert changed == {
+            user_uuid
+        }, "Mapped attribute must still trigger after unmapped changes"
     finally:
         dirsync_connection.unbind()
 
