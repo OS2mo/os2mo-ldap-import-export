@@ -69,8 +69,9 @@ async def test_poll(
     Walks through a lifecycle:
     1. Initial poll returns all existing user objects and a cookie
     2. Create user - incremental poll returns exactly that user
-    3. Modify user - incremental poll detects the modification
-    4. No changes - incremental poll returns empty set
+    3. Modify a mapped attribute - incremental poll detects the modification
+    4. Modify an unmapped attribute - incremental poll ignores it
+    5. No changes - incremental poll returns empty set
     """
     settings = Settings()
     ldap_connection = context["user_context"]["dataloader"].ldapapi.ldap_connection
@@ -99,16 +100,26 @@ async def test_poll(
         changed_uuids, cookie = await event_generator.poll(cookie)
         assert changed_uuids == {created_uuid}
 
-        # --- Step 3: Modify user ----------------------------------------------
+        # --- Step 3: Modify mapped attribute (sn) -----------------------------
+        user_dn = combine_dn_strings(["CN=Poll Test"] + ldap_org_unit)
         await ldap_connection.ldap_modify(
-            combine_dn_strings(["CN=Poll Test"] + ldap_org_unit),
-            {"sn": [(ldap3.MODIFY_REPLACE, ["Modified"])]},
+            user_dn, {"sn": [(ldap3.MODIFY_REPLACE, ["Modified"])]}
         )
 
         changed_uuids, cookie = await event_generator.poll(cookie)
         assert changed_uuids == {created_uuid}
 
-        # --- Step 4: No changes -----------------------------------------------
+        # --- Step 4: Modify unmapped attribute (description) ------------------
+        # 'description' is not in any ldap_to_mo mapping, so DirSync should
+        # not report the change.
+        await ldap_connection.ldap_modify(
+            user_dn, {"description": [(ldap3.MODIFY_REPLACE, ["irrelevant"])]}
+        )
+
+        ignored, cookie = await event_generator.poll(cookie)
+        assert ignored == set()
+
+        # --- Step 5: No changes -----------------------------------------------
         no_changes, cookie = await event_generator.poll(cookie)
         assert no_changes == set()
     finally:

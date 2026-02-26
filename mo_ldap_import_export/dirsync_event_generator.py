@@ -174,11 +174,27 @@ class DirSyncEventGenerator(AbstractAsyncContextManager):
         unique_id_field = self.settings.ldap_unique_id_field
         conn = self.dirsync_connection
 
+        # DirSync only reports objects where a *requested* attribute changed
+        # (per MS-ADTS).  Mirror the attribute set from ldap_amqp.py so we
+        # detect exactly the changes we care about.
+        relevant_attributes = {unique_id_field}
+        if self.settings.ldap_cpr_attribute:
+            relevant_attributes.add(self.settings.ldap_cpr_attribute)
+        if self.settings.discriminator_fields:
+            relevant_attributes.update(self.settings.discriminator_fields)
+        if self.settings.conversion_mapping.ldap_to_mo:
+            for mapping in self.settings.conversion_mapping.ldap_to_mo.values():
+                relevant_attributes.update(mapping.ldap_attributes)
+        for mappings in self.settings.conversion_mapping.ldap_to_mo_any.values():
+            for mapping in mappings:
+                relevant_attributes.update(mapping.ldap_attributes)
+        attributes = sorted(relevant_attributes - {"dn"})
+
         def _run_dirsync() -> tuple[list[dict], bytes]:
             ds = conn.extend.microsoft.dir_sync(
                 sync_base=search_base,
                 sync_filter=sync_filter,
-                attributes=[unique_id_field],
+                attributes=attributes,
                 cookie=cookie,
             )
             ds.loop()
