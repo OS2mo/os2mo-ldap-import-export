@@ -15,6 +15,13 @@ from mo_ldap_import_export.ldap import configure_ldap_connection
 from mo_ldap_import_export.ldapapi import LDAPAPI
 from mo_ldap_import_export.types import DN
 
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """Mark all tests in this directory with ``samba_test``."""
+    samba_marker = pytest.mark.samba_test
+    for item in items:
+        item.add_marker(samba_marker)
+
+
 SAMBA_ENVVARS = {
     "LDAP_CONTROLLERS": json.dumps([{"host": "samba", "port": 389}]),
     "LDAP_DOMAIN": "magenta.dk",

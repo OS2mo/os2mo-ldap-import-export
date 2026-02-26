@@ -94,6 +94,9 @@ Integration-test:
   parallel: 8
   variables:
     FASTRAMQPI__JSON_LOGS: False
+    # Samba AD tests require a privileged Samba DC service that is not
+    # available in standard CI runners.
+    PYTEST_ADDOPTS: "-m 'integration_test and not samba_test'"
     # LDAP: Connection
     LDAP_CONTROLLERS: '[{"host": "ldap"}]'
     LDAP_DOMAIN: "magenta.dk"
