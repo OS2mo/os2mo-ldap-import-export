@@ -51,6 +51,7 @@ debugpy = "^1"
 ariadne-codegen = "^0.7"
 respx = "^0.21"
 rich = "^13"
+virtualenv = "^21.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
