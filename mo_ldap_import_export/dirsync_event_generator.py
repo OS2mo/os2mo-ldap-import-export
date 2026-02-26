@@ -17,6 +17,7 @@ Constraints imposed by the DirSync protocol:
 """
 
 import asyncio
+import base64
 from contextlib import AbstractAsyncContextManager
 from contextlib import suppress
 from typing import Any
@@ -129,6 +130,16 @@ class DirSyncEventGenerator(AbstractAsyncContextManager):
     async def healthcheck(self, context: dict | Context) -> bool:
         return self._poller is not None and not self._poller.done()
 
+    def encode_poll_state(self, state: Any) -> str:
+        if state is None:
+            return ""
+        return base64.b64encode(state).decode()
+
+    def decode_poll_state(self, token: str | None) -> Any:
+        if not token:
+            return None
+        return base64.b64decode(token)
+
     def _setup_poller(self) -> asyncio.Task:
         def done_callback(future):
             # Silence CancelledErrors on shutdown
@@ -142,17 +153,19 @@ class DirSyncEventGenerator(AbstractAsyncContextManager):
 
     async def poll(
         self,
-        cookie: bytes | None,
-    ) -> tuple[set[LDAPUUID], bytes]:
+        state: Any,
+    ) -> tuple[set[LDAPUUID], Any]:
         """Poll the LDAP server for changes using DirSync control.
 
         Args:
-            cookie:
-                DirSync cookie from previous poll, or None for initial sync.
+            state:
+                Opaque poll state — a DirSync cookie (``bytes``) or ``None``
+                for initial sync.
 
         Returns:
-            Tuple of (set of changed UUIDs, new DirSync cookie).
+            Tuple of (set of changed UUIDs, new opaque state).
         """
+        cookie: bytes | None = state
         search_base = self.settings.ldap_search_base
         logger.debug(
             "Searching for DirSync changes",

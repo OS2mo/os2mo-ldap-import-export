@@ -56,7 +56,10 @@ async def test_update_timestamp_postgres(context: Context) -> None:
         ldap_connection=AsyncMock(),
     )
     event_generator.poll = AsyncMock(  # type: ignore[method-assign]
-        side_effect=lambda *_, **__: ({cast(LDAPUUID, uuid4())}, datetime.now())
+        side_effect=lambda state: (
+            {cast(LDAPUUID, uuid4())},
+            (state[0], datetime.now()),
+        )
     )
 
     for count, search_base in enumerate(["dc=ad0", "dc=ad1", "dc=ad2"]):
@@ -99,7 +102,10 @@ async def test_update_timestamp_no_changes(context: Context) -> None:
     assert last_run is None
 
     event_generator.poll = AsyncMock(  # type: ignore[method-assign]
-        side_effect=lambda *_, **__: ({cast(LDAPUUID, uuid4())}, datetime.now())
+        side_effect=lambda state: (
+            {cast(LDAPUUID, uuid4())},
+            (state[0], datetime.now()),
+        )
     )
     await event_generator._generate_events(search_base)
     first_run = await get_last_run(sessionmaker, search_base)
@@ -107,7 +113,7 @@ async def test_update_timestamp_no_changes(context: Context) -> None:
     assert first_run > test_start
 
     event_generator.poll = AsyncMock(  # type: ignore[method-assign]
-        side_effect=lambda *_, **__: (set(), None),
+        side_effect=lambda state: (set(), state),
     )
     await event_generator._generate_events(search_base)
     last_run = await get_last_run(sessionmaker, search_base)

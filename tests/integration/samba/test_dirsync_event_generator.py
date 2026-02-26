@@ -86,7 +86,7 @@ async def test_poll(
         )
 
         # --- Step 1: Initial full sync ----------------------------------------
-        initial_uuids, cookie = await event_generator.poll(cookie=None)
+        initial_uuids, cookie = await event_generator.poll(None)
         assert cookie is not None
         # Samba ships with built-in user accounts (Administrator, Guest, krbtgt)
         assert len(initial_uuids) > 0

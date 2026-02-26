@@ -499,7 +499,7 @@ def construct_router(settings: Settings) -> APIRouter:
         uuids_set = set()
         for search_base in search_bases:
             poll_uuids, _ = await ldap_event_generator.poll(
-                search_base, MICROSOFT_EPOCH
+                (search_base, MICROSOFT_EPOCH)
             )
             uuids_set.update(poll_uuids)
 
@@ -951,5 +951,24 @@ async def fetch_changes_since(
     since: datetime,
     search_base: Annotated[str, Body()],
 ) -> set[LDAPUUID]:
-    uuids, _ = await ldap_event_generator.poll(search_base, since)
+    uuids, _ = await ldap_event_generator.poll((search_base, since))
     return uuids
+
+
+@ldap_event_router.post("/poll")
+async def poll_changes(
+    ldap_event_generator: depends.LDAPEventGenerator,
+    state: Annotated[str | None, Body()] = None,
+) -> dict[str, Any]:
+    """Poll for LDAP changes using an opaque state token.
+
+    Pass ``null`` (or omit) on the first call to get all changes.
+    On subsequent calls, pass the ``state`` value from the previous response
+    to get only changes since then.
+    """
+    decoded = ldap_event_generator.decode_poll_state(state)
+    uuids, new_state = await ldap_event_generator.poll(decoded)
+    return {
+        "uuids": sorted(uuids),
+        "state": ldap_event_generator.encode_poll_state(new_state),
+    }

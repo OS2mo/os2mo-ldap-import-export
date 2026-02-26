@@ -3,6 +3,7 @@
 """LDAP change event generation."""
 
 import asyncio
+import json
 from contextlib import AbstractAsyncContextManager
 from contextlib import suppress
 from datetime import UTC
@@ -149,22 +150,35 @@ class LDAPEventGenerator(AbstractAsyncContextManager):
         handle.add_done_callback(done_callback)
         return handle
 
+    def encode_poll_state(self, state: Any) -> str:
+        search_base, last_search_time = state
+        return json.dumps({
+            "search_base": search_base,
+            "since": last_search_time.isoformat(),
+        })
+
+    def decode_poll_state(self, token: str | None) -> Any:
+        if token is None:
+            # Default: search all configured bases from the Microsoft epoch
+            search_base = self.settings.ldap_search_base
+            return (search_base, MICROSOFT_EPOCH)
+        data = json.loads(token)
+        return (data["search_base"], datetime.fromisoformat(data["since"]))
+
     async def poll(
         self,
-        search_base: str,
-        last_search_time: datetime,
-    ) -> tuple[set[LDAPUUID], datetime | None]:
-        """Pool the LDAP server for changes once.
+        state: Any,
+    ) -> tuple[set[LDAPUUID], Any]:
+        """Poll the LDAP server for changes once.
 
         Args:
-            search_base:
-                LDAP search base to look for changes in.
-            last_search_time:
-                Find events that occured since this time.
+            state:
+                Opaque poll state — a ``(search_base, last_search_time)`` tuple.
 
         Returns:
-            The set of UUIDs that have changed since last_search_time.
+            Tuple of (changed UUIDs, new opaque state).
         """
+        search_base, last_search_time = state
         logger.debug(
             "Searching for changes since last search", last_search_time=last_search_time
         )
@@ -220,7 +234,10 @@ class LDAPEventGenerator(AbstractAsyncContextManager):
         timestamps_with_none.discard(None)
         timestamps = cast(set[datetime], timestamps_with_none)
 
-        return uuids, max(timestamps, default=None)
+        max_timestamp = max(timestamps, default=None)
+        if max_timestamp is None:
+            return uuids, state
+        return uuids, (search_base, max_timestamp)
 
     async def _poller(self, search_base: str) -> None:
         """Poll the LDAP server continuously every `settings.poll_time` seconds.
@@ -259,9 +276,9 @@ class LDAPEventGenerator(AbstractAsyncContextManager):
             assert last_run.uuids is not None
 
             # Fetch changes since last-run and emit events for them
-            uuids, timestamp = await self.poll(
-                search_base, last_search_time=last_run.datetime
-            )
+            state = (search_base, last_run.datetime)
+            uuids, new_state = await self.poll(state)
+            _, timestamp = new_state
             # Only send out events if either the UUIDs or the timestamp have changed
             # Otherwise we will send out the same event over and over, every 'poll_time'
             # seconds effectively spamming the queue, which is a big issue if the UUID
@@ -270,7 +287,7 @@ class LDAPEventGenerator(AbstractAsyncContextManager):
                 await publish_uuids(self.settings, self.graphql_client, list(uuids))
 
             # No events found means no timestamps, which means we reuse the old last_run
-            if timestamp is None:
+            if timestamp == last_run.datetime:
                 return
 
             # Update last run time in database

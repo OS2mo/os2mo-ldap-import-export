@@ -305,6 +305,11 @@ class AuthBackendEnum(str, Enum):
     SIMPLE = "simple"
 
 
+class LDAPEventGeneratorEnum(str, Enum):
+    MODIFYTIMESTAMP = "modifytimestamp"
+    DIRSYNC = "dirsync"
+
+
 def yaml_config_settings_source(settings: BaseSettings) -> dict[str, Any]:
     # https://docs.pydantic.dev/1.10/usage/settings/#adding-sources
     encoding = settings.__config__.env_file_encoding
@@ -354,6 +359,11 @@ class Settings(BaseSettings):
 
     listen_to_changes_in_ldap: bool = Field(
         True, description="Whether to write to MO, when changes in LDAP are registered"
+    )
+
+    ldap_event_generator_type: LDAPEventGeneratorEnum = Field(
+        LDAPEventGeneratorEnum.MODIFYTIMESTAMP,
+        description="Strategy for detecting LDAP changes",
     )
 
     mo_uuids_to_ignore: list[UUID] = Field(
