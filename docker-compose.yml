@@ -112,25 +112,18 @@ services:
 
   # Samba AD DC - Active Directory compatible LDAP server for testing DirSync
   samba:
-    image: nowsci/samba-domain
+    image: smblds/smblds:latest
     hostname: dc
-    cap_add:
-      - SYS_ADMIN
-      - NET_ADMIN
-      - SYS_NICE
-      - SYS_RESOURCE
-      - SYS_TIME
     environment:
-      DOMAIN: "MAGENTA.DK"
-      DOMAINPASS: "AdminPassword123!"
-      DNSFORWARDER: "8.8.8.8"
-      HOSTIP: "0.0.0.0"
-      INSECURELDAP: "true"
-      NOCOMPLEXITY: "true"
+      REALM: "MAGENTA.DK"
+      DOMAIN: "MAGENTA"
+      ADMINPASS: "AdminPassword123!"
+      INSECURE_LDAP: "true"
+      INSECURE_PASSWORDSETTINGS: "true"
     networks:
       - default
     healthcheck:
-      test: ["CMD-SHELL", "samba-tool domain info 127.0.0.1 || exit 1"]
+      test: ["CMD-SHELL", "ldapsearch -H ldap://localhost -x -b '' -s base > /dev/null 2>&1"]
       interval: 10s
       timeout: 10s
       retries: 12

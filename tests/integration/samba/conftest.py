@@ -46,6 +46,7 @@ SAMBA_BASELINE_USER_DNS: set[DN] = {
     "CN=Group Policy Creator Owners,CN=Users,DC=magenta,DC=dk",
     "CN=Guest,CN=Users,DC=magenta,DC=dk",
     "CN=krbtgt,CN=Users,DC=magenta,DC=dk",
+    "CN=Protected Users,CN=Users,DC=magenta,DC=dk",
     "CN=RAS and IAS Servers,CN=Users,DC=magenta,DC=dk",
     "CN=Read-only Domain Controllers,CN=Users,DC=magenta,DC=dk",
     "CN=Schema Admins,CN=Users,DC=magenta,DC=dk",
