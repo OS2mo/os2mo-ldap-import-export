@@ -126,6 +126,118 @@ async def test_poll(
         dirsync_connection.unbind()
 
 
+@pytest.mark.integration_test
+@pytest.mark.envvar(
+    {
+        **SAMBA_ENVVARS,
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
+        "LDAP_OBJECT_CLASS": "user",
+    }
+)
+@pytest.mark.usefixtures("test_client")
+async def test_poll_attribute_filtering(
+    context: Context,
+    ldap_org_unit: list[str],
+) -> None:
+    """Verify that DirSync only emits events for changes to mapped attributes.
+
+    DirSync (MS-ADTS §3.1.1.3.4.6) only reports objects where a *requested*
+    attribute changed.  Our generator requests exactly the attributes declared
+    in the conversion mapping (plus the unique-id and CPR fields).
+
+    This test asserts that:
+    * Changing a **mapped** attribute (``sn``, ``givenName``) produces an event.
+    * Changing an **unmapped** attribute (``description``, ``department``,
+      ``physicalDeliveryOfficeName``) does **not** produce an event.
+
+    The latter category covers the same DirSync filtering mechanism that
+    prevents frequently-changing operational attributes — ``lastLogon``,
+    ``logonCount``, ``badPwdCount``, ``pwdLastSet`` etc. — from flooding the
+    event pipeline, since those attributes are never included in the request
+    set.
+    """
+    settings = Settings()
+    ldap_connection = context["user_context"]["dataloader"].ldapapi.ldap_connection
+    dirsync_connection = configure_dirsync_connection(settings)
+
+    try:
+        event_generator = DirSyncEventGenerator(
+            sessionmaker=context["sessionmaker"],
+            settings=settings,
+            graphql_client=context["graphql_client"],
+            dirsync_connection=dirsync_connection,
+        )
+
+        # Initial full sync — consume built-in accounts
+        _, cookie = await event_generator.poll(None)
+
+        # Create a test user and consume the creation event
+        await add_samba_user(
+            ldap_connection, ldap_org_unit, "Filter Test", "filter_test"
+        )
+        user_uuid = await lookup_uuid(
+            ldap_connection, ldap_org_unit, "filter_test",
+            settings.ldap_unique_id_field,
+        )
+        user_dn = combine_dn_strings(["CN=Filter Test"] + ldap_org_unit)
+
+        changed, cookie = await event_generator.poll(cookie)
+        assert changed == {user_uuid}
+
+        # -- Mapped attributes: changes SHOULD produce events ----------------
+
+        # 'sn' is listed in _ldap_attributes_ of the default Employee mapping
+        await ldap_connection.ldap_modify(
+            user_dn, {"sn": [(ldap3.MODIFY_REPLACE, ["NewSurname"])]}
+        )
+        changed, cookie = await event_generator.poll(cookie)
+        assert changed == {user_uuid}, "Mapped attribute 'sn' must trigger an event"
+
+        # 'givenName' is also in _ldap_attributes_
+        await ldap_connection.ldap_modify(
+            user_dn, {"givenName": [(ldap3.MODIFY_REPLACE, ["NewGiven"])]}
+        )
+        changed, cookie = await event_generator.poll(cookie)
+        assert changed == {user_uuid}, "Mapped attribute 'givenName' must trigger an event"
+
+        # -- Unmapped attributes: changes must NOT produce events ------------
+
+        # 'description' is a general-purpose field not in any mapping
+        await ldap_connection.ldap_modify(
+            user_dn, {"description": [(ldap3.MODIFY_REPLACE, ["Some note"])]}
+        )
+        changed, cookie = await event_generator.poll(cookie)
+        assert changed == set(), "Unmapped attribute 'description' must not trigger an event"
+
+        # 'department' is a common AD attribute that we don't map
+        await ldap_connection.ldap_modify(
+            user_dn, {"department": [(ldap3.MODIFY_REPLACE, ["Engineering"])]}
+        )
+        changed, cookie = await event_generator.poll(cookie)
+        assert changed == set(), "Unmapped attribute 'department' must not trigger an event"
+
+        # 'physicalDeliveryOfficeName' (office location) is likewise unmapped
+        await ldap_connection.ldap_modify(
+            user_dn,
+            {"physicalDeliveryOfficeName": [(ldap3.MODIFY_REPLACE, ["Room 101"])]},
+        )
+        changed, cookie = await event_generator.poll(cookie)
+        assert changed == set(), (
+            "Unmapped attribute 'physicalDeliveryOfficeName' must not trigger an event"
+        )
+
+        # -- Sanity: a mapped attribute still works after the unmapped ones --
+        await ldap_connection.ldap_modify(
+            user_dn, {"sn": [(ldap3.MODIFY_REPLACE, ["FinalSurname"])]}
+        )
+        changed, cookie = await event_generator.poll(cookie)
+        assert changed == {user_uuid}, (
+            "Mapped attribute must still trigger after unmapped changes"
+        )
+    finally:
+        dirsync_connection.unbind()
+
+
 async def get_dirsync_state(
     sessionmaker: async_sessionmaker[AsyncSession],
 ) -> DirSyncState | None:
