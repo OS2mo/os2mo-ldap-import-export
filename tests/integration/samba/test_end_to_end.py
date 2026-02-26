@@ -18,7 +18,6 @@ from mo_ldap_import_export.utils import combine_dn_strings
 from .conftest import SAMBA_ENVVARS
 
 
-@pytest.mark.samba_test
 @pytest.mark.integration_test
 @pytest.mark.envvar(
     {

@@ -51,7 +51,6 @@ async def lookup_uuid(ldap_connection, ldap_org_unit, sam, unique_id_field):
     return LDAPUUID(one(response)["attributes"][unique_id_field])
 
 
-@pytest.mark.samba_test
 @pytest.mark.integration_test
 @pytest.mark.envvar(
     {
@@ -127,7 +126,6 @@ async def test_poll(
         dirsync_connection.unbind()
 
 
-@pytest.mark.samba_test
 @pytest.mark.integration_test
 @pytest.mark.envvar(
     {
@@ -259,7 +257,6 @@ async def get_dirsync_cookie(
         return state.cookie
 
 
-@pytest.mark.samba_test
 @pytest.mark.integration_test
 @pytest.mark.envvar(
     {
