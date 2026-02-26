@@ -14,6 +14,7 @@ SAMBA_HOST = "samba"
 SAMBA_PORT = 389
 
 
+@pytest.mark.samba_test
 @pytest.mark.integration_test
 @pytest.mark.envvar(SAMBA_ENVVARS)
 @pytest.mark.usefixtures("test_client")
@@ -87,6 +88,7 @@ def _dirsync_dns(conn: ldap3.Connection) -> set[str]:
     return dns
 
 
+@pytest.mark.samba_test
 @pytest.mark.integration_test
 @pytest.mark.envvar(SAMBA_ENVVARS)
 @pytest.mark.usefixtures("test_client")
