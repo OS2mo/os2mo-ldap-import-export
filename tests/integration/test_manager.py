@@ -33,7 +33,7 @@ from mo_ldap_import_export.types import EmployeeUUID
         "CONVERSION_MAPPING": json.dumps(
             {
                 "mo2ldap": """
-                    {% set mo_employee_engagement = load_mo_primary_engagement(uuid) %}
+                    {% set mo_employee_engagement = load_mo_primary_engagement({"employee": {"uuids": [uuid]}, "from_date": None, "to_date": None}) %}
 
                     {% set mo_manager_uuid = None %}
                     {% if mo_employee_engagement %}

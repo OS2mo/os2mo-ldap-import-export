@@ -292,7 +292,7 @@ async def test_terminate_on_update(
         "CONVERSION_MAPPING": json.dumps(
             {
                 "mo2ldap": """
-                {% set mo_employee_address = load_mo_address(uuid, "EmailEmployee") %}
+                {% set mo_employee_address = load_mo_address({"employee": {"uuids": [uuid]}, "address_type": {"user_keys": ["EmailEmployee"]}, "from_date": None, "to_date": None}) %}
                 {{
                     {
                         "mail": mo_employee_address.value if mo_employee_address else [],

@@ -372,9 +372,13 @@ get_or_create_job_function_uuid = partial(
 
 async def load_primary_engagement(
     moapi: MOAPI,
-    employee_uuid: UUID,
+    filter: dict[str, Any],
     return_terminated: bool = False,
 ) -> Engagement | None:
+    engagement_filter = parse_obj_as(EngagementFilter, filter)
+    assert isinstance(engagement_filter.employee, EmployeeFilter)
+    assert engagement_filter.employee.uuids is not None
+    employee_uuid = one(engagement_filter.employee.uuids)
     primary_engagement_uuid = await get_primary_engagement(
         moapi.graphql_client, EmployeeUUID(employee_uuid)
     )
@@ -403,14 +407,11 @@ async def load_primary_engagement(
 
 async def load_primary_engagement_recalculated(
     moapi: MOAPI,
-    employee_uuid: UUID,
+    filter: dict[str, Any],
     exclude_engagement_types: set[UUID] | None = None,
 ) -> Engagement | None:
     # NOTE: This function is a reimplementation of the calculate primary integration
-    engagement_filter = EngagementFilter(
-        employee=EmployeeFilter(uuids=[employee_uuid], from_date=None, to_date=None),
-        to_date=None,
-    )
+    engagement_filter = parse_obj_as(EngagementFilter, filter)
     result = await moapi.graphql_client.read_engagements(engagement_filter)
     engagements = [
         read_engagement_to_engagement(validity)
@@ -423,6 +424,9 @@ async def load_primary_engagement_recalculated(
             e for e in engagements if e.engagement_type not in exclude_engagement_types
         ]
 
+    assert isinstance(engagement_filter.employee, EmployeeFilter)
+    assert engagement_filter.employee.uuids is not None
+    employee_uuid = one(engagement_filter.employee.uuids)
     if not engagements:
         logger.info(
             "Could not find any engagements for employee", employee_uuid=employee_uuid
@@ -477,26 +481,51 @@ async def load_primary_engagement_recalculated(
     )
 
 
-async def load_engagement(moapi: MOAPI, uuid: UUID) -> Engagement | None:
-    fetched_engagement = await moapi.load_mo_engagement(uuid, start=None, end=None)
+async def load_engagement(moapi: MOAPI, filter: dict[str, Any]) -> Engagement | None:
+    engagement_filter = parse_obj_as(EngagementFilter, filter)
+    result = await moapi.graphql_client.read_engagements(engagement_filter)
+    if not result.objects:
+        logger.info("Could not find engagement", filter=engagement_filter)
+        return None
+    validities = list(flatten_validities(result))
+    validity = extract_current_or_latest_validity(validities)
+    if validity is None:  # pragma: no cover
+        logger.error("No active validities on engagement", filter=engagement_filter)
+        raise RequeueException("No active validities on engagement")
+    fetched_engagement = await moapi.load_mo_engagement(
+        validity.uuid, start=None, end=None
+    )
     if fetched_engagement is None:  # pragma: no cover
-        logger.error("Unable to load mo engagement", uuid=uuid)
+        logger.error("Unable to load mo engagement", uuid=validity.uuid)
         raise RequeueException("Unable to load mo engagement")
     delete = get_delete_flag(fetched_engagement)
     if delete:
-        logger.debug("Engagement is terminated", uuid=uuid)
+        logger.debug("Engagement is terminated", uuid=validity.uuid)
         return None
     return fetched_engagement
 
 
-async def load_org_unit(moapi: MOAPI, uuid: UUID) -> OrganisationUnit | None:
-    fetched_org_unit = await moapi.load_mo_org_unit(uuid, current_objects_only=False)
+async def load_org_unit(
+    moapi: MOAPI, filter: dict[str, Any]
+) -> OrganisationUnit | None:
+    org_unit_filter = parse_obj_as(OrganisationUnitFilter, filter)
+    result = await moapi.graphql_client.read_org_unit_uuid(org_unit_filter)
+    if not result.objects:
+        logger.info("Could not find org unit", filter=org_unit_filter)
+        return None
+    obj = only(result.objects)
+    if obj is None:  # pragma: no cover
+        logger.error("Multiple org units found", filter=org_unit_filter)
+        raise RequeueException("Multiple org units found")
+    fetched_org_unit = await moapi.load_mo_org_unit(
+        obj.uuid, current_objects_only=False
+    )
     if fetched_org_unit is None:  # pragma: no cover
-        logger.error("Unable to load mo org_unit", uuid=uuid)
+        logger.error("Unable to load mo org_unit", uuid=obj.uuid)
         raise RequeueException("Unable to load mo org_unit")
     delete = get_delete_flag(fetched_org_unit)
     if delete:
-        logger.debug("Org unit is terminated", uuid=uuid)
+        logger.debug("Org unit is terminated", uuid=obj.uuid)
         return None
     return fetched_org_unit
 
@@ -562,43 +591,27 @@ async def create_mo_it_user(moapi: MOAPI, it_user: dict[str, Any]) -> ITUser | N
     )
 
 
-async def load_address(
-    moapi: MOAPI, employee_uuid: UUID, address_type_user_key: str
-) -> Address | None:
-    result = await moapi.graphql_client.read_filtered_addresses(
-        AddressFilter(
-            employee=EmployeeFilter(uuids=[employee_uuid]),
-            address_type=ClassFilter(user_keys=[address_type_user_key]),
-            from_date=None,
-            to_date=None,
-        )
-    )
+async def load_address(moapi: MOAPI, filter: dict[str, Any]) -> Address | None:
+    address_filter = parse_obj_as(AddressFilter, filter)
+    result = await moapi.graphql_client.read_filtered_addresses(address_filter)
     if not result.objects:
-        logger.info(
-            "Could not find employee address",
-            employee_uuid=employee_uuid,
-            address_type_user_key=address_type_user_key,
-        )
+        logger.info("Could not find address", filter=address_filter)
         return None
     # Flatten all validities to a list
     validities = list(flatten_validities(result))
     validity = extract_current_or_latest_validity(validities)
     if validity is None:  # pragma: no cover
-        logger.error(
-            "No active validities on employee address",
-            employee_uuid=employee_uuid,
-            address_type_user_key=address_type_user_key,
-        )
-        raise RequeueException("No active validities on employee address")
+        logger.error("No active validities on address", filter=address_filter)
+        raise RequeueException("No active validities on address")
     fetched_address = await moapi.load_mo_address(
         validity.uuid, current_objects_only=False
     )
     if fetched_address is None:  # pragma: no cover
-        logger.error("Unable to load employee address", uuid=validity.uuid)
-        raise RequeueException("Unable to load employee address")
+        logger.error("Unable to load address", uuid=validity.uuid)
+        raise RequeueException("Unable to load address")
     delete = get_delete_flag(fetched_address)
     if delete:
-        logger.debug("Employee address is terminated", uuid=validity.uuid)
+        logger.debug("Address is terminated", uuid=validity.uuid)
         return None
     return fetched_address
 
@@ -813,7 +826,10 @@ async def get_legacy_manager_for_org_unit(
 async def get_legacy_manager_person_uuid(
     moapi: MOAPI, uuid: EmployeeUUID, primary_manager_responsibility: UUID | None = None
 ) -> UUID | None:
-    primary_engagement = await load_primary_engagement(moapi, uuid)
+    primary_engagement = await load_primary_engagement(
+        moapi,
+        {"employee": {"uuids": [uuid]}, "from_date": None, "to_date": None},
+    )
     if primary_engagement is None:
         return None
 
@@ -825,7 +841,10 @@ async def get_legacy_manager_person_uuid(
         if manager_uuid != uuid:
             return manager_uuid
 
-        org_unit = await load_org_unit(moapi, manager_org_unit)
+        org_unit = await load_org_unit(
+            moapi,
+            {"uuids": [manager_org_unit], "from_date": None, "to_date": None},
+        )
         if org_unit is None or org_unit.parent is None:
             return manager_uuid
         manager_org_unit = OrgUnitUUID(org_unit.parent)

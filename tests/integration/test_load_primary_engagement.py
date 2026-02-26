@@ -59,14 +59,14 @@ async def test_load_primary_engagement(
 
     result = await load_primary_engagement(
         dataloader.moapi,
-        mo_person,
+        {"employee": {"uuids": [mo_person]}, "from_date": None, "to_date": None},
         return_terminated=False,
     )
     assert result is None
 
     result = await load_primary_engagement(
         dataloader.moapi,
-        mo_person,
+        {"employee": {"uuids": [mo_person]}, "from_date": None, "to_date": None},
         return_terminated=True,
     )
     assert result is not None
@@ -119,7 +119,10 @@ async def test_load_primary_engagement_deleted(
 
     dataloader = context["user_context"]["dataloader"]
     with capture_logs() as cap_logs:
-        result = await load_primary_engagement(dataloader.moapi, mo_person)
+        result = await load_primary_engagement(
+            dataloader.moapi,
+            {"employee": {"uuids": [mo_person]}, "from_date": None, "to_date": None},
+        )
     assert result is None
 
     events = [m["event"] for m in cap_logs]
@@ -161,7 +164,10 @@ async def test_load_primary_engagement_no_primary(
 
     dataloader = context["user_context"]["dataloader"]
     with pytest.raises(AcknowledgeException) as exc_info:
-        await load_primary_engagement(dataloader.moapi, mo_person)
+        await load_primary_engagement(
+            dataloader.moapi,
+            {"employee": {"uuids": [mo_person]}, "from_date": None, "to_date": None},
+        )
     assert "Waiting for primary engagement to be decided" in str(exc_info.value)
 
 
@@ -210,7 +216,10 @@ async def test_load_primary_engagement_multiple_primaries(
 
     dataloader = context["user_context"]["dataloader"]
     with pytest.raises(AcknowledgeException) as exc_info:
-        await load_primary_engagement(dataloader.moapi, mo_person)
+        await load_primary_engagement(
+            dataloader.moapi,
+            {"employee": {"uuids": [mo_person]}, "from_date": None, "to_date": None},
+        )
     assert "Waiting for multiple primary engagements to be resolved" in str(
         exc_info.value
     )
@@ -228,7 +237,14 @@ async def test_load_primary_engagement_invalid_employee(context: Context) -> Non
     dataloader = context["user_context"]["dataloader"]
     employee_uuid = uuid4()
     with capture_logs() as cap_logs:
-        result = await load_primary_engagement(dataloader.moapi, employee_uuid)
+        result = await load_primary_engagement(
+            dataloader.moapi,
+            {
+                "employee": {"uuids": [employee_uuid]},
+                "from_date": None,
+                "to_date": None,
+            },
+        )
     assert result is None
 
     events = [m["event"] for m in cap_logs]
@@ -251,7 +267,10 @@ async def test_load_primary_engagement_no_engagement(
 ) -> None:
     dataloader = context["user_context"]["dataloader"]
     with capture_logs() as cap_logs:
-        result = await load_primary_engagement(dataloader.moapi, mo_person)
+        result = await load_primary_engagement(
+            dataloader.moapi,
+            {"employee": {"uuids": [mo_person]}, "from_date": None, "to_date": None},
+        )
     assert result is None
 
     events = [m["event"] for m in cap_logs]

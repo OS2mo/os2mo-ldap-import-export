@@ -59,7 +59,13 @@ async def test_load_primary_engagement(
 
     dataloader = context["user_context"]["dataloader"]
 
-    result = await load_primary_engagement_recalculated(dataloader.moapi, mo_person)
+    result = await load_primary_engagement_recalculated(
+        dataloader.moapi,
+        {
+            "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+            "to_date": None,
+        },
+    )
     assert result is None
 
 
@@ -97,7 +103,13 @@ async def test_load_primary_engagement_deleted(
 
     dataloader = context["user_context"]["dataloader"]
     with capture_logs() as cap_logs:
-        result = await load_primary_engagement_recalculated(dataloader.moapi, mo_person)
+        result = await load_primary_engagement_recalculated(
+            dataloader.moapi,
+            {
+                "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+                "to_date": None,
+            },
+        )
     assert result is None
 
     events = [m["event"] for m in cap_logs]
@@ -135,7 +147,13 @@ async def test_load_primary_engagement_no_primary(
     )
 
     dataloader = context["user_context"]["dataloader"]
-    result = await load_primary_engagement_recalculated(dataloader.moapi, mo_person)
+    result = await load_primary_engagement_recalculated(
+        dataloader.moapi,
+        {
+            "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+            "to_date": None,
+        },
+    )
     assert result is not None
     assert result.fraction == 50
 
@@ -183,7 +201,13 @@ async def test_load_primary_engagement_multiple_primaries(
     )
 
     dataloader = context["user_context"]["dataloader"]
-    result = await load_primary_engagement_recalculated(dataloader.moapi, mo_person)
+    result = await load_primary_engagement_recalculated(
+        dataloader.moapi,
+        {
+            "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+            "to_date": None,
+        },
+    )
     assert result is not None
     assert result.user_key == "engagement1"
     assert result.fraction == 100
@@ -202,7 +226,15 @@ async def test_load_primary_engagement_invalid_employee(context: Context) -> Non
     employee_uuid = uuid4()
     with capture_logs() as cap_logs:
         result = await load_primary_engagement_recalculated(
-            dataloader.moapi, employee_uuid
+            dataloader.moapi,
+            {
+                "employee": {
+                    "uuids": [employee_uuid],
+                    "from_date": None,
+                    "to_date": None,
+                },
+                "to_date": None,
+            },
         )
     assert result is None
 
@@ -223,7 +255,13 @@ async def test_load_primary_engagement_no_engagement(
 ) -> None:
     dataloader = context["user_context"]["dataloader"]
     with capture_logs() as cap_logs:
-        result = await load_primary_engagement_recalculated(dataloader.moapi, mo_person)
+        result = await load_primary_engagement_recalculated(
+            dataloader.moapi,
+            {
+                "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+                "to_date": None,
+            },
+        )
     assert result is None
 
     events = [m["event"] for m in cap_logs]
@@ -275,7 +313,13 @@ async def test_load_primary_engagement_explicitly_primary(
     )
 
     dataloader = context["user_context"]["dataloader"]
-    result = await load_primary_engagement_recalculated(dataloader.moapi, mo_person)
+    result = await load_primary_engagement_recalculated(
+        dataloader.moapi,
+        {
+            "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+            "to_date": None,
+        },
+    )
     assert result is not None
     assert result.primary == explicitly_primary
 
@@ -325,7 +369,13 @@ async def test_load_primary_engagement_multiple_explicitly_primary(
 
     dataloader = context["user_context"]["dataloader"]
     with pytest.raises(ValueError) as exc_info:
-        await load_primary_engagement_recalculated(dataloader.moapi, mo_person)
+        await load_primary_engagement_recalculated(
+            dataloader.moapi,
+            {
+                "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+                "to_date": None,
+            },
+        )
     assert str(exc_info.value) == "Multiple explicitly primary engagements found"
 
 
@@ -373,7 +423,13 @@ async def test_load_primary_engagement_non_integer_user_key(
     )
 
     dataloader = context["user_context"]["dataloader"]
-    result = await load_primary_engagement_recalculated(dataloader.moapi, mo_person)
+    result = await load_primary_engagement_recalculated(
+        dataloader.moapi,
+        {
+            "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+            "to_date": None,
+        },
+    )
     assert result is not None
     assert result.user_key == "10"
 
@@ -422,7 +478,13 @@ async def test_load_primary_engagement_user_key_distinction(
     )
 
     dataloader = context["user_context"]["dataloader"]
-    result = await load_primary_engagement_recalculated(dataloader.moapi, mo_person)
+    result = await load_primary_engagement_recalculated(
+        dataloader.moapi,
+        {
+            "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+            "to_date": None,
+        },
+    )
     assert result is not None
     assert result.user_key == "10"
 
@@ -476,7 +538,10 @@ async def test_load_primary_engagement_exclude_engagement_types(
     # Exclude 'Praktikant' engagement type, 'Ansat' should be primary
     result = await load_primary_engagement_recalculated(
         dataloader.moapi,
-        mo_person,
+        {
+            "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+            "to_date": None,
+        },
         exclude_engagement_types={praktikant},
     )
     assert result is not None
@@ -485,7 +550,10 @@ async def test_load_primary_engagement_exclude_engagement_types(
     # Exclude 'Ansat' engagement type, 'Praktikant' should be primary
     result = await load_primary_engagement_recalculated(
         dataloader.moapi,
-        mo_person,
+        {
+            "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+            "to_date": None,
+        },
         exclude_engagement_types={ansat},
     )
     assert result is not None
@@ -494,7 +562,10 @@ async def test_load_primary_engagement_exclude_engagement_types(
     # Exclude both 'Ansat' and 'Praktikant', no primary should be found
     result = await load_primary_engagement_recalculated(
         dataloader.moapi,
-        mo_person,
+        {
+            "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+            "to_date": None,
+        },
         exclude_engagement_types={
             ansat,
             praktikant,
@@ -505,7 +576,10 @@ async def test_load_primary_engagement_exclude_engagement_types(
     # No exclusion, 'ansat' should be primary (default sorting by user_key)
     result = await load_primary_engagement_recalculated(
         dataloader.moapi,
-        mo_person,
+        {
+            "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+            "to_date": None,
+        },
     )
     assert result is not None
     assert result.user_key == "10"
@@ -573,7 +647,13 @@ async def test_load_primary_engagement_prefers_current(
     )
 
     dataloader = context["user_context"]["dataloader"]
-    result = await load_primary_engagement_recalculated(dataloader.moapi, mo_person)
+    result = await load_primary_engagement_recalculated(
+        dataloader.moapi,
+        {
+            "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+            "to_date": None,
+        },
+    )
     assert result is not None
     assert result.user_key == "current"
 
@@ -626,7 +706,13 @@ async def test_load_primary_engagement_prefers_future(
     )
 
     dataloader = context["user_context"]["dataloader"]
-    result = await load_primary_engagement_recalculated(dataloader.moapi, mo_person)
+    result = await load_primary_engagement_recalculated(
+        dataloader.moapi,
+        {
+            "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+            "to_date": None,
+        },
+    )
     assert result is not None
     assert result.user_key == "future"
 
@@ -679,7 +765,13 @@ async def test_load_primary_engagement_prefers_less_futuristic(
     )
 
     dataloader = context["user_context"]["dataloader"]
-    result = await load_primary_engagement_recalculated(dataloader.moapi, mo_person)
+    result = await load_primary_engagement_recalculated(
+        dataloader.moapi,
+        {
+            "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+            "to_date": None,
+        },
+    )
     assert result is not None
     assert result.user_key == "future"
 
@@ -731,7 +823,12 @@ async def test_load_primary_engagement_prefers_future_validity(
     # Check that both are excluded and thus we cannot find a primary
     dataloader = context["user_context"]["dataloader"]
     result = await load_primary_engagement_recalculated(
-        dataloader.moapi, mo_person, exclude_engagement_types={praktikant}
+        dataloader.moapi,
+        {
+            "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+            "to_date": None,
+        },
+        exclude_engagement_types={praktikant},
     )
     assert result is None
 
@@ -768,7 +865,12 @@ async def test_load_primary_engagement_prefers_future_validity(
     # Check that we see the future validity and get the primary
     dataloader = context["user_context"]["dataloader"]
     result = await load_primary_engagement_recalculated(
-        dataloader.moapi, mo_person, exclude_engagement_types={praktikant}
+        dataloader.moapi,
+        {
+            "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+            "to_date": None,
+        },
+        exclude_engagement_types={praktikant},
     )
     assert result is not None
     assert result.user_key == "engagement1"
@@ -820,7 +922,13 @@ async def test_load_primary_engagement_prefers_now_over_past(
 
     # Check that both are excluded and thus we cannot find a primary
     dataloader = context["user_context"]["dataloader"]
-    result = await load_primary_engagement_recalculated(dataloader.moapi, mo_person)
+    result = await load_primary_engagement_recalculated(
+        dataloader.moapi,
+        {
+            "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+            "to_date": None,
+        },
+    )
     assert result is not None
     assert result.user_key == "engagement1"
 
@@ -877,6 +985,12 @@ async def test_load_primary_engagement_ending_today(
     )
 
     dataloader = context["user_context"]["dataloader"]
-    result = await load_primary_engagement_recalculated(dataloader.moapi, mo_person)
+    result = await load_primary_engagement_recalculated(
+        dataloader.moapi,
+        {
+            "employee": {"uuids": [mo_person], "from_date": None, "to_date": None},
+            "to_date": None,
+        },
+    )
     assert result is not None
     assert result.user_key == "eng_today"

@@ -48,7 +48,15 @@ async def test_load_address(
     )
 
     dataloader = context["user_context"]["dataloader"]
-    result = await load_address(dataloader.moapi, mo_person, "EmailEmployee")
+    result = await load_address(
+        dataloader.moapi,
+        {
+            "employee": {"uuids": [mo_person]},
+            "address_type": {"user_keys": ["EmailEmployee"]},
+            "from_date": None,
+            "to_date": None,
+        },
+    )
     assert result is not None
     assert result.dict(exclude_none=True) == {
         "visibility": public,
@@ -92,14 +100,22 @@ async def test_load_address_deleted(
 
     dataloader = context["user_context"]["dataloader"]
     with capture_logs() as cap_logs:
-        result = await load_address(dataloader.moapi, mo_person, "EmailEmployee")
+        result = await load_address(
+            dataloader.moapi,
+            {
+                "employee": {"uuids": [mo_person]},
+                "address_type": {"user_keys": ["EmailEmployee"]},
+                "from_date": None,
+                "to_date": None,
+            },
+        )
     assert result is None
 
     events = [m["event"] for m in cap_logs]
     assert events == [
         "Loading address",
         "Returning delete=True because to_date <= current_date",
-        "Employee address is terminated",
+        "Address is terminated",
     ]
 
 
@@ -142,7 +158,15 @@ async def test_load_address_multiple_matches(
 
     dataloader = context["user_context"]["dataloader"]
     with pytest.raises(ValueError) as exc_info:
-        await load_address(dataloader.moapi, mo_person, "EmailEmployee")
+        await load_address(
+            dataloader.moapi,
+            {
+                "employee": {"uuids": [mo_person]},
+                "address_type": {"user_keys": ["EmailEmployee"]},
+                "from_date": None,
+                "to_date": None,
+            },
+        )
     assert "Expected exactly one item in iterable" in str(exc_info.value)
 
 
@@ -158,11 +182,19 @@ async def test_load_address_invalid_employee(context: Context) -> None:
     dataloader = context["user_context"]["dataloader"]
     employee_uuid = uuid4()
     with capture_logs() as cap_logs:
-        result = await load_address(dataloader.moapi, employee_uuid, "EmailEmployee")
+        result = await load_address(
+            dataloader.moapi,
+            {
+                "employee": {"uuids": [employee_uuid]},
+                "address_type": {"user_keys": ["EmailEmployee"]},
+                "from_date": None,
+                "to_date": None,
+            },
+        )
     assert result is None
 
     events = [m["event"] for m in cap_logs]
-    assert events == ["Could not find employee address"]
+    assert events == ["Could not find address"]
 
 
 @pytest.mark.integration_test
@@ -179,12 +211,18 @@ async def test_load_address_invalid_address_type(
     dataloader = context["user_context"]["dataloader"]
     with capture_logs() as cap_logs:
         result = await load_address(
-            dataloader.moapi, mo_person, "non_existing_it_system"
+            dataloader.moapi,
+            {
+                "employee": {"uuids": [mo_person]},
+                "address_type": {"user_keys": ["non_existing_it_system"]},
+                "from_date": None,
+                "to_date": None,
+            },
         )
     assert result is None
 
     events = [m["event"] for m in cap_logs]
-    assert events == ["Could not find employee address"]
+    assert events == ["Could not find address"]
 
 
 @pytest.mark.integration_test
@@ -198,11 +236,19 @@ async def test_load_address_invalid_address_type(
 async def test_load_address_no_address(context: Context, mo_person: UUID) -> None:
     dataloader = context["user_context"]["dataloader"]
     with capture_logs() as cap_logs:
-        result = await load_address(dataloader.moapi, mo_person, "EmailEmployee")
+        result = await load_address(
+            dataloader.moapi,
+            {
+                "employee": {"uuids": [mo_person]},
+                "address_type": {"user_keys": ["EmailEmployee"]},
+                "from_date": None,
+                "to_date": None,
+            },
+        )
     assert result is None
 
     events = [m["event"] for m in cap_logs]
-    assert events == ["Could not find employee address"]
+    assert events == ["Could not find address"]
 
 
 @pytest.mark.integration_test
@@ -244,6 +290,14 @@ async def test_load_address_multiple_disjoint_matches(
     )
 
     dataloader = context["user_context"]["dataloader"]
-    result = await load_address(dataloader.moapi, mo_person, "EmailEmployee")
+    result = await load_address(
+        dataloader.moapi,
+        {
+            "employee": {"uuids": [mo_person]},
+            "address_type": {"user_keys": ["EmailEmployee"]},
+            "from_date": None,
+            "to_date": None,
+        },
+    )
     assert result is not None
     assert result.value == "address2@example.com"
