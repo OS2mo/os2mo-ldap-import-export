@@ -91,6 +91,9 @@ Integration-test:
         LDAP_ADMIN_PASSWORD: "AdminPassword123"
         LDAP_CONFIG_PASSWORD: "ConfigPassword123"
         LDAP_LOG_LEVEL: 512
+        # Use non-standard port to avoid conflict with Samba AD DC on 389
+        LDAP_PORT: 2389
+        LDAPS_PORT: 2636
     # NOTE: this service should be kept synchronised with the one in docker-compose.yml!
     - name: smblds/smblds:latest
       alias: samba
@@ -98,15 +101,14 @@ Integration-test:
   variables:
     FASTRAMQPI__JSON_LOGS: False
     PYTEST_ADDOPTS: "-m 'integration_test'"
-    # LDAP: Connection
-    LDAP_CONTROLLERS: '[{"host": "ldap"}]'
+    # LDAP: Connection (OpenLDAP on non-standard port)
+    LDAP_CONTROLLERS: '[{"host": "ldap", "port": 2389}]'
     LDAP_DOMAIN: "magenta.dk"
     LDAP_USER: "cn=admin,dc=magenta,dc=dk"
     LDAP_PASSWORD: "AdminPassword123"
     LDAP_AUTH_METHOD: "simple"
     LDAP_DIALECT: "Standard"
-    # Samba AD DC: these are job-level so they are inherited by the samba
-    # service container (per-service variables require newer GitLab runners).
+    # Samba AD DC provisioning
     REALM: "MAGENTA.DK"
     DOMAIN: "MAGENTA"
     ADMINPASS: "AdminPassword123!"
