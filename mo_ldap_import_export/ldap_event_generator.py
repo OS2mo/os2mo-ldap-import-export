@@ -287,15 +287,10 @@ class LDAPEventGenerator(AbstractAsyncContextManager):
             # that is getting spammed is stuck.
             if uuids != set(last_run.uuids) or timestamp != last_run.datetime:
                 await publish_uuids(self.settings, self.graphql_client, list(uuids))
-
-            # No events found means no timestamps, which means we reuse the old last_run
-            if timestamp == last_run.datetime:
-                return
-
-            # Update last run time in database
-            last_run.uuids = list(uuids)
-            last_run.datetime = timestamp
-            session.add(last_run)
+                # Update last run state in database
+                last_run.uuids = list(uuids)
+                last_run.datetime = timestamp
+                session.add(last_run)
 
 
 def datetime_to_ldap_timestamp(dt: datetime) -> str:
