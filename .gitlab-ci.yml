@@ -94,12 +94,6 @@ Integration-test:
     # NOTE: this service should be kept synchronised with the one in docker-compose.yml!
     - name: smblds/smblds:latest
       alias: samba
-      variables:
-        REALM: "MAGENTA.DK"
-        DOMAIN: "MAGENTA"
-        ADMINPASS: "AdminPassword123!"
-        INSECURE_LDAP: "true"
-        INSECURE_PASSWORDSETTINGS: "true"
   parallel: 8
   variables:
     FASTRAMQPI__JSON_LOGS: False
@@ -111,5 +105,12 @@ Integration-test:
     LDAP_PASSWORD: "AdminPassword123"
     LDAP_AUTH_METHOD: "simple"
     LDAP_DIALECT: "Standard"
+    # Samba AD DC: these are job-level so they are inherited by the samba
+    # service container (per-service variables require newer GitLab runners).
+    REALM: "MAGENTA.DK"
+    DOMAIN: "MAGENTA"
+    ADMINPASS: "AdminPassword123!"
+    INSECURE_LDAP: "true"
+    INSECURE_PASSWORDSETTINGS: "true"
   rules:
     - <<: *if-merge-request
