@@ -141,6 +141,7 @@ async def test_import_single_entity_engagement_edit(
     mapping.terminate = None
     mapping.ldap_attributes = ["some_attr"]
     mapping.get_fields.return_value = {
+        "uuid": None,
         "user_key": None,
         "org_unit": None,
         "person": None,
