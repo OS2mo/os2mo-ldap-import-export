@@ -538,7 +538,7 @@ class SyncTool:
             dry_run: If True, simulates the import without making changes.
         """
         dn = ldap_object.dn
-        logger.info("Loading object", mo_class=mapping.as_mo_class(), dn=dn)
+        logger.info("Loading object", mo_class=mapping.as_mo_class())
 
         # Ensure that the object has the required attributes
         required_attributes = set(mapping.ldap_attributes) - {"dn"}
@@ -555,7 +555,6 @@ class SyncTool:
         logger.info(
             "Loaded object",
             mo_class=mapping.as_mo_class(),
-            dn=dn,
             loaded_object=loaded_object,
         )
 
@@ -579,7 +578,7 @@ class SyncTool:
                 "uuid", mapping.uuid, context
             )
         except SkipObject:
-            logger.info("Skipping object", field="uuid", dn=dn)
+            logger.info("Skipping object", field="uuid")
             return
 
         uuid = UUID(uuid_str) if uuid_str else None
@@ -595,7 +594,7 @@ class SyncTool:
                     "terminate", mapping.terminate, context
                 )
             except SkipObject:  # pragma: no cover
-                logger.info("Skipping object", field="terminate", dn=dn)
+                logger.info("Skipping object", field="terminate")
                 return
             if termination_date_str:
                 # The template's termination date can be any timezone, but MO
@@ -618,15 +617,13 @@ class SyncTool:
                     mapping, context, mo_class, termination_date
                 )
             except SkipObject:
-                logger.info("Skipping object", dn=dn)
+                logger.info("Skipping object")
                 return
             except SingleDayIntervalException:  # pragma: no cover
-                logger.info("SingleDayIntervalException", dn=dn)
+                logger.info("SingleDayIntervalException")
                 return
 
-            logger.info(
-                "Importing object", verb=Verb.CREATE, obj=converted_object, dn=dn
-            )
+            logger.info("Importing object", verb=Verb.CREATE, obj=converted_object)
             if dry_run:
                 raise DryRunException(
                     "Would have uploaded changes to MO",
@@ -648,7 +645,7 @@ class SyncTool:
                 logger.info(message)
                 return
             termination = Termination(mo_class=mo_class, at=termination_date, uuid=uuid)
-            logger.info("Importing object", verb=Verb.TERMINATE, obj=termination, dn=dn)
+            logger.info("Importing object", verb=Verb.TERMINATE, obj=termination)
             if dry_run:
                 raise DryRunException(
                     "Would have uploaded changes to MO",
@@ -671,10 +668,10 @@ class SyncTool:
                 return
             raise
         except SkipObject:  # pragma: no cover
-            logger.info("Skipping object", dn=dn)
+            logger.info("Skipping object")
             return
         except SingleDayIntervalException:
-            logger.info("SingleDayIntervalException", dn=dn)
+            logger.info("SingleDayIntervalException")
             return
 
         mo_attributes = set(mapping.get_fields().keys())
@@ -719,7 +716,7 @@ class SyncTool:
         mo_object_dict_to_upload.update(update_values)
         obj = mo_class(**mo_object_dict_to_upload)
 
-        logger.info("Importing object", verb=Verb.EDIT, obj=obj, dn=dn)
+        logger.info("Importing object", verb=Verb.EDIT, obj=obj)
         if dry_run:
             raise DryRunException(
                 "Would have uploaded changes to MO",
