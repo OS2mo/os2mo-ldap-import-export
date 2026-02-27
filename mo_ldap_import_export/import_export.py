@@ -676,32 +676,26 @@ class SyncTool:
             return
 
         logger.info("Preparing to edit object", converted_object=converted_object)
-        mo_attributes = set(mapping.get_fields().keys())
 
         # Convert our objects to dicts
+        assert converted_object.uuid == mo_object.uuid
         mo_object_dict_to_upload = mo_object.dict()
-        # Only the *intersection* of attribute names from
-        # mo_object_dict_to_upload and converted_mo_object_dict are used.
         converted_mo_object_dict = converted_object.dict()
 
-        # Update the existing MO object with the converted values
-        # NOTE: UUID cannot be updated as it is used to decide what we update
-        # NOTE: objectClass is removed as it is an LDAP implemenation detail
-        mo_attributes -= {"uuid", "objectClass"}
+        mo_attributes = set(mapping.get_fields().keys())
         # NOTE: Validity is handled explicitly by the integration -- it is not
         # possible to template it.
-        mo_attributes |= {"validity"}
-        # Only copy over keys that exist in both sets
-        mo_attributes &= converted_mo_object_dict.keys()
+        mo_attributes.add("validity")
 
         update_values = {
             key: converted_mo_object_dict[key]
             for key in mo_attributes
             # Only include values that actually need to be updated
             if mo_object_dict_to_upload[key] != converted_mo_object_dict[key]
-            # And don't include the sentinel UNSET value as a literal value
-            and converted_mo_object_dict[key] != models.UNSET
         }
+        assert all(
+            value != models.UNSET for value in update_values.values()
+        ), update_values
         # If an object is identical to the one already there, it does not need
         # to be uploaded.
         if not update_values:
