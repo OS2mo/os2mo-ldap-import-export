@@ -585,6 +585,7 @@ class SyncTool:
 
         mo_class = mapping.as_mo_class()
         mo_object = await self.fetch_uuid_object(uuid, mo_class) if uuid else None
+        logger.info("MO object", mo_object=mo_object)
 
         # Decide termination date
         termination_date = None
@@ -674,6 +675,7 @@ class SyncTool:
             logger.info("SingleDayIntervalException")
             return
 
+        logger.info("Preparing to edit object", converted_object=converted_object)
         mo_attributes = set(mapping.get_fields().keys())
 
         # Convert our objects to dicts
