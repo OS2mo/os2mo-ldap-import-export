@@ -685,7 +685,9 @@ class SyncTool:
         mo_attributes = set(mapping.get_fields().keys())
         # NOTE: Validity is handled explicitly by the integration -- it is not
         # possible to template it.
-        mo_attributes.add("validity")
+        # Only added when the model actually has the field (Employee does not).
+        if "validity" in converted_mo_object_dict:
+            mo_attributes.add("validity")
 
         update_values = {
             key: converted_mo_object_dict[key]
