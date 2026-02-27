@@ -3,9 +3,11 @@
 """Shared fixtures for Samba AD integration tests."""
 
 import json
+import time
 from collections.abc import AsyncIterator
 from contextlib import suppress
 
+import ldap3
 import pytest
 from ldap3 import NO_ATTRIBUTES
 
@@ -51,6 +53,35 @@ SAMBA_BASELINE_USER_DNS: set[DN] = {
     "CN=Read-only Domain Controllers,CN=Users,DC=magenta,DC=dk",
     "CN=Schema Admins,CN=Users,DC=magenta,DC=dk",
 }
+
+
+@pytest.fixture(autouse=True, scope="session")
+def wait_for_samba() -> None:
+    """Wait for Samba AD DC to finish provisioning before running tests.
+
+    The smblds container needs time to run ``samba-tool domain provision``
+    after starting. The LDAP port may accept connections before provisioning
+    completes, but authenticated binds will fail with ``invalidCredentials``
+    until the domain is fully set up.
+    """
+    server = ldap3.Server("samba", port=389, get_info=ldap3.NONE)
+    last_exc: Exception | None = None
+    for _ in range(60):
+        try:
+            conn = ldap3.Connection(
+                server,
+                user=SAMBA_ENVVARS["LDAP_USER"],
+                password=SAMBA_ENVVARS["LDAP_PASSWORD"],
+                authentication=ldap3.SIMPLE,
+                auto_bind=True,
+                raise_exceptions=True,
+            )
+            conn.unbind()
+            return
+        except Exception as exc:
+            last_exc = exc
+            time.sleep(2)
+    pytest.fail(f"Samba AD DC not ready after 120s: {last_exc}")
 
 
 @pytest.fixture
