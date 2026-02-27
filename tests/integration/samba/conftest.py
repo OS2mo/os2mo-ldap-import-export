@@ -9,12 +9,14 @@ from contextlib import suppress
 
 import ldap3
 import pytest
+from fastramqpi.main import FastRAMQPI
 from ldap3 import NO_ATTRIBUTES
 
 from mo_ldap_import_export.config import Settings
 from mo_ldap_import_export.ldap import _paged_search
 from mo_ldap_import_export.ldap import configure_ldap_connection
 from mo_ldap_import_export.ldapapi import LDAPAPI
+from mo_ldap_import_export.main import create_fastramqpi
 from mo_ldap_import_export.types import DN
 
 SAMBA_ENVVARS = {
@@ -55,6 +57,21 @@ SAMBA_BASELINE_USER_DNS: set[DN] = {
 }
 
 
+# Settings constructor kwargs for Samba — these use init_settings priority which
+# overrides both /var/run/config.yaml and environment variables.
+SAMBA_SETTINGS_KWARGS = {
+    "ldap_controllers": [{"host": "samba", "port": 389}],
+    "ldap_domain": SAMBA_ENVVARS["LDAP_DOMAIN"],
+    "ldap_user": SAMBA_ENVVARS["LDAP_USER"],
+    "ldap_password": SAMBA_ENVVARS["LDAP_PASSWORD"],
+    "ldap_search_base": SAMBA_ENVVARS["LDAP_SEARCH_BASE"],
+    "ldap_ous_to_search_in": ["CN=Users"],
+    "ldap_ou_for_new_users": SAMBA_ENVVARS["LDAP_OU_FOR_NEW_USERS"],
+    "ldap_dialect": "AD",
+    "ldap_auth_method": "simple",
+}
+
+
 @pytest.fixture(autouse=True, scope="session")
 def wait_for_samba() -> None:
     """Wait for Samba AD DC to finish provisioning before running tests.
@@ -86,9 +103,21 @@ def wait_for_samba() -> None:
 
 @pytest.fixture
 async def write_ldap_api(load_marked_envvars: None) -> LDAPAPI:
-    """Override to point to Samba AD DC instead of OpenLDAP."""
-    settings = Settings()
+    """Override to point to Samba AD DC instead of OpenLDAP.
+
+    The Samba connection settings are passed as constructor kwargs so they take
+    the highest priority in Pydantic's settings source chain — overriding both
+    ``/var/run/config.yaml`` (created by the CI template with OpenLDAP
+    credentials) and environment variables.
+    """
+    settings = Settings(**SAMBA_SETTINGS_KWARGS)
     return LDAPAPI(settings, configure_ldap_connection(settings))
+
+
+@pytest.fixture
+async def fastramqpi(load_marked_envvars: None) -> FastRAMQPI:
+    """Override to pass Samba settings as init kwargs (highest priority)."""
+    return create_fastramqpi(**SAMBA_SETTINGS_KWARGS)
 
 
 @pytest.fixture

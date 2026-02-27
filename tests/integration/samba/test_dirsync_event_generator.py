@@ -22,6 +22,7 @@ from mo_ldap_import_export.types import LDAPUUID
 from mo_ldap_import_export.utils import combine_dn_strings
 
 from .conftest import SAMBA_ENVVARS
+from .conftest import SAMBA_SETTINGS_KWARGS
 
 
 async def add_samba_user(ldap_connection, ldap_org_unit, cn, sam):
@@ -73,7 +74,7 @@ async def test_poll(
     4. Modify an unmapped attribute - incremental poll ignores it
     5. No changes - incremental poll returns empty set
     """
-    settings = Settings()
+    settings = Settings(**SAMBA_SETTINGS_KWARGS)
     ldap_connection = context["user_context"]["dataloader"].ldapapi.ldap_connection
     dirsync_connection = configure_dirsync_connection(settings)
 
@@ -156,7 +157,7 @@ async def test_poll_attribute_filtering(
     event pipeline, since those attributes are never included in the request
     set.
     """
-    settings = Settings()
+    settings = Settings(**SAMBA_SETTINGS_KWARGS)
     ldap_connection = context["user_context"]["dataloader"].ldapapi.ldap_connection
     dirsync_connection = configure_dirsync_connection(settings)
 
@@ -278,7 +279,7 @@ async def test_generate_events(
     3. When no changes have occurred, no events are published
     4. Cookie is always updated in the database
     """
-    settings = Settings()
+    settings = Settings(**SAMBA_SETTINGS_KWARGS)
     sessionmaker = context["sessionmaker"]
     graphql_client: GraphQLClient = context["graphql_client"]
     ldap_connection = context["user_context"]["dataloader"].ldapapi.ldap_connection
