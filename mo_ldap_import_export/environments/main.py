@@ -20,6 +20,7 @@ from uuid import UUID
 from uuid import uuid4
 
 import structlog
+from fastramqpi.ramqp.depends import handle_exclusively_decorator
 from jinja2 import Environment
 from jinja2 import StrictUndefined
 from jinja2 import TemplateRuntimeError
@@ -339,6 +340,12 @@ async def _create_facet_class(
     )
 
 
+@handle_exclusively_decorator(
+    key=lambda moapi, class_user_key, facet_user_key, default: (
+        class_user_key,
+        facet_user_key,
+    )
+)
 async def _get_or_create_facet_class(
     moapi: MOAPI,
     class_user_key: str,
