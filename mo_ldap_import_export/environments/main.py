@@ -341,7 +341,7 @@ async def _create_facet_class(
 
 
 @handle_exclusively_decorator(
-    key=lambda moapi, class_user_key, facet_user_key, default: (
+    key=lambda moapi, class_user_key, facet_user_key, default=None: (
         class_user_key,
         facet_user_key,
     )
