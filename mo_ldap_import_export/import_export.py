@@ -640,7 +640,7 @@ class SyncTool:
             return
 
         # Handle terminations
-        if termination_date is not None:
+        if mapping.do_actually_terminate and termination_date is not None:
             # Asked to terminate, but uuid template did not return an uuid, i.e.
             # there was no object to actually terminate, so we just skip it.
             if not uuid:  # pragma: no cover

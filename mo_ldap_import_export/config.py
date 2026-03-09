@@ -120,6 +120,11 @@ class LDAP2MOMapping(MappingBaseModel):
     terminate: str | None = Field(
         alias="_terminate_", description="The date at which to terminate the object"
     )
+    do_actually_terminate: bool = Field(
+        default=True,
+        alias="_do_actually_terminate_",
+        description="Use terminate for edits, as well as terminates, if false never run the terminate mutator",
+    )
     ldap_attributes: list[str] = Field(
         ...,
         alias="_ldap_attributes_",
@@ -131,7 +136,13 @@ class LDAP2MOMapping(MappingBaseModel):
 
     def get_fields(self) -> dict[str, Any]:
         return self.dict(
-            exclude={"objectClass", "import_to_mo", "terminate", "ldap_attributes"},
+            exclude={
+                "objectClass",
+                "import_to_mo",
+                "terminate",
+                "do_actually_terminate",
+                "ldap_attributes",
+            },
             exclude_unset=True,
         )
 
@@ -207,6 +218,7 @@ class LDAP2MOMapping(MappingBaseModel):
             "objectClass",
             "import_to_mo",
             "terminate",
+            "do_actually_terminate",
             "ldap_attributes",
         }
         # Disallow validity until we introduce a consistent behavior in the future
