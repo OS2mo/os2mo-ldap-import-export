@@ -831,6 +831,37 @@ async def get_legacy_manager_person_uuid(
         manager_org_unit = OrgUnitUUID(org_unit.parent)
 
 
+async def get_engagement_interval(
+    graphql_client: GraphQLClient,
+    engagement_uuid: UUID,
+) -> tuple[datetime | None, datetime | None]:
+    result = await graphql_client.read_engagements(
+        EngagementFilter(
+            uuids=[engagement_uuid],
+            from_date=None,
+            to_date=None,
+        )
+    )
+    if not result.objects:
+        return None, None
+
+    tzmin = datetime.min.replace(tzinfo=MO_TZ)
+    tzmax = datetime.max.replace(tzinfo=MO_TZ)
+
+    # Flatten all validities to a list
+    validities = list(flatten_validities(result))
+    if not validities:
+        return None, None
+
+    start_dates, end_dates = unzip(
+        (validity.validity.from_ or tzmin, validity.validity.to or tzmax)
+        for validity in validities
+    )
+    startdate = min(start_dates)
+    enddate = max(end_dates)
+    return startdate, enddate
+
+
 async def get_employment_interval(
     graphql_client: GraphQLClient,
     employee_uuid: UUID,
@@ -1220,6 +1251,7 @@ def construct_globals_dict(
         "get_engagement_uuid": partial(get_engagement_uuid, graphql_client),
         "get_org_unit_uuid": partial(get_org_unit_uuid, graphql_client),
         "get_employment_interval": partial(get_employment_interval, graphql_client),
+        "get_engagement_interval": partial(get_engagement_interval, graphql_client),
         "get_manager_person_uuid": partial(get_manager_person_uuid, graphql_client),
         "get_person_dn": partial(get_person_dn, dataloader),
         "mo_itusers": partial(mo_itusers, graphql_client),
