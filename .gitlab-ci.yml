@@ -91,11 +91,14 @@ Integration-test:
         LDAP_ADMIN_PASSWORD: "AdminPassword123"
         LDAP_CONFIG_PASSWORD: "ConfigPassword123"
         LDAP_LOG_LEVEL: 512
+        # Use non-standard port to avoid conflict with Samba AD DC on 389
+        LDAP_PORT: 2389
+        LDAPS_PORT: 2636
   parallel: 8
   variables:
     FASTRAMQPI__JSON_LOGS: False
-    # LDAP: Connection
-    LDAP_CONTROLLERS: '[{"host": "ldap"}]'
+    # LDAP: Connection (OpenLDAP on non-standard port)
+    LDAP_CONTROLLERS: '[{"host": "ldap", "port": 2389}]'
     LDAP_DOMAIN: "magenta.dk"
     LDAP_USER: "cn=admin,dc=magenta,dc=dk"
     LDAP_PASSWORD: "AdminPassword123"
