@@ -24,10 +24,17 @@ from mo_ldap_import_export.types import DN
 
 # Baseline DNs in a fresh Samba AD DC provisioned for MAGENTA.DK.
 # Any DN found that is NOT in this set was created by a test.
-SAMBA_BASELINE_DNS: set[DN] = {
+# Split into users (objectClass=user) and non-users for use in tests and cleanup.
+SAMBA_BASELINE_USER_DNS: set[DN] = {
+    "CN=Administrator,CN=Users,DC=magenta,DC=dk",
+    "CN=DC,OU=Domain Controllers,DC=magenta,DC=dk",
+    "CN=Guest,CN=Users,DC=magenta,DC=dk",
+    "CN=krbtgt,CN=Users,DC=magenta,DC=dk",
+}
+
+SAMBA_BASELINE_NON_USER_DNS: set[DN] = {
     "CN=Account Operators,CN=Builtin,DC=magenta,DC=dk",
     "CN=AdminSDHolder,CN=System,DC=magenta,DC=dk",
-    "CN=Administrator,CN=Users,DC=magenta,DC=dk",
     "CN=Administrators,CN=Builtin,DC=magenta,DC=dk",
     "CN=Allowed RODC Password Replication Group,CN=Users,DC=magenta,DC=dk",
     "CN=Backup Operators,CN=Builtin,DC=magenta,DC=dk",
@@ -38,7 +45,6 @@ SAMBA_BASELINE_DNS: set[DN] = {
     "CN=ComPartitions,CN=System,DC=magenta,DC=dk",
     "CN=Computers,DC=magenta,DC=dk",
     "CN=Cryptographic Operators,CN=Builtin,DC=magenta,DC=dk",
-    "CN=DC,OU=Domain Controllers,DC=magenta,DC=dk",
     "CN=Denied RODC Password Replication Group,CN=Users,DC=magenta,DC=dk",
     "CN=Distributed COM Users,CN=Builtin,DC=magenta,DC=dk",
     "CN=DnsAdmins,CN=Users,DC=magenta,DC=dk",
@@ -55,7 +61,6 @@ SAMBA_BASELINE_DNS: set[DN] = {
     "CN=FileLinks,CN=System,DC=magenta,DC=dk",
     "CN=ForeignSecurityPrincipals,DC=magenta,DC=dk",
     "CN=Group Policy Creator Owners,CN=Users,DC=magenta,DC=dk",
-    "CN=Guest,CN=Users,DC=magenta,DC=dk",
     "CN=Guests,CN=Builtin,DC=magenta,DC=dk",
     "CN=IIS_IUSRS,CN=Builtin,DC=magenta,DC=dk",
     "CN=Incoming Forest Trust Builders,CN=Builtin,DC=magenta,DC=dk",
@@ -96,11 +101,12 @@ SAMBA_BASELINE_DNS: set[DN] = {
     "CN=Users,DC=magenta,DC=dk",
     "CN=VolumeTable,CN=FileLinks,CN=System,DC=magenta,DC=dk",
     "CN=Windows Authorization Access Group,CN=Builtin,DC=magenta,DC=dk",
-    "CN=krbtgt,CN=Users,DC=magenta,DC=dk",
     "CN={31B2F340-016D-11D2-945F-00C04FB984F9},CN=Policies,CN=System,DC=magenta,DC=dk",
     "CN={6AC1786C-016F-11D2-945F-00C04FB984F9},CN=Policies,CN=System,DC=magenta,DC=dk",
     "OU=Domain Controllers,DC=magenta,DC=dk",
 }
+
+SAMBA_BASELINE_DNS = SAMBA_BASELINE_USER_DNS | SAMBA_BASELINE_NON_USER_DNS
 
 
 @pytest.fixture
