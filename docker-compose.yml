@@ -20,6 +20,36 @@ services:
   #    ports:
   #      - "389:389"
 
+  # Samba AD DC is an Active Directory compatible LDAP server
+  # It is to test Microsoft Active Directory specific behavior, such as DirSync
+  samba:
+    # Most Samba AD DC OCI images require privileged as Samba AD imitates the entire
+    # Active Directory setup including a full Kerberos server, DNS server and ACL.
+    # The ACL in particular is problematic as it stores it using Windows-style ACLs in
+    # the `security.*` xattr namespace on the file-system which requires `CAP_SYS_ADMIN`
+    # or equivalent root-level access.
+    #
+    # The below Samba AD DC OCI image is specifically designed to avoid all of this, by
+    # stripping everything but the domain controller itself. As such it does not provide
+    # Kerberos, DNS, ACL, Group policies or similar, only the domain controller itself.
+    #
+    # For more information, see: https://github.com/smblds/smblds-container
+    #
+    # Should the need for a more full-fledged Samba AD DC with Kerberos et al be needed,
+    # consider migration to: https://github.com/samba-in-kubernetes/samba-container,
+    # assuming the project eventually looses the need to use privileged.
+    container_name: samba
+    image: smblds/smblds:latest
+    hostname: dc
+    environment:
+      DOMAIN: "MAGENTA"
+      REALM: "MAGENTA.DK"
+      ADMINPASS: "AdminPassword123"
+      INSECURE_LDAP: "true"
+      INSECURE_PASSWORDSETTINGS: "true"
+    networks:
+      - default
+
   mo-init:
     image: magentaaps/os2mo-init:5
     environment:
