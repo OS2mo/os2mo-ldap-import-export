@@ -82,6 +82,28 @@ Integration-test:
     - .integration-test:mo
   services:
     - !reference [.integration-test:mo, services]
+    # NOTE: These services should be kept synchronised with docker-compose.yml
+    - name: smblds/smblds:latest
+      alias: samba
+      # GitLab CI does not support `hostname:` on services, but Samba AD DC
+      # uses the container hostname during domain provisioning. Without a
+      # stable hostname, Samba provisions with a random container ID which
+      # can cause DirSync and other AD operations to hang.
+      # We override the entrypoint to inject `--host-name=dc` into the
+      # `samba-tool domain provision` command, since containers cannot call
+      # `sethostname(2)` without CAP_SYS_ADMIN.
+      entrypoint:
+        [
+          "sh",
+          "-c",
+          "sed -i 's/--adminpass/--host-name=dc --adminpass/' /entrypoint.sh && exec /entrypoint.sh",
+        ]
+      variables:
+        DOMAIN: "MAGENTA"
+        REALM: "MAGENTA.DK"
+        ADMINPASS: "AdminPassword123"
+        INSECURE_LDAP: "true"
+        INSECURE_PASSWORDSETTINGS: "true"
     - name: osixia/openldap:1.5.0
       alias: ldap
       command: ["--copy-service", "--loglevel", "debug"]

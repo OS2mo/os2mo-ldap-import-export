@@ -194,17 +194,16 @@ def configure_ldap_connection(settings: Settings) -> Connection:
     return connection
 
 
-async def ldap_healthcheck(context: dict | Context) -> bool:
-    """LDAP connection Healthcheck.
+async def connection_healthcheck(ldap_connection: Connection) -> bool:
+    """Check whether a connection is healthy.
 
     Args:
-        context: To lookup ldap_connection in.
+        ldap_connection: The connection to check.
 
     Returns:
-        Whether the LDAP connection is OK.
+        Whether the connection is OK.
     """
     logger.debug("Running LDAP healthcheck")
-    ldap_connection = context["user_context"]["ldap_connection"]
     if ldap_connection.bound is False:
         logger.warning("LDAP connection not bound")
         return False
@@ -244,6 +243,19 @@ async def ldap_healthcheck(context: dict | Context) -> bool:
         return False
     logger.debug("LDAP healthcheck passed", response=response, result=result)
     return True
+
+
+async def ldap_healthcheck(context: dict | Context) -> bool:
+    """LDAP connection Healthcheck.
+
+    Args:
+        context: To lookup ldap_connection in.
+
+    Returns:
+        Whether the LDAP connection is OK.
+    """
+    ldap_connection = context["user_context"]["ldap_connection"]
+    return await connection_healthcheck(ldap_connection)
 
 
 class LDAPConnection:
