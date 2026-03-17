@@ -43,6 +43,7 @@ from .converters import LdapConverter
 from .customer_specific_checks import ExportChecks
 from .database import Base
 from .dataloaders import DataLoader
+from .dirsync_event_generator import DirSyncEventGenerator
 from .environments.main import construct_environment
 from .exceptions import NoObjectsReturnedException
 from .exceptions import ReadOnlyException
@@ -340,11 +341,11 @@ def construct_ldap_event_generator(
     sessionmaker: Any,
     graphql_client: GraphQLClient,
     ldap_connection: Connection,
-) -> LDAPEventGenerator:
+) -> LDAPEventGenerator | DirSyncEventGenerator:
     """Construct the appropriate LDAP event generator based on settings.
 
     Returns:
-        An LDAPEventGenerator instance.
+        An LDAPEventGenerator or DirSyncEventGenerator instance.
     """
     match settings.ldap_event_generator_type:
         case LDAPEventGeneratorEnum.MODIFYTIMESTAMP:
@@ -353,6 +354,12 @@ def construct_ldap_event_generator(
                 settings=settings,
                 graphql_client=graphql_client,
                 ldap_connection=ldap_connection,
+            )
+        case LDAPEventGeneratorEnum.DIRSYNC:
+            return DirSyncEventGenerator(
+                sessionmaker=sessionmaker,
+                settings=settings,
+                graphql_client=graphql_client,
             )
 
 
