@@ -317,6 +317,11 @@ class AuthBackendEnum(str, Enum):
     SIMPLE = "simple"
 
 
+class LDAPEventGeneratorEnum(str, Enum):
+    MODIFYTIMESTAMP = "modifytimestamp"
+    DIRSYNC = "dirsync"
+
+
 def yaml_config_settings_source(settings: BaseSettings) -> dict[str, Any]:
     # https://docs.pydantic.dev/1.10/usage/settings/#adding-sources
     encoding = settings.__config__.env_file_encoding
@@ -366,6 +371,11 @@ class Settings(BaseSettings):
 
     listen_to_changes_in_ldap: bool = Field(
         True, description="Whether to write to MO, when changes in LDAP are registered"
+    )
+
+    ldap_event_generator_type: LDAPEventGeneratorEnum = Field(
+        LDAPEventGeneratorEnum.MODIFYTIMESTAMP,
+        description="Strategy for detecting LDAP changes",
     )
 
     mo_uuids_to_ignore: list[UUID] = Field(
@@ -469,6 +479,17 @@ class Settings(BaseSettings):
         description="Name of the attribute that holds the server-assigned unique identifier. `objectGUID` on Active Directory and `entryUUID` on most standard LDAP implementations (per RFC4530).",
     )
     ldap_user_objectclass: str = Field("", description="Object class for users")
+
+    @root_validator
+    def check_dirsync_requires_ad(cls, values: dict[str, Any]) -> dict[str, Any]:
+        """Ensure that the dirsync event generator is only used with the AD dialect."""
+        event_generator = values.get("ldap_event_generator_type")
+        dialect = values.get("ldap_dialect")
+        if event_generator == LDAPEventGeneratorEnum.DIRSYNC and dialect != "AD":
+            raise ValueError(
+                "The 'dirsync' event generator can only be used with the 'AD' dialect"
+            )
+        return values
 
     @root_validator
     def set_dialect_defaults(cls, values: dict[str, Any]) -> dict[str, Any]:
