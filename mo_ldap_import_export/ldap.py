@@ -107,6 +107,23 @@ def get_client_strategy():
     return SAFE_RESTARTABLE
 
 
+def get_auth_kwargs(settings: Settings) -> dict[str, Any]:
+    """Build the authentication kwargs for an LDAP connection from settings."""
+    match settings.ldap_auth_method:
+        case AuthBackendEnum.NTLM:
+            return {
+                "user": settings.ldap_domain + "\\" + settings.ldap_user,
+                "authentication": NTLM,
+            }
+        case AuthBackendEnum.SIMPLE:
+            return {
+                "user": settings.ldap_user,
+                "authentication": SIMPLE,
+            }
+        case _:
+            raise ValueError("Unknown authentication backend")
+
+
 def construct_server_pool(settings: Settings) -> ServerPool:
     servers = [construct_server(c) for c in settings.ldap_controllers]
     # Pick the next server to use at random, retry connections 10 times,
@@ -162,25 +179,11 @@ def configure_ldap_connection(settings: Settings) -> Connection:
         "read_only": settings.ldap_read_only,
     }
     set_config_parameter("RESPONSE_WAITING_TIMEOUT", settings.ldap_response_timeout)
-    match settings.ldap_auth_method:
-        case AuthBackendEnum.NTLM:
-            connection_kwargs.update(
-                {
-                    "user": settings.ldap_domain + "\\" + settings.ldap_user,
-                    "authentication": NTLM,
-                }
-            )
-        case AuthBackendEnum.SIMPLE:
-            connection_kwargs.update(
-                {
-                    "user": settings.ldap_user,
-                    "authentication": SIMPLE,
-                }
-            )
-        case _:
-            # Turn off the alarm
-            signal.alarm(0)
-            raise ValueError("Unknown authentication backend")
+    try:
+        connection_kwargs.update(get_auth_kwargs(settings))
+    except ValueError:
+        signal.alarm(0)
+        raise
 
     try:
         connection = Connection(**connection_kwargs)
