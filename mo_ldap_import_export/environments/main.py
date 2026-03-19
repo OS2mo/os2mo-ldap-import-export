@@ -477,6 +477,38 @@ async def load_primary_engagement_recalculated(
     )
 
 
+async def load_mo_employee_engagements(
+    moapi: MOAPI,
+    employee_uuid: UUID,
+) -> list[Engagement]:
+    engagement_filter = EngagementFilter(
+        employee=EmployeeFilter(uuids=[employee_uuid], from_date=None, to_date=None),
+        from_date=None,
+        to_date=None,
+    )
+    result = await moapi.graphql_client.read_engagements(engagement_filter)
+    return [
+        read_engagement_to_engagement(validity)
+        for engagement in result.objects
+        for validity in engagement.validities
+    ]
+
+
+async def get_claimed_engagement_uuids(
+    moapi: MOAPI,
+    employee_uuid: UUID,
+    itsystem_user_key: str,
+) -> list[UUID]:
+    itsystem_uuid_str = await moapi.get_it_system_uuid(itsystem_user_key)
+    if itsystem_uuid_str is None:
+        return []
+    itsystem_uuid = UUID(itsystem_uuid_str)
+    it_users = await moapi.load_mo_employee_it_users(employee_uuid, itsystem_uuid)
+    return [
+        eng_uuid for ituser in it_users for eng_uuid in ituser.engagements
+    ]
+
+
 async def load_engagement(moapi: MOAPI, uuid: UUID) -> Engagement | None:
     fetched_engagement = await moapi.load_mo_engagement(uuid, start=None, end=None)
     if fetched_engagement is None:  # pragma: no cover
@@ -1199,6 +1231,8 @@ def construct_globals_dict(
             load_primary_engagement_recalculated, moapi
         ),
         "load_mo_engagement": partial(load_engagement, moapi),
+        "load_mo_employee_engagements": partial(load_mo_employee_engagements, moapi),
+        "get_claimed_engagement_uuids": partial(get_claimed_engagement_uuids, moapi),
         "load_mo_org_unit": partial(load_org_unit, moapi),
         "load_mo_it_user": partial(load_it_user, moapi),
         "load_mo_address": partial(load_address, moapi),

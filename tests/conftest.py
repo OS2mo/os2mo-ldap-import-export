@@ -46,9 +46,32 @@ def pytest_collection_modifyitems(items: list[Item]) -> None:
         if item.get_closest_marker("integration_test"):
             # MUST prepend to replicate auto-use fixtures coming first
             item.fixturenames[:0] = [  # type: ignore[attr-defined]
+                "empty_db",  # Ensure MO database is clean between integration tests
                 "integration_test_environment_variables",  # Default mapping for integration tests
                 "purge_ldap",  # Ensure LDAP is cleaned between integration tests
             ]
+
+
+@pytest.fixture
+async def empty_db() -> AsyncIterator[None]:
+    """Ensure MO database is clean between integration tests.
+
+    On first invocation: takes a snapshot of the initial (mo-init seeded) state.
+    On subsequent invocations: restores to that snapshot, then takes a new one.
+    Restore is done in setup (not teardown) to avoid interfering with other
+    fixtures' teardown (e.g. FastRAMQPI's graphql_events_quick_retry).
+    """
+    async with AsyncClient(base_url="http://mo:5000") as client:
+        if empty_db.snapshot_taken:
+            r = await client.post("/testing/database/restore")
+            r.raise_for_status()
+        r = await client.post("/testing/database/snapshot")
+        r.raise_for_status()
+        empty_db.snapshot_taken = True
+    yield
+
+
+empty_db.snapshot_taken = False  # type: ignore[attr-defined]
 
 
 @pytest.fixture
