@@ -51,7 +51,7 @@ def pytest_collection_modifyitems(items: list[Item]) -> None:
         if item.get_closest_marker("integration_test"):
             # MUST prepend to replicate auto-use fixtures coming first
             item.fixturenames[:0] = [  # type: ignore[attr-defined]
-                "empty_db",  # Ensure MO database is clean before snapshot
+                "empty_db",  # Ensure MO database is clean between integration tests
                 "seed_mo_db",  # Recreate facets, classes, and IT systems
                 "integration_test_environment_variables",  # Default mapping for integration tests
                 "purge_ldap",  # Ensure LDAP is cleaned between integration tests
