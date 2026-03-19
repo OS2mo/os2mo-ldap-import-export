@@ -39,13 +39,20 @@ from mo_ldap_import_export.types import DN
 from tests.graphql_mocker import GraphQLMocker
 
 
+@pytest.hookimpl(trylast=True)
 def pytest_collection_modifyitems(items: list[Item]) -> None:
-    """Fake `autouse` fixtures for tests marked with integration_test."""
+    """Fake `autouse` fixtures for tests marked with integration_test.
+
+    Uses trylast=True so it runs after the fastramqpi plugin's hook, ensuring
+    prepended fixtures (like empty_db) end up before the plugin's fixtures.
+    """
 
     for item in items:
         if item.get_closest_marker("integration_test"):
             # MUST prepend to replicate auto-use fixtures coming first
             item.fixturenames[:0] = [  # type: ignore[attr-defined]
+                "empty_db",  # Ensure MO database is clean before snapshot
+                "seed_mo_db",  # Recreate facets, classes, and IT systems
                 "integration_test_environment_variables",  # Default mapping for integration tests
                 "purge_ldap",  # Ensure LDAP is cleaned between integration tests
             ]
@@ -163,6 +170,16 @@ def integration_test_environment_variables(monkeypatch: pytest.MonkeyPatch) -> N
         },
     }
     monkeypatch.setenv("CONVERSION_MAPPING", json.dumps(mapping))
+
+
+@pytest.fixture
+async def empty_db(
+    unauthenticated_mo_client: AsyncClient,
+) -> AsyncIterator[None]:
+    """Ensure tests are running on an empty database."""
+    r = await unauthenticated_mo_client.post("/testing/database/purge")
+    r.raise_for_status()
+    yield
 
 
 @pytest.fixture
