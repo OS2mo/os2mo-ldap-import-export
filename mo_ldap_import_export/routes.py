@@ -18,11 +18,13 @@ from typing import Any
 from typing import cast
 from uuid import UUID
 
+import httpx
 import structlog
 from fastapi import APIRouter
 from fastapi import Body
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
+from fastramqpi.events import Event
 from ldap3 import Connection
 from ldap3.protocol import oid
 from more_itertools import always_iterable
@@ -1122,6 +1124,49 @@ def construct_router(settings: Settings) -> APIRouter:
             ),
         )
         return update_result.uuid
+
+    @router.get("/Inspect/mo_to_ldap/{identifier}/all", status_code=200, tags=["LDAP"])
+    async def mo_to_ldap_dry_run_all(
+        identifier: str,
+        graphql_client: depends.GraphQLClient,
+        settings: depends.Settings,
+        start_at: UUID | None = None,
+    ) -> Any:
+        mapping = settings.conversion_mapping.mo_to_ldap.get(identifier)
+        if mapping is None:
+            raise HTTPException(
+                status_code=404, detail=f"Unknown identifier: {identifier}"
+            )
+
+        if mapping.routing_key == "person":
+            persons = await graphql_client.read_person_uuid()
+            uuids = [person.uuid for person in persons.objects]
+        elif mapping.routing_key == "ituser":
+            itusers = await graphql_client.read_ituser_uuid(ITUserFilter())
+            uuids = [ituser.uuid for ituser in itusers.objects]
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Unsupported routing key: {mapping.routing_key}",
+            )
+        uuids = sorted(uuids)
+        if start_at is not None:
+            uuids = [uuid for uuid in uuids if uuid > start_at]
+
+        async with httpx.AsyncClient(
+            base_url="http://127.0.0.1:8000", timeout=300
+        ) as client:
+            with open(f"/tmp/mo_to_ldap_{identifier}.jsonl", "w") as fout:
+                for uuid in uuids:
+                    response = await client.post(
+                        f"/mo_to_ldap/{identifier}",
+                        params={"dry_run": True},
+                        json=jsonable_encoder(Event(subject=uuid, priority=0)),
+                    )
+                    row = {"uuid": str(uuid), **response.json()}
+                    fout.write(json.dumps(row) + "\n")
+                    fout.flush()
+        return "OK"
 
     return router
 
