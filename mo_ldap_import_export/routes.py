@@ -226,7 +226,7 @@ async def load_all_current_it_users(
 
 async def get_non_existing_unique_ldap_uuids(
     settings: Settings, ldap_connection: Connection, dataloader: DataLoader
-) -> list[dict[str, Any]]:
+) -> set[ITUserUUID]:
     it_system_uuid = await dataloader.moapi.get_ldap_it_system_uuid()
     if not it_system_uuid:
         raise ObjectGUIDITSystemNotFound("Could not find it_system_uuid")
@@ -239,23 +239,15 @@ async def get_non_existing_unique_ldap_uuids(
 
     unique_ldap_uuids = set(map(LDAPUUID, map(one, ldap_uuid_attributes)))
 
-    # Fetch all MO IT-users and extract all LDAP UUIDs
+    # Fetch all MO IT-users and find those with LDAP UUIDs not in LDAP
     all_it_users = await load_all_current_it_users(
         dataloader.moapi.graphql_client, UUID(it_system_uuid)
     )
-    it_user_map = {UUID(it_user["user_key"]): it_user for it_user in all_it_users}
-    unique_ituser_ldap_uuids = set(it_user_map.keys())
-
-    # Find LDAP UUIDs in MO, which do not exist in LDAP
-    ituser_uuids_not_in_ldap = unique_ituser_ldap_uuids - unique_ldap_uuids
-    return [
-        {
-            "ituser_uuid": it_user_map[uuid]["uuid"],
-            "mo_employee_uuid": it_user_map[uuid]["employee_uuid"],
-            "unique_ldap_uuid": it_user_map[uuid]["user_key"],
-        }
-        for uuid in ituser_uuids_not_in_ldap
-    ]
+    return {
+        ITUserUUID(it_user["uuid"])
+        for it_user in all_it_users
+        if UUID(it_user["user_key"]) not in unique_ldap_uuids
+    }
 
 
 async def get_non_existing_account_names(
@@ -598,18 +590,6 @@ def construct_router(settings: Settings) -> APIRouter:
         ldap_objects = await dataloader.find_mo_employee_dn(uuid=uuid, attributes=set())
         return {obj.dn for obj in ldap_objects}
 
-    @router.get(
-        "/Inspect/non_existing_unique_ldap_uuids", status_code=202, tags=["LDAP"]
-    )
-    async def get_non_existing_unique_ldap_uuids_from_MO(
-        settings: depends.Settings,
-        ldap_connection: depends.Connection,
-        dataloader: depends.DataLoader,
-    ) -> list[dict[str, Any]]:
-        return await get_non_existing_unique_ldap_uuids(
-            settings, ldap_connection, dataloader
-        )
-
     @router.post(
         "/fixup/delete_non_existing_unique_ldap_uuids", status_code=200, tags=["LDAP"]
     )
@@ -618,16 +598,18 @@ def construct_router(settings: Settings) -> APIRouter:
         ldap_connection: depends.Connection,
         dataloader: depends.DataLoader,
         at: datetime,
+        dry_run: bool = True,
     ) -> set[ITUserUUID]:
         bad_itusers = await get_non_existing_unique_ldap_uuids(
             settings, ldap_connection, dataloader
         )
+        if dry_run:
+            return bad_itusers
 
         deleted = set()
-        for entry in bad_itusers:
-            ituser_uuid = entry["ituser_uuid"]
+        for uuid in bad_itusers:
             result = await dataloader.moapi.graphql_client.ituser_terminate(
-                ITUserTerminateInput(uuid=UUID(ituser_uuid), to=at)
+                ITUserTerminateInput(uuid=UUID(str(uuid)), to=at)
             )
             deleted.add(cast(ITUserUUID, result.uuid))
         return deleted

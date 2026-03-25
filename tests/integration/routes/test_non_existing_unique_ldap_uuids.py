@@ -93,22 +93,7 @@ async def test_non_existing_unique_ldap_uuids(
         ).uuid
         ituser_map[aduuid] = ituser_uuid
 
-    # Expect to see the non-existing ADUUIDs in our result
-    expected_result = [
-        {
-            "ituser_uuid": str(ituser_uuid),
-            "mo_employee_uuid": str(mo_person),
-            "unique_ldap_uuid": str(aduuid),
-        }
-        for aduuid, ituser_uuid in ituser_map.items()
-    ]
-    response = await test_client.get("/Inspect/non_existing_unique_ldap_uuids")
-    assert response.status_code == 202
-    assert sorted(response.json(), key=lambda x: x["ituser_uuid"]) == sorted(
-        expected_result, key=lambda x: x["ituser_uuid"]
-    )
-
-    # Call the fixup endpoint, and expect to see all the ituser_uuids
+    # Dry-run: expect to see the non-existing ITUser UUIDs
     response = await test_client.post(
         "/fixup/delete_non_existing_unique_ldap_uuids",
         params={"at": "2020-01-01T00:00:00"},
@@ -116,9 +101,20 @@ async def test_non_existing_unique_ldap_uuids(
     assert response.status_code == 200
     assert set(response.json()) == set(map(str, ituser_map.values()))
 
-    # Retest the original endpoint, expecting all non-existing ADUUIDs to be gone
-    response = await test_client.get("/Inspect/non_existing_unique_ldap_uuids")
-    assert response.status_code == 202
+    # Call the fixup endpoint with dry_run=False, and expect to see all the ituser_uuids
+    response = await test_client.post(
+        "/fixup/delete_non_existing_unique_ldap_uuids",
+        params={"at": "2020-01-01T00:00:00", "dry_run": "false"},
+    )
+    assert response.status_code == 200
+    assert set(response.json()) == set(map(str, ituser_map.values()))
+
+    # Retest with dry-run, expecting all non-existing ADUUIDs to be gone
+    response = await test_client.post(
+        "/fixup/delete_non_existing_unique_ldap_uuids",
+        params={"at": "2020-01-01T00:00:00"},
+    )
+    assert response.status_code == 200
     assert response.json() == []
 
 
@@ -133,5 +129,8 @@ async def test_non_existing_unique_ldap_uuids(
 async def test_non_existing_unique_ldap_uuids_no_itsystem(
     test_client: AsyncClient,
 ) -> None:
-    response = await test_client.get("/Inspect/non_existing_unique_ldap_uuids")
+    response = await test_client.post(
+        "/fixup/delete_non_existing_unique_ldap_uuids",
+        params={"at": "2020-01-01T00:00:00"},
+    )
     assert response.status_code == 404
