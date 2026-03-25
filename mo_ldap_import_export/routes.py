@@ -953,3 +953,14 @@ async def fetch_changes_since(
 ) -> set[LDAPUUID]:
     uuids, _ = await ldap_event_generator.poll(search_base, since)
     return uuids
+
+
+@ldap_event_router.post("/emit/{uuid}")
+async def refresh_uuid(
+    settings: depends.Settings, graphql_client: depends.GraphQLClient, uuid: LDAPUUID
+) -> None:
+    """Manually emit a single UUID.
+
+    Required as it is not possible to event_send via GraphQL even as an admin.
+    """
+    await publish_uuids(settings, graphql_client, [uuid])
