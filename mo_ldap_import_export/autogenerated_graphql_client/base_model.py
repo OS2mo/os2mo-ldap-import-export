@@ -4,6 +4,7 @@ from typing import get_args
 from typing import get_origin
 
 from pydantic import BaseModel as PydanticBaseModel
+from pydantic import Extra
 from pydantic.class_validators import validator
 from pydantic.fields import ModelField
 
@@ -24,6 +25,7 @@ class BaseModel(PydanticBaseModel):
         allow_population_by_field_name = True
         validate_assignment = True
         arbitrary_types_allowed = True
+        extra = Extra.forbid
 
     # pylint: disable=no-self-argument
     @validator("*", pre=True)
