@@ -1003,7 +1003,7 @@ async def rolebinding_uuid_to_role_uuid(
     graphql_client: GraphQLClient, uuid: UUID
 ) -> UUID | None:
     result = await graphql_client.read_rolebindings(
-        filter=RoleBindingFilter(uuid=[uuid])
+        filter=RoleBindingFilter(uuids=[uuid])
     )
     role_binding = only(result.objects)
     if role_binding is None or role_binding.current is None:
