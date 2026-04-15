@@ -45,7 +45,7 @@ async def test_mo_itusers(
     result = await mo_itusers(
         graphql_client,
         filter={
-            "user_key": "foo",
+            "user_keys": ["foo"],
         },
     )
     assert result == ItusersItusers(

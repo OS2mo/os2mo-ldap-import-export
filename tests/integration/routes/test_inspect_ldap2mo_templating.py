@@ -333,7 +333,7 @@ async def test_mo2ldap_template_existing_change(
                         "objectClass": "Address",
                         "_import_to_mo_": "true",
                         "_ldap_attributes_": ["mail"],
-                        "uuid": "{{ get_address_uuid({'address_type': {'user_key': 'EmailEmployee'}, 'employee': {'uuids': [employee_uuid]}}) }}",
+                        "uuid": "{{ get_address_uuid({'address_type': {'user_keys': ['EmailEmployee']}, 'employee': {'uuids': [employee_uuid]}}) }}",
                         "value": "{{ ldap.mail }}",
                         "address_type": "{{ get_employee_address_type_uuid('EmailEmployee') }}",
                         "person": "{{ employee_uuid }}",
@@ -404,7 +404,7 @@ async def test_mo2ldap_template_address(
                         "_ldap_attributes_": ["mail"],
                         # Always terminate
                         "_terminate_": "{{ now()|mo_datestring }}",
-                        "uuid": "{{ get_address_uuid({'address_type': {'user_key': 'EmailEmployee'}, 'employee': {'uuids': [employee_uuid]}}) }}",
+                        "uuid": "{{ get_address_uuid({'address_type': {'user_keys': ['EmailEmployee']}, 'employee': {'uuids': [employee_uuid]}}) }}",
                         "value": "{{ ldap.mail }}",
                         "address_type": "{{ get_employee_address_type_uuid('EmailEmployee') }}",
                         "person": "{{ employee_uuid }}",

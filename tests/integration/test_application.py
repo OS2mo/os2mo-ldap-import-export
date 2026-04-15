@@ -399,7 +399,7 @@ async def test_mismatched_json_key_and_address_type(
             await graphql_client._testing__address_read(
                 filter=AddressFilter(
                     employee=EmployeeFilter(uuids=[mo_person]),
-                    address_type=ClassFilter(uuid=[email_employee]),
+                    address_type=ClassFilter(uuids=[email_employee]),
                 )
             )
         ).objects

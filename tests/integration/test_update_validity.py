@@ -32,7 +32,7 @@ from mo_ldap_import_export.utils import mo_today
                         "objectClass": "Address",
                         "_import_to_mo_": "true",
                         "_ldap_attributes_": [],
-                        "uuid": "{{ get_address_uuid({'address_type': {'user_key': 'EmailEmployee'}, 'employee': {'uuids': [employee_uuid]}}) }}",
+                        "uuid": "{{ get_address_uuid({'address_type': {'user_keys': ['EmailEmployee']}, 'employee': {'uuids': [employee_uuid]}}) }}",
                         "user_key": "-",
                         "value": "new@example.org",
                         "address_type": "{{ get_employee_address_type_uuid('EmailEmployee') }}",
