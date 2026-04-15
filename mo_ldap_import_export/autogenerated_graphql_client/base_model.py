@@ -1,3 +1,4 @@
+# This file has been modified by the ForbidExtraBaseModelPlugin
 from typing import Any
 from typing import Union
 from typing import get_args
