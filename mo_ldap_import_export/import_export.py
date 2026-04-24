@@ -709,6 +709,19 @@ class SyncTool:
             logger.info("Converted object is identical to existing object, skipping")
             return
 
+        # If an object is identical except on validity.start, we do not wish to upload
+        # it, as it creates a registration in OS2mo with no validity change after
+        # consolidation, unnecessarily adding rows to the database, triggering new
+        # events, etc.
+        if update_values.keys() == {"validity"}:
+            old_end = mo_object_dict_to_upload["validity"].get("end")
+            new_end = converted_mo_object_dict["validity"].get("end")
+            if old_end == new_end:
+                logger.info(
+                    "Converted object contain only validity.start change, skipping"
+                )
+                return
+
         logger.info(
             "Setting values on upload dict",
             uuid=mo_object_dict_to_upload["uuid"],

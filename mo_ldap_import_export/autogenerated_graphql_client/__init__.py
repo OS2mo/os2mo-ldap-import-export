@@ -10,6 +10,12 @@ from ._testing__address_read import TestingAddressReadAddressesObjectsValidities
 from ._testing__address_read import (
     TestingAddressReadAddressesObjectsValiditiesVisibility,
 )
+from ._testing__address_registration import TestingAddressRegistration
+from ._testing__address_registration import TestingAddressRegistrationAddresses
+from ._testing__address_registration import TestingAddressRegistrationAddressesObjects
+from ._testing__address_registration import (
+    TestingAddressRegistrationAddressesObjectsRegistrations,
+)
 from ._testing__class_read import TestingClassRead
 from ._testing__class_read import TestingClassReadClasses
 from ._testing__class_read import TestingClassReadClassesObjects
@@ -957,6 +963,10 @@ __all__ = [
     "TestingAddressReadAddressesObjectsValiditiesPerson",
     "TestingAddressReadAddressesObjectsValiditiesValidity",
     "TestingAddressReadAddressesObjectsValiditiesVisibility",
+    "TestingAddressRegistration",
+    "TestingAddressRegistrationAddresses",
+    "TestingAddressRegistrationAddressesObjects",
+    "TestingAddressRegistrationAddressesObjectsRegistrations",
     "TestingClassRead",
     "TestingClassReadClasses",
     "TestingClassReadClassesObjects",

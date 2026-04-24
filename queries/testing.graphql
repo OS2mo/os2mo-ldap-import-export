@@ -184,3 +184,14 @@ mutation __testing__person_update($input: EmployeeUpdateInput!) {
     uuid
   }
 }
+
+query __testing__address_registration($filter: AddressFilter) {
+  addresses(filter: $filter) {
+    objects {
+      registrations {
+        start
+        end
+      }
+    }
+  }
+}
