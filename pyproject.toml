@@ -85,6 +85,8 @@ plugins = [
     "ariadne_codegen.contrib.shorter_results.ShorterResultsPlugin",
     # Add UNSET and UnsetType to generated input types
     "fastramqpi.ariadne.UnsetInputTypesPlugin",
+    # Forbid extra fields on the generated BaseModel so typos raise
+    "tools.ariadne_plugins.ForbidExtraBaseModelPlugin",
 ]
 include_comments = false
 [tool.ariadne-codegen.scalars.DateTime]
@@ -108,6 +110,11 @@ DEP002 = [
   "pycryptodome",
   # uvicorn is used by the Dockerfile
   "uvicorn",
+]
+DEP004 = [
+  # ariadne-codegen is only imported by the local ariadne-codegen plugin,
+  # which runs exclusively during client generation (tools/regen_client.sh).
+  "ariadne_codegen",
 ]
 
 [tool.ruff]

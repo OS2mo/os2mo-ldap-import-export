@@ -64,7 +64,7 @@ async def test_mo_addresses(
     result = await mo_addresses(
         graphql_client,
         filter={
-            "user_key": "foo",
+            "user_keys": ["foo"],
         },
     )
     assert result == AddressesAddresses(

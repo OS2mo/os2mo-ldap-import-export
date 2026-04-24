@@ -36,7 +36,7 @@ async def test_integration_get_org_unit_path_string(
 
     kwargs: dict[str, Any] = {
         "graphql_client": graphql_client,
-        "filter": {"itsystem": {"uuid": [itsystem.uuid]}},
+        "filter": {"itsystem": {"uuids": [itsystem.uuid]}},
     }
     result: Any
 

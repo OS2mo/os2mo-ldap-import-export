@@ -35,7 +35,7 @@ from mo_ldap_import_export.utils import combine_dn_strings
                         "_import_to_mo_": "true",
                         "_ldap_attributes_": ["mail"],
                         "_terminate_": "",
-                        "uuid": "{{ get_address_uuid({'address_type': {'user_key': 'EmailEmployee'}, 'employee': {'uuids': [employee_uuid]}}) }}",
+                        "uuid": "{{ get_address_uuid({'address_type': {'user_keys': ['EmailEmployee']}, 'employee': {'uuids': [employee_uuid]}}) }}",
                         # Here we pick the first value after sorting
                         "value": "{{ ldap.mail | sort | first }}",
                         "address_type": "{{ get_employee_address_type_uuid('EmailEmployee') }}",
