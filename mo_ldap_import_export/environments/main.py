@@ -959,6 +959,15 @@ async def dn_exists(ldapapi: LDAPAPI, dn: DN) -> bool:
     return False
 
 
+async def find_best_dn(dataloader: DataLoader, dn: DN) -> DN | None:
+    employee_uuid = await find_mo_employee_uuid(dataloader, dn)
+    if employee_uuid is None:
+        return None
+    with suppress(NoGoodLDAPAccountFound):
+        return await dataloader._find_best_dn(employee_uuid)
+    return None
+
+
 async def get_class(dataloader: DataLoader, uuid: UUID) -> Class | None:
     return await dataloader.moapi.load_mo_class(uuid)
 
@@ -1251,6 +1260,7 @@ def construct_globals_dict(
         "get_legacy_manager_person_uuid": partial(
             get_legacy_manager_person_uuid, moapi
         ),
+        "find_best_dn": partial(find_best_dn, dataloader),
     }
 
 
