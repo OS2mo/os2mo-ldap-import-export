@@ -78,6 +78,7 @@ from ..models import ITUser
 from ..models import OrganisationUnit
 from ..types import DN
 from ..types import LDAPUUID
+from ..types import CPRNumber
 from ..types import EmployeeUUID
 from ..types import EngagementUUID
 from ..types import OrgUnitUUID
@@ -920,6 +921,14 @@ async def get_person_dn(dataloader: DataLoader, uuid: EmployeeUUID) -> DN | None
     return None
 
 
+async def get_ldap_attribute_values_by_cpr(
+    ldapapi: LDAPAPI, cpr: str, attribute: str
+) -> set[str]:
+    """Return the values of ``attribute`` across LDAP accounts with the given CPR."""
+    objects = await ldapapi.cpr2dns(CPRNumber(cpr), {attribute})
+    return {value for obj in objects for value in getattr(obj, attribute, [])}
+
+
 def skip_if_none(obj: T | None) -> T:
     if obj is None:
         raise SkipObject("Skipping: Object is None")
@@ -1237,6 +1246,9 @@ def construct_globals_dict(
         "get_employment_interval": partial(get_employment_interval, graphql_client),
         "get_manager_person_uuid": partial(get_manager_person_uuid, graphql_client),
         "get_person_dn": partial(get_person_dn, dataloader),
+        "get_ldap_attribute_values_by_cpr": partial(
+            get_ldap_attribute_values_by_cpr, dataloader.ldapapi
+        ),
         "mo_itusers": partial(mo_itusers, graphql_client),
         "mo_addresses": partial(mo_addresses, graphql_client),
         "dn_to_uuid": dataloader.ldapapi.get_ldap_unique_ldap_uuid,
