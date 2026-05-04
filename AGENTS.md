@@ -44,6 +44,7 @@ The development stack MAY be started using `docker compose up --build --detach`
 - Unit-tests SHOULD only be written for pure functions.
 - Mocks SHOULD be avoided.
 - Unit-tests MAY be eliminated in favor of integration-tests.
+- Consider using parameterization instead of almost identical tests.
 
 ## Code style
 
