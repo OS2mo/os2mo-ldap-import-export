@@ -150,6 +150,8 @@ from .read_address_relation_uuids import ReadAddressRelationUuids
 from .read_address_relation_uuids import ReadAddressRelationUuidsAddresses
 from .read_address_uuid import ReadAddressUuid
 from .read_address_uuid import ReadAddressUuidAddresses
+from .read_address_validities import ReadAddressValidities
+from .read_address_validities import ReadAddressValiditiesAddresses
 from .read_addresses import ReadAddresses
 from .read_addresses import ReadAddressesAddresses
 from .read_all_ituser_user_keys_by_itsystem_uuid import (
@@ -1538,6 +1540,39 @@ class GraphQLClient(AsyncBaseClient):
         response = await self.execute(query=query, variables=variables)
         data = self.get_data(response)
         return ReadCleanupAddresses.parse_obj(data).addresses
+
+    async def read_address_validities(
+        self, address_uuid: UUID
+    ) -> ReadAddressValiditiesAddresses:
+        query = gql("""
+            query read_address_validities($address_uuid: UUID!) {
+              addresses(filter: {uuids: [$address_uuid], from_date: null, to_date: null}) {
+                objects {
+                  validities {
+                    uuid
+                    user_key
+                    value
+                    visibility_uuid
+                    employee_uuid
+                    org_unit_uuid
+                    engagement_uuid
+                    ituser_uuid
+                    validity {
+                      from
+                      to
+                    }
+                    address_type {
+                      uuid
+                    }
+                  }
+                }
+              }
+            }
+            """)
+        variables: dict[str, object] = {"address_uuid": address_uuid}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return ReadAddressValidities.parse_obj(data).addresses
 
     async def read_employee_registrations(
         self, employee_uuid: UUID
