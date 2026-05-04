@@ -74,19 +74,6 @@ class DataLoader:
         self.moapi = moapi
         self.username_generator = username_generator
 
-    async def find_mo_employee_uuid_via_cpr_number(
-        self, ldap_object: LdapObject
-    ) -> set[EmployeeUUID]:
-        if self.settings.ldap_cpr_attribute:
-            assert hasattr(
-                ldap_object, self.settings.ldap_cpr_attribute
-            ), f"ldap_object missing cpr attribute: {self.settings.ldap_cpr_attribute}"
-        cpr_number = self.ldapapi.ldap_object2cpr(ldap_object)
-
-        if cpr_number is None:
-            return set()
-        return await self.moapi.cpr2uuids(cpr_number)
-
     async def find_mo_employee_uuid_by_guid_and_cpr(
         self,
         guid: LDAPUUID | UUID | None = None,
@@ -126,12 +113,11 @@ class DataLoader:
     async def find_mo_employee_uuid(
         self, ldap_object: LdapObject
     ) -> EmployeeUUID | None:
-        dn = ldap_object.dn
-        cpr_results = await self.find_mo_employee_uuid_via_cpr_number(ldap_object)
-        if len(cpr_results) == 1:
-            uuid = one(cpr_results)
-            logger.info("Found employee via CPR matching", dn=dn, uuid=uuid)
-            return uuid
+        if self.settings.ldap_cpr_attribute:
+            assert hasattr(
+                ldap_object, self.settings.ldap_cpr_attribute
+            ), f"ldap_object missing cpr attribute: {self.settings.ldap_cpr_attribute}"
+        cpr_number = self.ldapapi.ldap_object2cpr(ldap_object)
 
         assert hasattr(
             ldap_object, self.settings.ldap_unique_id_field
@@ -143,24 +129,7 @@ class DataLoader:
                 f"Object has no {self.settings.ldap_unique_id_field}"
             )
 
-        ituser_results = await self.moapi.find_mo_employee_uuid_via_ituser(unique_uuid)
-        if len(ituser_results) == 1:
-            uuid = one(ituser_results)
-            logger.info("Found employee via ITUser matching", dn=dn, uuid=uuid)
-            return uuid
-
-        # TODO: Return an ExceptionGroup with both
-        # NOTE: This may break a lot of things, because we explicitly match against MultipleObjectsReturnedException
-        if len(cpr_results) > 1:
-            raise MultipleObjectsReturnedException(f"Multiple CPR matches for dn={dn}")
-
-        if len(ituser_results) > 1:
-            raise MultipleObjectsReturnedException(
-                f"Multiple ITUser matches for dn={dn}"
-            )
-
-        logger.info("No matching employee", dn=dn)
-        return None
+        return await self.find_mo_employee_uuid_by_guid_and_cpr(unique_uuid, cpr_number)
 
     async def find_mo_employee_dn_by_itsystem(
         self, uuid: UUID, attributes: set[str]
