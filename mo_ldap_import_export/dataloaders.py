@@ -87,6 +87,42 @@ class DataLoader:
             return set()
         return await self.moapi.cpr2uuids(cpr_number)
 
+    async def find_mo_employee_uuid_by_guid_and_cpr(
+        self,
+        guid: LDAPUUID | UUID | None = None,
+        cpr: CPRNumber | None = None,
+    ) -> EmployeeUUID | None:
+        cpr_results: set[EmployeeUUID] = set()
+        if cpr:
+            cpr_results = await self.moapi.cpr2uuids(cpr)
+            if len(cpr_results) == 1:
+                uuid = one(cpr_results)
+                logger.info("Found employee via CPR matching", guid=guid, uuid=uuid)
+                return uuid
+
+        ituser_results: set[EmployeeUUID] = set()
+        if guid:
+            ituser_results = await self.moapi.find_mo_employee_uuid_via_ituser(guid)
+            if len(ituser_results) == 1:
+                uuid = one(ituser_results)
+                logger.info("Found employee via ITUser matching", guid=guid, uuid=uuid)
+                return uuid
+
+        # TODO: Return an ExceptionGroup with both
+        # NOTE: This may break a lot of things, because we explicitly match against MultipleObjectsReturnedException
+        if len(cpr_results) > 1:
+            raise MultipleObjectsReturnedException(
+                f"Multiple CPR matches for guid={guid}"
+            )
+
+        if len(ituser_results) > 1:
+            raise MultipleObjectsReturnedException(
+                f"Multiple ITUser matches for guid={guid}"
+            )
+
+        logger.info("No matching employee", guid=guid)
+        return None
+
     async def find_mo_employee_uuid(
         self, ldap_object: LdapObject
     ) -> EmployeeUUID | None:
