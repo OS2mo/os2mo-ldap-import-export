@@ -1256,6 +1256,7 @@ def construct_globals_dict(
         "refresh": partial(refresh, graphql_client),
         "refresh_ldap": partial(refresh_ldap, settings, graphql_client),
         "find_mo_employee_uuid": partial(find_mo_employee_uuid, dataloader),
+        "find_mo_employee_uuid_by_guid_and_cpr": dataloader.find_mo_employee_uuid_by_guid_and_cpr,
         "resolve_dar_address": partial(resolve_dar_address, graphql_client),
         "get_legacy_manager_person_uuid": partial(
             get_legacy_manager_person_uuid, moapi
