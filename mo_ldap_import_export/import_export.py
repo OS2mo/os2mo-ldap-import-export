@@ -518,6 +518,9 @@ class SyncTool:
                 mapping, ldap_object, template_context={}, dry_run=False
             )
 
+    @handle_exclusively_decorator(
+        key=lambda self, mapping, ldap_object, template_context, dry_run: ldap_object.dn
+    )
     async def import_entity(
         self,
         mapping: LDAP2MOMapping,
@@ -568,9 +571,6 @@ class SyncTool:
                 mapping, ldap_object, {**context, "each": each}, dry_run
             )
 
-    @handle_exclusively_decorator(
-        key=lambda self, mapping, ldap_object, template_context, dry_run: ldap_object.dn
-    )
     async def import_single_entity(
         self,
         mapping: LDAP2MOMapping,
