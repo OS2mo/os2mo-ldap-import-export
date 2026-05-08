@@ -487,7 +487,7 @@ class SyncTool:
         # The template author should make sure to define objects in order, so
         # dependencies exist before their dependent objects.
         for json_key in json_keys:
-            await self.import_single_entity(
+            await self.import_entity(
                 self.get_mapping(json_key),
                 ldap_object,
                 template_context,
@@ -514,13 +514,63 @@ class SyncTool:
         logger.info("Importing object class")
         mappings = self.settings.conversion_mapping.ldap_to_mo_any[object_class]
         for mapping in mappings:
-            await self.import_single_entity(
+            await self.import_entity(
                 mapping, ldap_object, template_context={}, dry_run=False
             )
 
     @handle_exclusively_decorator(
         key=lambda self, mapping, ldap_object, template_context, dry_run: ldap_object.dn
     )
+    async def import_entity(
+        self,
+        mapping: LDAP2MOMapping,
+        ldap_object: LdapObject,
+        template_context: dict[str, Any],
+        dry_run: bool,
+    ) -> None:
+        """Import an entity, fanning out via `_for_each_` if configured."""
+
+        def convert_value(value: Any) -> Any:
+            if not is_list(value):
+                return value
+            # If the value is a single element list, return the contents
+            if len(value) == 1:
+                return one(value)
+            # Otherwise simply return the list
+            return value
+
+        ldap_dict = {
+            key: convert_value(value) for key, value in ldap_object.dict().items()
+        }
+        context = {"ldap": ldap_dict, **template_context}
+
+        # No for_each mapping, simply call through once without setting `each`
+        if mapping.for_each is None:
+            return await self.import_single_entity(
+                mapping, ldap_object, context, dry_run
+            )
+
+        # At this point we have a for_each mapping, evaluate the template, then verify
+        # that it is a list, then call the handler for each entity in the list.
+        try:
+            for_each = await self.converter.render_template(
+                "for_each", mapping.for_each, context
+            )
+        except SkipObject:  # pragma: no cover
+            logger.info("Skipping object", field="for_each")
+            return
+
+        if not isinstance(for_each, list):
+            raise IncorrectMapping(
+                f"'_for_each_' template must render to a list, got {type(for_each)}: {for_each}"
+            )
+
+        logger.info("Iterating mapping via _for_each_", count=len(for_each))
+        for each in for_each:
+            await self.import_single_entity(
+                mapping, ldap_object, {**context, "each": each}, dry_run
+            )
+
     async def import_single_entity(
         self,
         mapping: LDAP2MOMapping,
@@ -553,33 +603,17 @@ class SyncTool:
             not missing_attributes
         ), f"ldap_object missing required attributes: {missing_attributes}"
 
-        loaded_object = ldap_object
-
         logger.info(
             "Loaded object",
             mo_class=mapping.as_mo_class(),
             dn=dn,
-            loaded_object=loaded_object,
+            loaded_object=ldap_object,
         )
-
-        def convert_value(value: Any) -> Any:
-            if not is_list(value):
-                return value
-            # If the value is a single element list, return the contents
-            if len(value) == 1:
-                return one(value)
-            # Otherwise simply return the list
-            return value
-
-        ldap_dict = {
-            key: convert_value(value) for key, value in loaded_object.dict().items()
-        }
-        context = {"ldap": ldap_dict, **template_context}
 
         try:
             # Pydantic validator ensures that uuid is set here
             uuid_str = await self.converter.render_template(
-                "uuid", mapping.uuid, context
+                "uuid", mapping.uuid, template_context
             )
         except SkipObject:
             logger.info("Skipping object", field="uuid", dn=dn)
@@ -595,7 +629,7 @@ class SyncTool:
         if mapping.terminate:
             try:
                 termination_date_str = await self.converter.render_template(
-                    "terminate", mapping.terminate, context
+                    "terminate", mapping.terminate, template_context
                 )
             except SkipObject:  # pragma: no cover
                 logger.info("Skipping object", field="terminate", dn=dn)
@@ -618,7 +652,7 @@ class SyncTool:
         if mo_object is None:
             try:
                 converted_object = await self._create_converted_object(
-                    mapping, context, mo_class, termination_date
+                    mapping, template_context, mo_class, termination_date
                 )
             except SkipObject:
                 logger.info("Skipping object", dn=dn)
@@ -666,7 +700,7 @@ class SyncTool:
         # Handle updates
         try:
             converted_object = await self._create_converted_object(
-                mapping, context, mo_class, termination_date
+                mapping, template_context, mo_class, termination_date
             )
         except EmptyFieldsToSynchronise:
             # Empty fields are okay if the template just wanted to terminate

@@ -132,6 +132,16 @@ class LDAP2MOMapping(MappingBaseModel):
         alias="_ldap_attributes_",
         description="The attributes to fetch for LDAP, aka attributes available on the ldap object in templates",
     )
+    for_each: JinjaTemplate | None = Field(
+        default=None,
+        alias="_for_each_",
+        description="""
+        Jinja template returning a list.
+
+        The mapping will be applied once per element in the list, with the
+        element exposed in subsequent templates as the variable 'each'.
+        """,
+    )
 
     def as_mo_class(self) -> type[MOBase]:
         return import_class(self.objectClass)
@@ -144,6 +154,7 @@ class LDAP2MOMapping(MappingBaseModel):
                 "terminate",
                 "do_actually_terminate",
                 "ldap_attributes",
+                "for_each",
             },
             exclude_unset=True,
         )
@@ -222,6 +233,7 @@ class LDAP2MOMapping(MappingBaseModel):
             "terminate",
             "do_actually_terminate",
             "ldap_attributes",
+            "for_each",
         }
         # Disallow validity until we introduce a consistent behavior in the future
         if "validity" in detected_attributes:

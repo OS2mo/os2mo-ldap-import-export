@@ -74,7 +74,7 @@ async def test_template_strictness(
     assert settings.conversion_mapping.ldap_to_mo is not None
     # Ensure required attributes are present to satisfy import_single_entity's assertion
     full_ldap_values = {"givenName": "given_name", "sn": "surname", **ldap_values}
-    await sync_tool.import_single_entity(
+    await sync_tool.import_entity(
         mapping=settings.conversion_mapping.ldap_to_mo["Employee"],
         ldap_object=LdapObject(dn="CN=foo", **full_ldap_values),
         template_context={

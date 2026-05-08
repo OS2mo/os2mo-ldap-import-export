@@ -139,6 +139,7 @@ async def test_import_single_entity_engagement_edit(
 
     mapping = MagicMock()
     mapping.terminate = None
+    mapping.for_each = None
     mapping.ldap_attributes = ["some_attr"]
     mapping.get_fields.return_value = {
         "user_key": None,
@@ -151,7 +152,7 @@ async def test_import_single_entity_engagement_edit(
 
     ldap_object = LdapObject(dn="CN=foo", some_attr="val")
 
-    await sync_tool.import_single_entity(
+    await sync_tool.import_entity(
         mapping=mapping,
         ldap_object=ldap_object,
         template_context={},
@@ -195,6 +196,7 @@ async def test_import_single_entity_engagement_create(
 
     mapping = MagicMock()
     mapping.terminate = None
+    mapping.for_each = None
     mapping.ldap_attributes = ["some_attr"]
     mapping.get_fields.return_value = {
         "user_key": None,
@@ -207,7 +209,7 @@ async def test_import_single_entity_engagement_create(
 
     ldap_object = LdapObject(dn="CN=foo", some_attr="val")
 
-    await sync_tool.import_single_entity(
+    await sync_tool.import_entity(
         mapping=mapping,
         ldap_object=ldap_object,
         template_context={},
@@ -242,6 +244,7 @@ async def test_import_single_entity_employee_create(
 
     mapping = MagicMock()
     mapping.terminate = None
+    mapping.for_each = None
     mapping.ldap_attributes = ["some_attr"]
     mapping.get_fields.return_value = {
         "given_name": None,
@@ -252,7 +255,7 @@ async def test_import_single_entity_employee_create(
 
     ldap_object = LdapObject(dn="CN=foo", some_attr="val")
 
-    await sync_tool.import_single_entity(
+    await sync_tool.import_entity(
         mapping=mapping,
         ldap_object=ldap_object,
         template_context={},

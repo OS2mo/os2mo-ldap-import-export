@@ -52,7 +52,7 @@ async def test_ldap_to_mo_dict_error(context: Context) -> None:
 
     with pytest.raises(IncorrectMapping) as exc_info:
         assert settings.conversion_mapping.ldap_to_mo is not None
-        await sync_tool.import_single_entity(
+        await sync_tool.import_entity(
             mapping=settings.conversion_mapping.ldap_to_mo["Active Directory"],
             ldap_object=LdapObject(
                 dn="",
