@@ -926,7 +926,9 @@ async def get_ldap_attribute_values_by_cpr(
 ) -> set[str]:
     """Return the values of ``attribute`` across LDAP accounts with the given CPR."""
     objects = await ldapapi.cpr2dns(CPRNumber(cpr), {attribute})
-    return {value for obj in objects for value in getattr(obj, attribute, [])}
+    return {
+        value for obj in objects for value in getattr(obj, attribute, [])
+    }
 
 
 def skip_if_none(obj: T | None) -> T:
