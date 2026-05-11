@@ -10,7 +10,8 @@ from tests.integration.conftest import AddLdapPerson
 
 
 @pytest.mark.integration_test
-async def test_single_valued_string_attribute_is_exploded_into_characters(
+@pytest.mark.xfail(reason="string value is coerced into a set", strict=True)
+async def test_single_valued_string_attribute_is_not_exploded(
     ldap_api: LDAPAPI,
     ldap_person_dn: DN,
 ) -> None:
@@ -23,9 +24,7 @@ async def test_single_valued_string_attribute_is_exploded_into_characters(
     result = await get_ldap_attribute_values_by_cpr(
         ldap_api, "2108613133", "displayName"
     )
-    # The function iterates the string character-by-character, so we end up
-    # with a set of its characters instead of the whole value.
-    assert result == {"D", "E", "A", "C", "O", ",", "0", "3"}
+    assert result == {"DEADCODE,03"}
 
 
 @pytest.mark.integration_test
