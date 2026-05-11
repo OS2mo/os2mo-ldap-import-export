@@ -10,7 +10,6 @@ from tests.integration.conftest import AddLdapPerson
 
 
 @pytest.mark.integration_test
-@pytest.mark.xfail(reason="string value is coerced into a set", strict=True)
 async def test_single_valued_string_attribute_is_not_exploded(
     ldap_api: LDAPAPI,
     ldap_person_dn: DN,

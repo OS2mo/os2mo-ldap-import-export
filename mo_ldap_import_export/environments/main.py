@@ -926,8 +926,9 @@ async def get_ldap_attribute_values_by_cpr(
 ) -> set[str]:
     """Return the values of ``attribute`` across LDAP accounts with the given CPR."""
     objects = await ldapapi.cpr2dns(CPRNumber(cpr), {attribute})
+    # ldap3 returns SINGLE-VALUE attributes as strings, not lists.
     return {
-        value for obj in objects for value in getattr(obj, attribute, [])
+        value for obj in objects for value in ensure_list(getattr(obj, attribute, []))
     }
 
 
