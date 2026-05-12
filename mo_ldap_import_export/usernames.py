@@ -4,10 +4,13 @@ from collections.abc import Iterator
 from typing import Any
 
 import structlog
+from ldap3 import NO_ATTRIBUTES
 from ldap3 import Connection
+from ldap3.utils.conv import escape_filter_chars
 from more_itertools import one
 
 from .config import Settings
+from .ldap import object_search
 from .ldap import paged_search
 from .models import Employee
 from .utils import combine_dn_strings
@@ -77,8 +80,8 @@ class UserNameGenerator:
 
         return dn
 
-    def _create_common_name(
-        self, name: list[str], existing_common_names: set[str]
+    async def _create_common_name(
+        self, name: list[str], current_common_name: str | None = None
     ) -> str:
         """
         Create an LDAP-style common name (CN) based on first and last name
@@ -96,9 +99,6 @@ class UserNameGenerator:
             yield username
             for permutation_counter in range(2, 1000):
                 yield username + "_" + str(permutation_counter)
-
-        def existing(potential_name: str) -> bool:
-            return potential_name.lower() in existing_common_names
 
         name = [n for n in name if n]
         num_middlenames = len(name) - 2
@@ -118,29 +118,35 @@ class UserNameGenerator:
         common_name = common_name[:60]
 
         for potential_name in permutations(common_name):
-            if existing(potential_name):
+            # We allow the candidate to match the current common name, as the entity
+            # is otherwise considered to conflict with itself.
+            if (
+                current_common_name
+                and potential_name.lower() == current_common_name.lower()
+            ):
+                return potential_name
+            if await self._common_name_exists(potential_name):
                 continue
             return potential_name
 
         # TODO: Return a more specific exception type
         raise RuntimeError("Failed to create common name")
 
-    async def _get_existing_common_names(self) -> set[str]:
-        # TODO: Consider if it is better to fetch all names or candidate names
-        existing_values = await self.get_existing_values(["cn"])
-        existing_common_names = existing_values["cn"]
-        return existing_common_names
+    async def _common_name_exists(self, candidate: str) -> bool:
+        searchParameters = {
+            "search_base": self.settings.ldap_search_base,
+            "search_filter": f"(cn={escape_filter_chars(candidate)})",
+            "attributes": NO_ATTRIBUTES,
+            "size_limit": 1,
+        }
+        search_result = await object_search(searchParameters, self.ldap_connection)
+        return bool(search_result)
 
     async def generate_common_name(
         self, employee: Employee, current_common_name: str | None = None
     ) -> str:
         name = generate_person_name(employee)
-        existing_common_names = await self._get_existing_common_names()
-        # We have to discard the current common name, as we may otherwise generate a new
-        # common name due to a conflict with ourselves.
-        if current_common_name:
-            existing_common_names.discard(current_common_name.lower())
-        common_name = self._create_common_name(name, existing_common_names)
+        common_name = await self._create_common_name(name, current_common_name)
         logger.info(
             "Generated CommonName based on name",
             name=name,

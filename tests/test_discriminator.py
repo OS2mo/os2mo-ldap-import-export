@@ -968,20 +968,6 @@ async def test_get_existing_values(sync_tool: SyncTool, context: Context) -> Non
     assert result == {"employeeID": {"0101700001"}}
 
 
-async def test_get_existing_names(sync_tool: SyncTool, context: Context) -> None:
-    settings = context["user_context"]["settings"]
-    settings = settings.copy(update={"ldap_dialect": "Standard"})
-    context["user_context"]["settings"] = settings
-
-    user_context = context["user_context"]
-    username_generator = UserNameGenerator(
-        user_context["settings"], user_context["ldap_connection"]
-    )
-
-    result = await username_generator._get_existing_common_names()
-    assert result == {"foo"}
-
-
 async def test_load_ldap_OUs(
     ldap_connection: Connection,
     ldap_container_dn: DN,

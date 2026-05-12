@@ -810,9 +810,7 @@ async def test_generate_common_name_exhausted(
     dataloader: DataLoader = context["user_context"]["dataloader"]
     username_generator = dataloader.username_generator
 
-    async def always_exists(
-        candidate: str, current_common_name: str | None = None
-    ) -> bool:
+    async def always_exists(candidate: str) -> bool:
         return True
 
     monkeypatch.setattr(username_generator, "_common_name_exists", always_exists)
