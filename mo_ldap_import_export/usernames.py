@@ -1,17 +1,14 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
 from collections.abc import Iterator
-from typing import Any
 
 import structlog
 from ldap3 import NO_ATTRIBUTES
 from ldap3 import Connection
 from ldap3.utils.conv import escape_filter_chars
-from more_itertools import one
 
 from .config import Settings
 from .ldap import object_search
-from .ldap import paged_search
 from .models import Employee
 from .utils import combine_dn_strings
 
@@ -38,32 +35,6 @@ class UserNameGenerator:
     def __init__(self, settings: Settings, ldap_connection: Connection) -> None:
         self.settings = settings
         self.ldap_connection = ldap_connection
-
-    async def get_existing_values(self, attributes: list[str]) -> dict[str, set[Any]]:
-        searchParameters = {
-            "search_filter": "(objectclass=*)",
-            "attributes": attributes,
-        }
-        search_base = self.settings.ldap_search_base
-        search_result = await paged_search(
-            self.settings,
-            self.ldap_connection,
-            searchParameters,
-            search_base,
-        )
-
-        output = {}
-        for attribute in attributes:
-            values = set()
-            for entry in search_result:
-                value = entry["attributes"][attribute]
-                if not value:
-                    continue
-                if isinstance(value, list):
-                    value = one(value)
-                values.add(value.lower())
-            output[attribute] = values
-        return output
 
     def _make_cn(self, username_string: str):
         return f"CN={username_string}"

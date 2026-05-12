@@ -955,19 +955,6 @@ async def test_apply_discriminator_template(
         assert result is None
 
 
-async def test_get_existing_values(sync_tool: SyncTool, context: Context) -> None:
-    user_context = context["user_context"]
-    username_generator = UserNameGenerator(
-        user_context["settings"], user_context["ldap_connection"]
-    )
-
-    result = await username_generator.get_existing_values(["sAMAccountName", "cn"])
-    assert result == {"cn": {"foo"}, "sAMAccountName": set()}
-
-    result = await username_generator.get_existing_values(["employeeID"])
-    assert result == {"employeeID": {"0101700001"}}
-
-
 async def test_load_ldap_OUs(
     ldap_connection: Connection,
     ldap_container_dn: DN,

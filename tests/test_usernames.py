@@ -1,14 +1,10 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
 import json
-from collections.abc import Iterator
-from unittest.mock import AsyncMock
 from unittest.mock import MagicMock
-from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
-from fastramqpi.context import Context
 from pydantic import ValidationError
 from pydantic import parse_obj_as
 
@@ -23,106 +19,6 @@ from mo_ldap_import_export.main import GRAPHQL_VERSION
 from mo_ldap_import_export.moapi import MOAPI
 from mo_ldap_import_export.usernames import UserNameGenerator
 from tests.graphql_mocker import GraphQLMocker
-
-
-@pytest.fixture
-def dataloader() -> MagicMock:
-    mock = MagicMock()
-    mock.load_all_it_users = AsyncMock()
-    mock.ldapapi.add_ldap_object = AsyncMock()
-    mock.moapi = AsyncMock()
-    return mock
-
-
-@pytest.fixture
-def context(
-    minimal_valid_environmental_variables: None,
-    monkeypatch: pytest.MonkeyPatch,
-    dataloader: MagicMock,
-    converter: MagicMock,
-) -> Context:
-    mapping = {
-        "username_generator": {
-            "char_replacement": {"ø": "oe", "æ": "ae", "å": "aa"},
-            "forbidden_usernames": ["holes", "hater"],
-            "combinations_to_try": ["F123L", "F12LL", "F1LLL", "FLLLL", "FLLLLX"],
-        },
-    }
-    monkeypatch.setenv("CONVERSION_MAPPING", json.dumps(mapping))
-    monkeypatch.setenv("LDAP_SEARCH_BASE", "DC=bar")
-    monkeypatch.setenv("LDAP_DIALECT", "AD")
-    monkeypatch.setenv("LDAP_OU_FOR_NEW_USERS", "")
-
-    ldap_connection = AsyncMock()
-
-    context: Context = {
-        "user_context": {
-            "mapping": mapping,
-            "settings": Settings(),
-            "dataloader": dataloader,
-            "converter": converter,
-            "ldap_connection": ldap_connection,
-        }
-    }
-
-    return context
-
-
-@pytest.fixture
-def existing_usernames() -> set[str]:
-    return {"nj", "ngc"}
-
-
-@pytest.fixture
-def existing_common_names() -> set[str]:
-    return {"Nick Janssen", "Nick Janssen_2"}
-
-
-@pytest.fixture
-def existing_user_principal_names() -> set[str]:
-    return {"nj@magenta.dk", "ngc2@magenta.dk"}
-
-
-@pytest.fixture
-def existing_usernames_ldap(
-    existing_usernames: set[str],
-    existing_common_names: set[str],
-    existing_user_principal_names: set[str],
-) -> list:
-    existing_usernames_ldap = [
-        {"attributes": {"cn": cn, "sAMAccountName": sam, "userPrincipalName": up}}
-        for cn, sam, up in zip(
-            existing_common_names,
-            existing_usernames,
-            existing_user_principal_names,
-            strict=False,
-        )
-    ]
-    return existing_usernames_ldap
-
-
-@pytest.fixture
-def username_generator(
-    minimal_valid_environmental_variables: None,
-    context: Context,
-    existing_usernames_ldap: list,
-) -> Iterator[UserNameGenerator]:
-    with patch(
-        "mo_ldap_import_export.usernames.paged_search",
-        return_value=existing_usernames_ldap,
-    ):
-        user_context = context["user_context"]
-        yield UserNameGenerator(Settings(), user_context["ldap_connection"])
-
-
-async def test_get_existing_usernames(
-    username_generator: UserNameGenerator,
-    existing_usernames: set[str],
-    existing_common_names: set[str],
-):
-    result = await username_generator.get_existing_values(["sAMAccountName", "cn"])
-    assert result["sAMAccountName"] == existing_usernames
-    assert result["cn"] == {cn.lower() for cn in existing_common_names}
 
 
 @pytest.mark.parametrize(
