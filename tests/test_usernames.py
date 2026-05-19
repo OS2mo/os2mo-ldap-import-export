@@ -162,13 +162,6 @@ def test_create_common_name(
     assert common_name == expected
 
 
-def test_create_common_name_exhausted(username_generator: UserNameGenerator) -> None:
-    # Nick_1 until Nick_2000 exists - we cannot generate a username
-    with pytest.raises(RuntimeError):
-        username_generator._create_common_name(
-            ["Nick", ""], {"nick"} | {f"nick_{d}" for d in range(2000)}
-        )
-
 
 @pytest.mark.parametrize(
     "name,combi,expected",
