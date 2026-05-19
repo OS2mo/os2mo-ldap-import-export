@@ -162,26 +162,6 @@ def test_create_common_name(
     assert common_name == expected
 
 
-@pytest.mark.parametrize(
-    "names,existing,expected",
-    (
-        # Regular case, but Nick Johnson is taken
-        # TODO: Are common names actually case insensitive in LDAP / AD?
-        (["Nick", "Johnson"], {"nick johnson"}, "Nick Johnson_2"),
-        # Regualr case, but both 'Nick Janssen' and 'Nick Janssen_2' are taken
-        (["Nick", "Janssen"], {"nick janssen", "nick janssen_2"}, "Nick Janssen_3"),
-    ),
-)
-def test_create_common_name_taken(
-    username_generator: UserNameGenerator,
-    names: list[str],
-    existing: set[str],
-    expected: str,
-) -> None:
-    common_name = username_generator._create_common_name(names, existing)
-    assert common_name == expected
-
-
 def test_create_common_name_exhausted(username_generator: UserNameGenerator) -> None:
     # Nick_1 until Nick_2000 exists - we cannot generate a username
     with pytest.raises(RuntimeError):

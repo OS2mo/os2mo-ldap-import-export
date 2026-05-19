@@ -636,3 +636,55 @@ async def test_generate_common_name_dn_format(
     assert one(employee["attributes"]["cn"]) == "Patrick Bateman"
     expected_dn = combine_dn_strings(["cn=Patrick Bateman"] + ldap_org_unit)
     assert employee["dn"] == expected_dn
+
+
+@pytest.mark.integration_test
+@pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
+        "CONVERSION_MAPPING": json.dumps(
+            {
+                "mo2ldap": """
+                    {% set mo_employee = load_mo_employee(uuid) %}
+                    {{
+                        {
+                            "employeeNumber": mo_employee.cpr_number,
+                            "uid": mo_employee.cpr_number,
+                            "cn": generate_common_name(uuid, dn),
+                            "sn": mo_employee.surname or "-",
+                            "givenName": mo_employee.given_name,
+                        }|tojson
+                    }}
+                """,
+            }
+        ),
+    }
+)
+async def test_generate_common_name_third_collision(
+    trigger_sync: Callable[[EmployeeUUID], Awaitable[None]],
+    graphql_client: GraphQLClient,
+    ldap_api: LDAPAPI,
+    ldap_org_unit: list[str],
+) -> None:
+    async def fetch_cn(cpr_number: str) -> str:
+        response, _ = await ldap_api.ldap_connection.ldap_search(
+            search_base=combine_dn_strings(ldap_org_unit),
+            search_filter=f"(employeeNumber={cpr_number})",
+            attributes=["cn"],
+        )
+        return cast(str, one(one(response)["attributes"]["cn"]))
+
+    persons = [
+        ("0101700010", "Aage Klareng"),
+        ("0101700011", "Aage Klareng_2"),
+        ("0101700012", "Aage Klareng_3"),
+    ]
+    for cpr, expected_cn in persons:
+        r = await graphql_client.person_create(
+            input=EmployeeCreateInput(
+                given_name="Aage", surname="Klareng", cpr_number=cpr
+            )
+        )
+        await trigger_sync(EmployeeUUID(r.uuid))
+        assert await fetch_cn(cpr) == expected_cn
