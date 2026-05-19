@@ -126,44 +126,6 @@ async def test_get_existing_usernames(
 
 
 @pytest.mark.parametrize(
-    "names,expected",
-    (
-        # Regular case
-        (["Nick", "Johnson"], "Nick Johnson"),
-        # Middle names are not used
-        (["Nick", "Gerardus", "Cornelis", "Johnson"], "Nick Gerardus Cornelis Johnson"),
-        # Users without a last name are supported
-        (["Nick", ""], "Nick"),
-        # If a name is over 64 characters, a middle name is removed.
-        (
-            ["Nick", "Gerardus", "Cornelis", "long name" * 20, "Johnson"],
-            "Nick Gerardus Cornelis Johnson",
-        ),
-        # If the name is still over 64 characters, another middle name is removed.
-        (
-            ["Nick", "Gerardus", "Cornelis", "long name" * 20, "Hansen", "Johnson"],
-            "Nick Gerardus Cornelis Johnson",
-        ),
-        # In the rare case that someone has a first or last name with over 64 characters,
-        # we cut off characters from his name
-        # Because AD does not allow common names with more than 64 characters
-        (["Nick" * 40, "Johnson"], ("Nick" * 40)[:60]),
-        (["Nick", "Johnson" * 40], ("Nick" + " " + "Johnson" * 40)[:60]),
-        (
-            ["Nick", "Gerardus", "Cornelis", "Johnson" * 40],
-            ("Nick" + " " + "Johnson" * 40)[:60],
-        ),
-    ),
-)
-def test_create_common_name(
-    username_generator: UserNameGenerator, names: list[str], expected: str
-) -> None:
-    common_name = username_generator._create_common_name(names, set())
-    assert common_name == expected
-
-
-
-@pytest.mark.parametrize(
     "name,combi,expected",
     [
         # Test with a combi using middle names

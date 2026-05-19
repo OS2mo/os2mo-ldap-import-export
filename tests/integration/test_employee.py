@@ -697,6 +697,109 @@ async def test_generate_common_name_third_collision(
     {
         "LISTEN_TO_CHANGES_IN_MO": "False",
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
+        "CONVERSION_MAPPING": json.dumps(
+            {
+                "mo2ldap": """
+                    {% set mo_employee = load_mo_employee(uuid) %}
+                    {{
+                        {
+                            "employeeNumber": mo_employee.cpr_number,
+                            "uid": mo_employee.cpr_number,
+                            "cn": generate_common_name(uuid, dn),
+                            "sn": mo_employee.surname or "-",
+                            "givenName": mo_employee.given_name,
+                        }|tojson
+                    }}
+                """,
+            }
+        ),
+    }
+)
+@pytest.mark.parametrize(
+    "given_name,surname,expected_cn",
+    [
+        # Regular case.
+        (
+            "Nick",
+            "Johnson",
+            "Nick Johnson",
+        ),
+        # Middle names are preserved when the combined name fits.
+        (
+            "Nick Gerardus Cornelis",
+            "Johnson",
+            "Nick Gerardus Cornelis Johnson",
+        ),
+        # Users without a last name are supported.
+        (
+            "Nick",
+            "",
+            "Nick",
+        ),
+        # If the name is over 60 characters, a middle name is removed.
+        (
+            "Nick Gerardus Cornelis " + "longname" * 20,
+            "Johnson",
+            "Nick Gerardus Cornelis Johnson",
+        ),
+        # If the name is still over 60 characters, another middle name is
+        # removed. (The original unit test had four middle names; the
+        # integration path caps given_name.split(" ") at four entries, so
+        # only three middles can be exercised here.)
+        (
+            "Nick Gerardus " + "longname" * 20 + " Cornelis",
+            "Johnson",
+            "Nick Gerardus Johnson",
+        ),
+        # In the rare case that someone has a first or last name with over 60
+        # characters, characters are cut off the name.
+        (
+            "Nick" * 40,
+            "Johnson",
+            ("Nick" * 40 + " Johnson")[:60],
+        ),
+        (
+            "Nick",
+            "Johnson" * 40,
+            ("Nick " + "Johnson" * 40)[:60],
+        ),
+        (
+            "Nick Gerardus Cornelis",
+            "Johnson" * 40,
+            ("Nick " + "Johnson" * 40)[:60],
+        ),
+    ],
+)
+async def test_generate_common_name_truncation(
+    trigger_sync: Callable[[EmployeeUUID], Awaitable[None]],
+    graphql_client: GraphQLClient,
+    ldap_api: LDAPAPI,
+    ldap_org_unit: list[str],
+    given_name: str,
+    surname: str,
+    expected_cn: str,
+) -> None:
+    cpr_number = "0101700031"
+    r = await graphql_client.person_create(
+        input=EmployeeCreateInput(
+            given_name=given_name, surname=surname, cpr_number=cpr_number
+        )
+    )
+    await trigger_sync(EmployeeUUID(r.uuid))
+
+    response, _ = await ldap_api.ldap_connection.ldap_search(
+        search_base=combine_dn_strings(ldap_org_unit),
+        search_filter=f"(employeeNumber={cpr_number})",
+        attributes=["cn"],
+    )
+    assert one(one(response)["attributes"]["cn"]) == expected_cn
+
+
+@pytest.mark.integration_test
+@pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
 @pytest.mark.usefixtures("test_client")
