@@ -21,7 +21,6 @@ from mo_ldap_import_export.environments.generate_username import generate_userna
 from mo_ldap_import_export.ldapapi import LDAPAPI
 from mo_ldap_import_export.main import GRAPHQL_VERSION
 from mo_ldap_import_export.moapi import MOAPI
-from mo_ldap_import_export.models import Employee
 from mo_ldap_import_export.usernames import UserNameGenerator
 from tests.graphql_mocker import GraphQLMocker
 
@@ -116,110 +115,6 @@ def username_generator(
         yield UserNameGenerator(Settings(), user_context["ldap_connection"])
 
 
-@pytest.fixture
-def alleroed_username_generator(
-    minimal_valid_environmental_variables: None,
-    monkeypatch: pytest.MonkeyPatch,
-    context: Context,
-    existing_usernames_ldap: list,
-) -> Iterator[UserNameGenerator]:
-    username_generator_config = {
-        "char_replacement": {},
-        # Note: We need some 'X's in this list. to account for potential duplicates
-        # Note2: We need some short combinations in this list, to account for persons with
-        # short names.
-        #
-        # Index:
-        # F: First name
-        # 1: First middle name
-        # 2: Second middle name
-        # 3: Third middle name
-        # L: Last name
-        # X: Number
-        #
-        # Example1: If combination = "F11LL", 'Hans Jakob Hansen' returns username="hjaha"
-        # Example2: If combination = "FFLL", 'Hans Jakob Hansen' returns username="haha"
-        "combinations_to_try": [
-            # Try to make a username with 4 characters.
-            "F111",
-            "F112",
-            "F122",
-            "F222",
-            "F223",
-            "F233",
-            "F333",
-            #
-            "F11L",
-            "F12L",
-            "F22L",
-            "F23L",
-            "F33L",
-            #
-            "F1LL",
-            "F2LL",
-            "F3LL",
-            #
-            "FLLL",
-            #
-            # If we get to here, we failed to make a username with 4 characters.
-            "F111L",
-            "F112L",
-            "F122L",
-            "F222L",
-            "F223L",
-            "F233L",
-            "F333L",
-            #
-            "F11LL",
-            "F12LL",
-            "F22LL",
-            "F23LL",
-            "F33LL",
-            #
-            "F1LLL",
-            "F2LLL",
-            "F3LLL",
-            #
-            "FLLLL",
-            #
-            # If we get to here, we failed to make a username with only a single
-            # character for the first name
-            #
-            "FF11",
-            "FF12",
-            "FF22",
-            "FF23",
-            "FF33",
-            "FF1L",
-            "FF2L",
-            "FF3L",
-            "FFLL",
-            #
-            "FFF1",
-            "FFF2",
-            "FFF3",
-            "FFFL",
-            #
-            "FFFF",
-        ],
-        "forbidden_usernames": ["abrn", "anls"],
-        "remove_vowels": True,
-        "disallow_mo_usernames": True,
-    }
-    monkeypatch.setenv(
-        "CONVERSION_MAPPING",
-        json.dumps({"username_generator": username_generator_config}),
-    )
-    monkeypatch.setenv("LDAP_SEARCH_BASE", "DC=bar")
-
-    with patch(
-        "mo_ldap_import_export.usernames.paged_search",
-        return_value=existing_usernames_ldap,
-    ):
-        user_context = context["user_context"]
-        yield UserNameGenerator(Settings(), user_context["ldap_connection"])
-
-
 async def test_get_existing_usernames(
     username_generator: UserNameGenerator,
     existing_usernames: set[str],
@@ -295,18 +190,6 @@ def test_create_common_name_exhausted(username_generator: UserNameGenerator) -> 
         )
 
 
-async def test_generate_dn(
-    monkeypatch: pytest.MonkeyPatch, username_generator: UserNameGenerator
-) -> None:
-    monkeypatch.setenv("CONVERSION_MAPPING__MO2LDAP", "{}")
-    username_generator.settings = Settings()
-
-    employee = Employee(given_name="Patrick", surname="Bateman")
-    common_name = await username_generator.generate_common_name(employee)
-    dn = await username_generator.generate_dn(common_name)
-    assert dn == "CN=Patrick Bateman,DC=bar"
-
-
 @pytest.mark.parametrize(
     "name,combi,expected",
     [
@@ -360,19 +243,6 @@ def test_check_combinations_to_try():
     config = {"combinations_to_try": ["GAK"]}
     with pytest.raises(ValidationError, match="Incorrect combination"):
         parse_obj_as(UsernameGeneratorConfig, config)
-
-
-async def test_alleroed_dn_generator(
-    monkeypatch: pytest.MonkeyPatch,
-    alleroed_username_generator: UserNameGenerator,
-) -> None:
-    monkeypatch.setenv("CONVERSION_MAPPING__MO2LDAP", "{}")
-    alleroed_username_generator.settings = Settings()
-
-    employee = Employee(given_name="Patrick", surname="Bateman")
-    common_name = await alleroed_username_generator.generate_common_name(employee)
-    dn = await alleroed_username_generator.generate_dn(common_name)
-    assert dn == "CN=Patrick Bateman,DC=bar"
 
 
 @pytest.mark.usefixtures("minimal_valid_environmental_variables")

@@ -588,3 +588,51 @@ async def test_generate_common_name(
     await trigger_sync(mo_person)
     common_name = await fetch_common_name(mo_person_cpr_number)
     assert common_name == "Aage Klareng"
+
+
+@pytest.mark.integration_test
+@pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
+        "CONVERSION_MAPPING": json.dumps(
+            {
+                "mo2ldap": """
+                    {% set mo_employee = load_mo_employee(uuid) %}
+                    {{
+                        {
+                            "employeeNumber": mo_employee.cpr_number,
+                            "uid": mo_employee.cpr_number,
+                            "cn": generate_common_name(uuid, dn),
+                            "sn": mo_employee.surname or "-",
+                            "givenName": mo_employee.given_name,
+                        }|tojson
+                    }}
+                """,
+            }
+        ),
+    }
+)
+async def test_generate_common_name_dn_format(
+    trigger_sync: Callable[[EmployeeUUID], Awaitable[None]],
+    graphql_client: GraphQLClient,
+    ldap_api: LDAPAPI,
+    ldap_org_unit: list[str],
+) -> None:
+    cpr_number = "0101700020"
+    r = await graphql_client.person_create(
+        input=EmployeeCreateInput(
+            given_name="Patrick", surname="Bateman", cpr_number=cpr_number
+        )
+    )
+    await trigger_sync(EmployeeUUID(r.uuid))
+
+    response, _ = await ldap_api.ldap_connection.ldap_search(
+        search_base=combine_dn_strings(ldap_org_unit),
+        search_filter=f"(employeeNumber={cpr_number})",
+        attributes=["cn"],
+    )
+    employee = one(response)
+    assert one(employee["attributes"]["cn"]) == "Patrick Bateman"
+    expected_dn = combine_dn_strings(["cn=Patrick Bateman"] + ldap_org_unit)
+    assert employee["dn"] == expected_dn
