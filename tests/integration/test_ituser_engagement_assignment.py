@@ -69,6 +69,7 @@ from tests.integration.conftest import AddLdapPerson
         ),
     }
 )
+@pytest.mark.usefixtures("aduuid")
 async def test_ituser_engagement_assignment(
     graphql_client: GraphQLClient,
     mo_person: UUID,

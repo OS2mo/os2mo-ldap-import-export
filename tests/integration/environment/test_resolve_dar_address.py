@@ -21,7 +21,9 @@ PILESTREADE42 = "fe40c3ab-2e2e-4f00-8065-914b824d0457"
 
 
 @pytest.fixture
-async def dar_employee(graphql_client: GraphQLClient) -> UUID:
+async def dar_employee(
+    graphql_client: GraphQLClient, adresse_post_employee: UUID
+) -> UUID:
     return one(
         (
             await graphql_client.read_class_uuid_by_facet_and_class_user_key(

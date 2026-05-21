@@ -213,6 +213,7 @@ async def test_ldap_template_skip(test_client: AsyncClient, mo_person: UUID) -> 
         )
     }
 )
+@pytest.mark.usefixtures("root_org")
 async def test_ldap_template_multiple_lines(
     test_client: AsyncClient, graphql_client: GraphQLClient
 ) -> None:
@@ -256,6 +257,7 @@ async def test_ldap_template_multiple_lines(
         )
     }
 )
+@pytest.mark.usefixtures("root_org")
 async def test_ldap_template_start_at(
     test_client: AsyncClient, graphql_client: GraphQLClient
 ) -> None:

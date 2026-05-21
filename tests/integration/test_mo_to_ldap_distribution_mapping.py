@@ -129,6 +129,7 @@ async def trigger_sync(identifier: str, uuid: UUID) -> None:
         "role_to_group",
     ],
 )
+@pytest.mark.usefixtures("role_facet")
 async def test_group_user_key_correlation(
     add_ldap_person: AddLdapPerson,
     ldap_api: LDAPAPI,

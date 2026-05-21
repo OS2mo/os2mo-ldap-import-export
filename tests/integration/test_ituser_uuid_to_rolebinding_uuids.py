@@ -29,7 +29,7 @@ from mo_ldap_import_export.environments.main import ituser_uuid_to_rolebinding_u
 
 
 @pytest.fixture
-async def itsystem(graphql_client: GraphQLClient) -> UUID:
+async def itsystem(graphql_client: GraphQLClient, root_org: UUID) -> UUID:
     itsystem = await graphql_client.itsystem_create(
         input=ITSystemCreateInput(
             user_key="borgerpc",

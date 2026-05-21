@@ -43,7 +43,7 @@ from tests.conftest import construct_mitid_nl3uuid
         ),
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "string_employee_address_type", "public")
 async def test_mitid_import(
     graphql_client: GraphQLClient,
     mo_person: UUID,

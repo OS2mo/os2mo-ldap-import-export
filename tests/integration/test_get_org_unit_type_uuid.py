@@ -16,7 +16,7 @@ from mo_ldap_import_export.exceptions import UUIDNotFoundException
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "afdeling")
 async def test_get_org_unit_type_uuid(
     graphql_client: GraphQLClient,
 ) -> None:

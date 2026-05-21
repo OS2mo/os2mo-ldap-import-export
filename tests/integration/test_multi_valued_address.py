@@ -50,7 +50,7 @@ from mo_ldap_import_export.utils import combine_dn_strings
         ),
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "public", "email_employee")
 async def test_multi_valued_address_from_ldap(
     graphql_client: GraphQLClient,
     mo_person: UUID,

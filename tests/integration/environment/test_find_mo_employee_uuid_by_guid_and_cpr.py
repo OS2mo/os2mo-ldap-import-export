@@ -47,6 +47,7 @@ async def test_cpr_match(
 
 
 @pytest.mark.integration_test
+@pytest.mark.usefixtures("aduuid")
 async def test_ituser_match(
     dataloader: DataLoader,
     add_ldap_person: AddLdapPerson,

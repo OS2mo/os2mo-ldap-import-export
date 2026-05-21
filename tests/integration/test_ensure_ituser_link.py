@@ -82,6 +82,7 @@ async def test_ensure_ituser_link_invalid_itsystem(
         "LDAP_IT_SYSTEM": "ADUUID",
     }
 )
+@pytest.mark.usefixtures("aduuid")
 async def test_ensure_ituser_link(
     context: Context,
     ldap_api: LDAPAPI,

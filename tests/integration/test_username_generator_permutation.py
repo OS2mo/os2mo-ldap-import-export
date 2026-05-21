@@ -126,7 +126,7 @@ async def test_generate_username_permutation_avoids_ldap_taken_names(
         ("Io", "Au"),
     ],
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "root_org")
 async def test_generate_username_permutation_no_available_usernames(
     context: Context, graphql_client: GraphQLClient, given_name: str, surname: str
 ) -> None:
@@ -332,7 +332,7 @@ async def test_generate_username_permutation_with_forbidden_usernames(
         ("Ab Aaa", "abb1"),  # Only *one* consonant across *all* name parts
     ],
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "root_org")
 async def test_generate_username_permutation_expected_usernames(
     graphql_client: GraphQLClient,
     context: Context,

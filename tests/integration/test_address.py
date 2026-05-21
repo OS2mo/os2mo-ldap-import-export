@@ -62,7 +62,7 @@ from mo_ldap_import_export.utils import mo_today
         ),
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "email_employee", "public")
 async def test_to_mo(
     graphql_client: GraphQLClient,
     mo_person: UUID,
@@ -165,7 +165,7 @@ async def test_to_mo(
         ),
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "email_employee", "public")
 async def test_terminate_on_create(
     graphql_client: GraphQLClient,
     mo_person: UUID,
@@ -424,7 +424,7 @@ async def test_to_ldap(
         ),
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "email_employee", "public")
 async def test_to_mo_terminate_without_value(
     graphql_client: GraphQLClient,
     mo_person: UUID,

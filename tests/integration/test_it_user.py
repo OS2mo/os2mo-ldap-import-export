@@ -64,7 +64,7 @@ from mo_ldap_import_export.utils import mo_today
         ),
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "adtitle")
 async def test_to_mo(
     graphql_client: GraphQLClient,
     mo_person: UUID,
