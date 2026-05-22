@@ -148,3 +148,18 @@ def get_delete_flag(mo_object: MOBase) -> bool:
         )
         return True
     return False
+
+
+def rec_flatten_current_in_response(entry: dict[str, Any]) -> dict[str, Any]:
+    new_dict = {}
+
+    for key, value in entry.items():
+        if isinstance(value, str) or not value:
+            new_dict.update({key: value})
+            continue
+        if key == "current":
+            new_dict.update(rec_flatten_current_in_response(value))
+        else:
+            new_dict.update({key: rec_flatten_current_in_response(value)})
+
+    return new_dict
