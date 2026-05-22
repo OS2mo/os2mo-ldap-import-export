@@ -506,6 +506,14 @@ from .read_itusers import ReadItusersItusersObjects
 from .read_itusers import ReadItusersItusersObjectsValidities
 from .read_itusers import ReadItusersItusersObjectsValiditiesRolebindings
 from .read_itusers import ReadItusersItusersObjectsValiditiesValidity
+from .read_itusers_with_validity import ReadItusersWithValidity
+from .read_itusers_with_validity import ReadItusersWithValidityItusers
+from .read_itusers_with_validity import ReadItusersWithValidityItusersObjects
+from .read_itusers_with_validity import ReadItusersWithValidityItusersObjectsValidities
+from .read_itusers_with_validity import (
+    ReadItusersWithValidityItusersObjectsValiditiesValidity,
+)
+from .read_itusers_with_validity import ReadItusersWithValidityItusersPageInfo
 from .read_manager_person_uuid import ReadManagerPersonUuid
 from .read_manager_person_uuid import ReadManagerPersonUuidManagers
 from .read_manager_person_uuid import ReadManagerPersonUuidManagersObjects
@@ -923,6 +931,12 @@ __all__ = [
     "ReadItusersItusersObjectsValidities",
     "ReadItusersItusersObjectsValiditiesRolebindings",
     "ReadItusersItusersObjectsValiditiesValidity",
+    "ReadItusersWithValidity",
+    "ReadItusersWithValidityItusers",
+    "ReadItusersWithValidityItusersObjects",
+    "ReadItusersWithValidityItusersObjectsValidities",
+    "ReadItusersWithValidityItusersObjectsValiditiesValidity",
+    "ReadItusersWithValidityItusersPageInfo",
     "ReadManagerPersonUuid",
     "ReadManagerPersonUuidManagers",
     "ReadManagerPersonUuidManagersObjects",

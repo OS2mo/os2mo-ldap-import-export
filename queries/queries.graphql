@@ -323,6 +323,22 @@ query read_all_itusers(
   }
 }
 
+query read_itusers_with_validity($filter: ITUserFilter!, $cursor: Cursor = null) {
+  itusers(limit: 100, cursor: $cursor, filter: $filter) {
+    objects {
+      uuid
+      validities {
+        validity {
+          to
+        }
+      }
+    }
+    page_info {
+      next_cursor
+    }
+  }
+}
+
 query read_filtered_addresses($filter: AddressFilter!) {
   addresses(filter: $filter) {
     objects {

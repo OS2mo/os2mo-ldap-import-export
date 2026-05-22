@@ -228,6 +228,8 @@ from .read_ituser_uuid import ReadItuserUuid
 from .read_ituser_uuid import ReadItuserUuidItusers
 from .read_itusers import ReadItusers
 from .read_itusers import ReadItusersItusers
+from .read_itusers_with_validity import ReadItusersWithValidity
+from .read_itusers_with_validity import ReadItusersWithValidityItusers
 from .read_manager_person_uuid import ReadManagerPersonUuid
 from .read_manager_person_uuid import ReadManagerPersonUuidManagers
 from .read_org_unit_ancestor_names import ReadOrgUnitAncestorNames
@@ -1161,6 +1163,31 @@ class GraphQLClient(AsyncBaseClient):
         response = await self.execute(query=query, variables=variables)
         data = self.get_data(response)
         return ReadAllItusers.parse_obj(data).itusers
+
+    async def read_itusers_with_validity(
+        self, filter: ITUserFilter, cursor: Any | None | UnsetType = UNSET
+    ) -> ReadItusersWithValidityItusers:
+        query = gql("""
+            query read_itusers_with_validity($filter: ITUserFilter!, $cursor: Cursor = null) {
+              itusers(limit: 100, cursor: $cursor, filter: $filter) {
+                objects {
+                  uuid
+                  validities {
+                    validity {
+                      to
+                    }
+                  }
+                }
+                page_info {
+                  next_cursor
+                }
+              }
+            }
+            """)
+        variables: dict[str, object] = {"filter": filter, "cursor": cursor}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return ReadItusersWithValidity.parse_obj(data).itusers
 
     async def read_filtered_addresses(
         self, filter: AddressFilter
