@@ -65,6 +65,62 @@ query read_employee_uuid_by_cpr_number($cpr_number: CPR!) {
   }
 }
 
+query read_current_addresses_filtered_with_pagination(
+    $filter: AddressFilter!
+    $cursor: Cursor = null
+    $limit: int = 100
+) {
+    addresses(limit: $limit, cursor: $cursor, filter: $filter) {
+        objects {
+            current {
+                address_type_response {
+                    current {
+                        uuid
+                        user_key
+                        name
+                    }
+                }
+                engagement_response {
+                    current {
+                        uuid
+                        user_key
+                    }
+                }
+                person_response {
+                    current {
+                        uuid
+                        user_key
+                        name
+                    }
+                }
+                uuid
+                user_key
+                value
+                visibility_response {
+                    current {
+                        uuid
+                        user_key
+                        description
+                        name
+                        facet_response {
+                            uuid
+                        }
+                    }
+                }
+                ituser_response {
+                    current {
+                        uuid
+                        user_key
+                    }
+                }
+            }
+        }
+        page_info {
+            next_cursor
+        }
+    }
+}
+
 query read_employees(
   $uuids: [UUID!]!
   $from_date: DateTime
