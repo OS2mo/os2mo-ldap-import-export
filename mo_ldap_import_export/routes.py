@@ -303,13 +303,13 @@ def _outliving_uuids(objects: list, termination_date: datetime) -> set[UUID]:
 async def get_dangling_ituser_relations(
     graphql_client: GraphQLClient,
     it_system_uuid: UUID,
-) -> dict[str, dict[str, Any]]:
+) -> dict[UUID, dict[str, Any]]:
     """Engagements and addresses that outlive their terminated IT-user, keyed by IT-user UUID."""
     read = partial(
         graphql_client.read_itusers_with_validity,
         ITUserFilter(itsystem_uuids=[it_system_uuid], from_date=None, to_date=None),
     )
-    report: dict[str, dict[str, Any]] = {}
+    report: dict[UUID, dict[str, Any]] = {}
     async for ituser in paged_query(read):
         termination_date = last(ituser.validities).validity.to
         if termination_date is None:
@@ -327,7 +327,7 @@ async def get_dangling_ituser_relations(
         dangling_addresses = _outliving_uuids(addresses.objects, termination_date)
         if not dangling_engagements and not dangling_addresses:
             continue
-        report[str(ituser.uuid)] = {
+        report[ituser.uuid] = {
             "termination_date": termination_date,
             "engagements": dangling_engagements,
             "addresses": dangling_addresses,
@@ -722,7 +722,7 @@ def construct_router(settings: Settings) -> APIRouter:
         graphql_client: depends.GraphQLClient,
         it_system: UUID,
         dry_run: bool = True,
-    ) -> dict[str, dict[str, Any]]:
+    ) -> dict[UUID, dict[str, Any]]:
         """Terminate engagements/addresses outliving their IT-user's termination."""
         dangling = await get_dangling_ituser_relations(graphql_client, it_system)
         if dry_run:
