@@ -333,6 +333,7 @@ class EmployeesBoundEngagementFilter(BaseModel):
     registration: Optional["EngagementRegistrationFilter"] = None
     job_function: Optional["ClassFilter"] = None
     engagement_type: Optional["ClassFilter"] = None
+    ituser: Optional["ITUserFilter"] = None
 
 
 class EmployeesBoundITUserFilter(BaseModel):
@@ -377,6 +378,25 @@ class EmployeesBoundManagerFilter(BaseModel):
     responsibility: Optional["ClassFilter"] = None
     manager_type: Optional["ClassFilter"] = None
     exclude: Optional["EmployeeFilter"] = None
+
+
+class EngagementBoundAddressFilter(BaseModel):
+    org_unit: Optional["OrganisationUnitFilter"] = None
+    org_units: list[UUID] | None = None
+    employee: Optional["EmployeeFilter"] | UnsetType = UNSET
+    employees: list[UUID] | None = None
+    uuids: list[UUID] | None = None
+    user_keys: list[str] | None = None
+    from_date: datetime | None | UnsetType = UNSET
+    to_date: datetime | None | UnsetType = UNSET
+    registration_time: datetime | None = None
+    registration: Optional["AddressRegistrationFilter"] = None
+    address_type: Optional["ClassFilter"] = None
+    address_types: list[UUID] | None = None
+    address_type_user_keys: list[str] | None = None
+    engagements: list[UUID] | None = None
+    ituser: Optional["ITUserFilter"] = None
+    visibility: Optional["ClassFilter"] = None
 
 
 class EngagementBoundITUserFilter(BaseModel):
@@ -431,6 +451,7 @@ class EngagementFilter(BaseModel):
     registration: Optional["EngagementRegistrationFilter"] = None
     job_function: Optional["ClassFilter"] = None
     engagement_type: Optional["ClassFilter"] = None
+    ituser: Optional["ITUserFilter"] = None
 
 
 class EngagementRegistrationFilter(BaseModel):
@@ -553,6 +574,7 @@ class FacetsBoundClassFilter(BaseModel):
 class FileFilter(BaseModel):
     file_store: FileStore
     file_names: list[str] | None = None
+    file_name_contains: str | None = None
 
 
 class FullEventFilter(BaseModel):
@@ -971,6 +993,7 @@ class OrgUnitsboundengagementfilter(BaseModel):
     registration: Optional["EngagementRegistrationFilter"] = None
     job_function: Optional["ClassFilter"] = None
     engagement_type: Optional["ClassFilter"] = None
+    ituser: Optional["ITUserFilter"] = None
 
 
 class OrgUnitsboundituserfilter(BaseModel):
@@ -1313,6 +1336,7 @@ class UuidsBoundEngagementFilter(BaseModel):
     registration: Optional["EngagementRegistrationFilter"] = None
     job_function: Optional["ClassFilter"] = None
     engagement_type: Optional["ClassFilter"] = None
+    ituser: Optional["ITUserFilter"] = None
 
 
 class UuidsBoundFacetFilter(BaseModel):
@@ -1415,6 +1439,7 @@ EmployeesBoundEngagementFilter.update_forward_refs()
 EmployeesBoundITUserFilter.update_forward_refs()
 EmployeesBoundLeaveFilter.update_forward_refs()
 EmployeesBoundManagerFilter.update_forward_refs()
+EngagementBoundAddressFilter.update_forward_refs()
 EngagementBoundITUserFilter.update_forward_refs()
 EngagementCreateInput.update_forward_refs()
 EngagementFilter.update_forward_refs()

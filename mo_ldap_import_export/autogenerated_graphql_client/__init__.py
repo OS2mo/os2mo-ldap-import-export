@@ -163,6 +163,7 @@ from .input_types import EmployeesBoundLeaveFilter
 from .input_types import EmployeesBoundManagerFilter
 from .input_types import EmployeeTerminateInput
 from .input_types import EmployeeUpdateInput
+from .input_types import EngagementBoundAddressFilter
 from .input_types import EngagementBoundITUserFilter
 from .input_types import EngagementCreateInput
 from .input_types import EngagementFilter
@@ -623,6 +624,7 @@ __all__ = [
     "EmployeesBoundITUserFilter",
     "EmployeesBoundLeaveFilter",
     "EmployeesBoundManagerFilter",
+    "EngagementBoundAddressFilter",
     "EngagementBoundITUserFilter",
     "EngagementCreate",
     "EngagementCreateEngagementCreate",
