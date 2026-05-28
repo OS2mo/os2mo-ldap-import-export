@@ -21,6 +21,8 @@ class TestingItuserReadItusersObjects(BaseModel):
 class TestingItuserReadItusersObjectsValidities(BaseModel):
     uuid: UUID
     user_key: str
+    external_id: str | None
+    binding_type: str | None
     itsystem: "TestingItuserReadItusersObjectsValiditiesItsystem"
     person: list["TestingItuserReadItusersObjectsValiditiesPerson"] | None
     validity: "TestingItuserReadItusersObjectsValiditiesValidity"

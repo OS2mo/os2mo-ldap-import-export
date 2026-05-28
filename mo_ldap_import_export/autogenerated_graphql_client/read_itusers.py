@@ -26,6 +26,7 @@ class ReadItusersItusersObjectsValidities(BaseModel):
     engagement_uuids: list[UUID]
     rolebindings: list["ReadItusersItusersObjectsValiditiesRolebindings"]
     external_id: str | None
+    binding_type: str | None
 
 
 class ReadItusersItusersObjectsValiditiesValidity(BaseModel):

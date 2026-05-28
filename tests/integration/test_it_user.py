@@ -103,6 +103,8 @@ async def test_to_mo(
     mo_it_user = {
         "uuid": ANY,
         "user_key": title,
+        "external_id": None,
+        "binding_type": None,
         "itsystem": {"user_key": "ADtitle"},
         "person": [{"uuid": mo_person}],
         "validity": {"from_": mo_today(), "to": None},

@@ -505,6 +505,7 @@ async def test_mismatched_json_key_and_itsystem(
                 "itsystem_uuid": ldap_uuid_itsystem_uuid,
                 "user_key": str(ldap_person_uuid),
                 "external_id": None,
+                "binding_type": None,
                 "rolebindings": [],
                 "validity": {
                     "from_": mo_today(),
@@ -584,6 +585,7 @@ async def test_default_validity(
                 "itsystem_uuid": ldap_uuid_itsystem_uuid,
                 "user_key": ANY,
                 "external_id": None,
+                "binding_type": None,
                 "rolebindings": [],
                 "validity": {
                     "from_": mo_today(),

@@ -2435,6 +2435,7 @@ input EmployeesBoundEngagementFilter {
   registration: EngagementRegistrationFilter = null
   job_function: ClassFilter = null
   engagement_type: ClassFilter = null
+  ituser: ITUserFilter = null
 }
 
 input EmployeesBoundITUserFilter {
@@ -2451,6 +2452,7 @@ input EmployeesBoundITUserFilter {
   itsystem_uuids: [UUID!] = null
   engagement: EngagementFilter = null
   external_ids: [String!] = null
+  binding_types: [String!] = null
 }
 
 input EmployeesBoundLeaveFilter {
@@ -2485,6 +2487,19 @@ input EmployeesBoundManagerFilter {
 Employee engagement in an organisation unit
 """
 type Engagement {
+  """
+  Addresses connected to the engagement.
+  """
+  addresses_response(
+    filter: EngagementBoundAddressFilter
+
+    "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
+    limit: int = null
+
+    "Cursor defining the next elements to fetch.\n\n| `cursor`       | Next element is    |\n|----------------|--------------------|\n| not provided   | First              |\n| `null`         | First              |\n| `\"MA==\"` (`*`) | First after Cursor |\n\n`*`: Placeholder for the cursor returned by the previous iteration.\n"
+    cursor: Cursor = null
+  ): AddressResponsePaged!
+
   "\nDescribes the employee's affiliation to an organisation unit\n\nExamples:\n* `\"Employed\"`\n* `\"Social worker\"`\n* `\"Employee (hourly wage)\"`\n"
   engagement_type_response: ClassResponse!
 
@@ -2767,6 +2782,25 @@ type Engagement {
   extension_10: String
 }
 
+input EngagementBoundAddressFilter {
+  org_unit: OrganisationUnitFilter = null
+  org_units: [UUID!] = null
+  employee: EmployeeFilter
+  employees: [UUID!] = null
+  uuids: [UUID!] = null
+  user_keys: [String!] = null
+  from_date: DateTime
+  to_date: DateTime
+  registration_time: DateTime = null
+  registration: AddressRegistrationFilter = null
+  address_type: ClassFilter = null
+  address_types: [UUID!] = null
+  address_type_user_keys: [String!] = null
+  engagements: [UUID!] = null
+  ituser: ITUserFilter = null
+  visibility: ClassFilter = null
+}
+
 input EngagementBoundITUserFilter {
   org_unit: OrganisationUnitFilter = null
   org_units: [UUID!] = null
@@ -2781,6 +2815,7 @@ input EngagementBoundITUserFilter {
   itsystem: ITSystemFilter = null
   itsystem_uuids: [UUID!] = null
   external_ids: [String!] = null
+  binding_types: [String!] = null
 }
 
 input EngagementCreateInput {
@@ -2907,6 +2942,11 @@ input EngagementFilter {
 
   "Engagement type filter limiting which entries are returned.\n"
   engagement_type: ClassFilter = null
+
+  """
+  ITUser filter limiting which entries are returned.
+  """
+  ituser: ITUserFilter = null
 }
 
 type EngagementRegistration implements IRegistration & RegistrationBase {
@@ -3645,6 +3685,9 @@ input FileFilter {
 
   "Filename filter limiting which entries are returned.\n\n| `file_names`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   file_names: [String!] = null
+
+  "Case-insensitive substring of the filename filter limiting which entries are returned.\n\n| `file_name_contains`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  file_name_contains: String = null
 }
 
 """
@@ -4391,6 +4434,11 @@ type ITUser {
   """
   external_id: String
 
+  """
+  Free-form classification of how the IT user is bound to the rest of MO.
+  """
+  binding_type: String
+
   "\nThe object type.\n\nAlways contains the string `it`.\n"
   type: String!
     @deprecated(
@@ -4458,6 +4506,11 @@ input ITUserCreateInput {
   ID of the user account in the external system.
   """
   external_id: String = null
+
+  """
+  Free-form classification of how the IT user is bound to the rest of MO.
+  """
+  binding_type: String = null
 
   """
   Primary field of the IT user object
@@ -4559,6 +4612,9 @@ input ITUserFilter {
 
   "Only return IT users with this `external_id` filter limiting which entries are returned.\n\n| `external_id`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   external_ids: [String!] = null
+
+  "Only return IT users with this `binding_type` filter limiting which entries are returned.\n\n| `binding_type`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  binding_types: [String!] = null
 }
 
 type ITUserRegistration implements IRegistration & RegistrationBase {
@@ -4731,6 +4787,11 @@ input ITUserUpdateInput {
   ID of the user account in the external system.
   """
   external_id: String = null
+
+  """
+  Free-form classification of how the IT user is bound to the rest of MO.
+  """
+  binding_type: String = null
 
   """
   Primary field of the IT user object
@@ -6195,6 +6256,11 @@ type Mutation {
         reason: "This is not the argument our event system deserves, but the one it needs right now."
       )
     owner: UUID = null
+
+    """
+    Priority of the event. 1 is the highest priority.
+    """
+    priority: Int! = 10000
   ): UUIDPaged!
 
   """
@@ -6233,6 +6299,11 @@ type Mutation {
         reason: "This is not the argument our event system deserves, but the one it needs right now."
       )
     owner: UUID = null
+
+    """
+    Priority of the event. 1 is the highest priority.
+    """
+    priority: Int! = 10000
   ): UUIDPaged!
 
   """
@@ -6274,6 +6345,11 @@ type Mutation {
         reason: "This is not the argument our event system deserves, but the one it needs right now."
       )
     owner: UUID = null
+
+    """
+    Priority of the event. 1 is the highest priority.
+    """
+    priority: Int! = 10000
   ): UUIDPaged!
 
   """
@@ -6315,6 +6391,11 @@ type Mutation {
         reason: "This is not the argument our event system deserves, but the one it needs right now."
       )
     owner: UUID = null
+
+    """
+    Priority of the event. 1 is the highest priority.
+    """
+    priority: Int! = 10000
   ): UUIDPaged!
 
   """
@@ -6364,6 +6445,11 @@ type Mutation {
         reason: "This is not the argument our event system deserves, but the one it needs right now."
       )
     owner: UUID = null
+
+    """
+    Priority of the event. 1 is the highest priority.
+    """
+    priority: Int! = 10000
   ): UUIDPaged!
 
   """
@@ -6405,6 +6491,11 @@ type Mutation {
         reason: "This is not the argument our event system deserves, but the one it needs right now."
       )
     owner: UUID = null
+
+    """
+    Priority of the event. 1 is the highest priority.
+    """
+    priority: Int! = 10000
   ): UUIDPaged!
 
   """
@@ -6463,6 +6554,11 @@ type Mutation {
         reason: "This is not the argument our event system deserves, but the one it needs right now."
       )
     owner: UUID = null
+
+    """
+    Priority of the event. 1 is the highest priority.
+    """
+    priority: Int! = 10000
   ): UUIDPaged!
 
   """
@@ -6509,6 +6605,11 @@ type Mutation {
         reason: "This is not the argument our event system deserves, but the one it needs right now."
       )
     owner: UUID = null
+
+    """
+    Priority of the event. 1 is the highest priority.
+    """
+    priority: Int! = 10000
   ): UUIDPaged!
 
   """
@@ -6547,6 +6648,11 @@ type Mutation {
         reason: "This is not the argument our event system deserves, but the one it needs right now."
       )
     owner: UUID = null
+
+    """
+    Priority of the event. 1 is the highest priority.
+    """
+    priority: Int! = 10000
   ): UUIDPaged!
 
   """
@@ -6585,6 +6691,11 @@ type Mutation {
         reason: "This is not the argument our event system deserves, but the one it needs right now."
       )
     owner: UUID = null
+
+    """
+    Priority of the event. 1 is the highest priority.
+    """
+    priority: Int! = 10000
   ): UUIDPaged!
 
   """
@@ -6628,6 +6739,11 @@ type Mutation {
         reason: "This is not the argument our event system deserves, but the one it needs right now."
       )
     owner: UUID = null
+
+    """
+    Priority of the event. 1 is the highest priority.
+    """
+    priority: Int! = 10000
   ): UUIDPaged!
 
   """
@@ -6680,6 +6796,11 @@ type Mutation {
         reason: "This is not the argument our event system deserves, but the one it needs right now."
       )
     owner: UUID = null
+
+    """
+    Priority of the event. 1 is the highest priority.
+    """
+    priority: Int! = 10000
   ): UUIDPaged!
 
   """
@@ -6718,6 +6839,11 @@ type Mutation {
         reason: "This is not the argument our event system deserves, but the one it needs right now."
       )
     owner: UUID = null
+
+    """
+    Priority of the event. 1 is the highest priority.
+    """
+    priority: Int! = 10000
   ): UUIDPaged!
 
   """
@@ -6746,6 +6872,11 @@ type Mutation {
         reason: "This is not the argument our event system deserves, but the one it needs right now."
       )
     owner: UUID = null
+
+    """
+    Priority of the event. 1 is the highest priority.
+    """
+    priority: Int! = 10000
   ): UUIDPaged!
 
   """
@@ -6794,6 +6925,11 @@ type Mutation {
         reason: "This is not the argument our event system deserves, but the one it needs right now."
       )
     owner: UUID = null
+
+    """
+    Priority of the event. 1 is the highest priority.
+    """
+    priority: Int! = 10000
   ): UUIDPaged!
 
   "Create a namespace.\n\nThis operation is idempotent, so it can be called upon application startup.\n\nNamespaces are used to create your own event systems.\n"
@@ -7018,6 +7154,7 @@ input OrgUnitsboundengagementfilter {
   registration: EngagementRegistrationFilter = null
   job_function: ClassFilter = null
   engagement_type: ClassFilter = null
+  ituser: ITUserFilter = null
 }
 
 input OrgUnitsboundituserfilter {
@@ -7034,6 +7171,7 @@ input OrgUnitsboundituserfilter {
   itsystem_uuids: [UUID!] = null
   engagement: EngagementFilter = null
   external_ids: [String!] = null
+  binding_types: [String!] = null
 }
 
 input OrgUnitsboundklefilter {
@@ -7131,7 +7269,7 @@ type OrganisationUnit {
       reason: "Use 'parent_response' instead. Will be removed in a future version of OS2mo."
     )
 
-  "\nThe top-unit (root) of the organisation unit, in the hierarchy.\n"
+  "\nThe top-unit (root) of the organisation unit, in the hierarchy.\n\nNote that this assumes that the unit had a unique root over all\ntime. If this is not the case, an error will be thrown.\n"
   root_response: OrganisationUnitResponse
 
   "\nThe top-unit (root) of the organisation unit, in the hierarchy.\n"
@@ -9379,6 +9517,7 @@ input UuidsBoundEngagementFilter {
   registration: EngagementRegistrationFilter = null
   job_function: ClassFilter = null
   engagement_type: ClassFilter = null
+  ituser: ITUserFilter = null
 }
 
 input UuidsBoundFacetFilter {
@@ -9414,6 +9553,7 @@ input UuidsBoundITUserFilter {
   itsystem_uuids: [UUID!] = null
   engagement: EngagementFilter = null
   external_ids: [String!] = null
+  binding_types: [String!] = null
 }
 
 input UuidsBoundLeaveFilter {
