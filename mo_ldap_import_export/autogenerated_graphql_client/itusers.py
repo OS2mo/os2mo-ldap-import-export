@@ -19,6 +19,7 @@ class ItusersItusersObjects(BaseModel):
 
 class ItusersItusersObjectsCurrent(BaseModel):
     external_id: str | None
+    binding_type: str | None
 
 
 Itusers.update_forward_refs()

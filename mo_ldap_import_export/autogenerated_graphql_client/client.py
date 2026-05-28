@@ -952,6 +952,7 @@ class GraphQLClient(AsyncBaseClient):
                       uuid
                     }
                     external_id
+                    binding_type
                   }
                 }
               }
@@ -974,6 +975,7 @@ class GraphQLClient(AsyncBaseClient):
                   uuid
                   current {
                     external_id
+                    binding_type
                   }
                 }
               }
@@ -1144,6 +1146,7 @@ class GraphQLClient(AsyncBaseClient):
                     employee_uuid
                     user_key
                     external_id
+                    binding_type
                     uuid
                   }
                 }
@@ -2190,6 +2193,8 @@ class GraphQLClient(AsyncBaseClient):
                   validities {
                     uuid
                     user_key
+                    external_id
+                    binding_type
                     itsystem {
                       user_key
                     }

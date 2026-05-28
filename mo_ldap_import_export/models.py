@@ -96,6 +96,7 @@ class ITUser(StrictBaseModel):
     user_key: str
 
     external_id: str | None
+    binding_type: str | None
     itsystem: UUID
     person: UUID | None
     org_unit: UUID | None

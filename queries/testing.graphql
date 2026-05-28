@@ -108,6 +108,8 @@ query __testing__ituser_read($filter: ITUserFilter) {
       validities {
         uuid
         user_key
+        external_id
+        binding_type
         itsystem {
           user_key
         }
