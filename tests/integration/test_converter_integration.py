@@ -27,7 +27,7 @@ from mo_ldap_import_export.ldap_classes import LdapObject
                         "uuid": "{{ employee_uuid }}",
                         "user_key": "{{ ldap.msSFU30Name or '' }}",
                         "itsystem": "{ 'hep': 'hey }",  # Malformed JSON
-                        "person": "{{ dict(uuid=employee_uuid or '') }}",
+                        "person": "{{ employee_uuid }}",
                     }
                 },
             }

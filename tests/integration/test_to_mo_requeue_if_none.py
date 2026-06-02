@@ -26,7 +26,7 @@ from mo_ldap_import_export.types import LDAPUUID
                         "objectClass": "Employee",
                         "_import_to_mo_": "true",
                         "_ldap_attributes_": ["sn", "employeeNumber"],
-                        "uuid": "{{ employee_uuid or '' }}",
+                        "uuid": "{{ employee_uuid }}",
                         "given_name": "{{ requeue_if_none(load_mo_primary_engagement(employee_uuid)).user_key }}",
                         "surname": "{{ ldap.sn }}",
                         "cpr_number": "{{ ldap.employeeNumber }}",

@@ -86,7 +86,7 @@ async def test_event_generator_runs_with_listen(
                         "objectClass": "Employee",
                         "_import_to_mo_": "true",
                         "_ldap_attributes_": ["givenName", "sn"],
-                        "uuid": "{{ employee_uuid or '' }}",  # TODO: why is this required?
+                        "uuid": "{{ employee_uuid }}",  # TODO: why is this required?
                         "given_name": "{{ ldap.givenName }}",
                         "surname": "{{ ldap.sn }}",
                     }

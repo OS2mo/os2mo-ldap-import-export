@@ -54,25 +54,25 @@ def converter_mapping() -> dict[str, Any]:
                 "given_name": "{{ldap.givenName}}",
                 "surname": "{{ldap.sn}}",
                 "cpr_number": "{{ldap.employeeID or None}}",
-                "uuid": "{{ employee_uuid or '' }}",
+                "uuid": "{{ employee_uuid }}",
             },
             "Email": {
                 "objectClass": "Address",
                 "_import_to_mo_": "True",
                 "_ldap_attributes_": ["mail"],
-                "uuid": "{{ employee_uuid or '' }}",
+                "uuid": "{{ employee_uuid }}",
                 "value": "{{ldap.mail}}",
                 "address_type": "{{ 'f376deb8-4743-4ca6-a047-3241de8fe9d2' }}",
-                "person": "{{ employee_uuid or '' }}",
+                "person": "{{ employee_uuid }}",
             },
             "Active Directory": {
                 "objectClass": "ITUser",
                 "_import_to_mo_": "True",
                 "_ldap_attributes_": ["msSFU30Name"],
-                "uuid": "{{ employee_uuid or '' }}",
+                "uuid": "{{ employee_uuid }}",
                 "user_key": "{{ ldap.msSFU30Name or '' }}",
                 "itsystem": "{{ get_it_system_uuid(ldap.itSystemName) }}",
-                "person": "{{ employee_uuid or '' }}",
+                "person": "{{ employee_uuid }}",
             },
         },
         "mo2ldap": """
@@ -391,8 +391,8 @@ def test_check_uuid_refs_in_mo_objects(converter_mapping: dict[str, Any]) -> Non
             "ldap_to_mo": {
                 "EmailEmployee": {
                     **address_obj,
-                    "person": "{{ employee_uuid or '' }}",
-                    "org_unit": "{{ employee_uuid or '' }}",
+                    "person": "{{ employee_uuid }}",
+                    "org_unit": "{{ employee_uuid }}",
                 }
             }
         }
@@ -444,7 +444,7 @@ def test_import_to_mo_configuration(
                         "objectClass": "Employee",
                         "_import_to_mo_": import_to_mo,
                         "_ldap_attributes_": [],
-                        "uuid": "{{ employee_uuid or '' }}",
+                        "uuid": "{{ employee_uuid }}",
                     }
                 },
             }

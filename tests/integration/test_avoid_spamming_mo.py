@@ -25,7 +25,7 @@ from mo_ldap_import_export.types import DN
                         "objectClass": "Employee",
                         "_import_to_mo_": "true",
                         "_ldap_attributes_": ["employeeNumber", "givenName", "sn"],
-                        "uuid": "{{ employee_uuid or '' }}",  # TODO: why is this required?
+                        "uuid": "{{ employee_uuid }}",  # TODO: why is this required?
                         "cpr_number": "{{ ldap.employeeNumber }}",
                         "given_name": "{{ ldap.givenName }}",
                         "surname": "{{ ldap.sn }}",
@@ -93,7 +93,7 @@ async def test_no_registration_spam(
                             "sn",
                             "uid",
                         ],
-                        "uuid": "{{ employee_uuid or '' }}",  # TODO: why is this required?
+                        "uuid": "{{ employee_uuid }}",  # TODO: why is this required?
                         "cpr_number": "{{ ldap.employeeNumber }}",
                         "given_name": "{{ ldap.givenName }}",
                         "surname": "{{ ldap.sn }}",
@@ -163,7 +163,7 @@ async def test_no_registration_spam_user_key(
                             "sn",
                             "carLicense",
                         ],
-                        "uuid": "{{ employee_uuid or '' }}",  # TODO: why is this required?
+                        "uuid": "{{ employee_uuid }}",  # TODO: why is this required?
                         "cpr_number": "{{ ldap.employeeNumber }}",
                         "given_name": "{{ ldap.givenName }}",
                         "surname": "{{ ldap.sn }}",

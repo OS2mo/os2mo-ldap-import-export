@@ -41,7 +41,7 @@ from mo_ldap_import_export.utils import mo_today
                         "objectClass": "Employee",
                         "_import_to_mo_": "false",
                         "_ldap_attributes_": [],
-                        "uuid": "{{ employee_uuid or '' }}",  # TODO: why is this required?
+                        "uuid": "{{ employee_uuid }}",  # TODO: why is this required?
                     },
                     "Engagement": {
                         "objectClass": "Engagement",
@@ -309,7 +309,7 @@ async def test_to_ldap(
                         "objectClass": "Employee",
                         "_import_to_mo_": "false",
                         "_ldap_attributes_": [],
-                        "uuid": "{{ employee_uuid or '' }}",  # TODO: why is this required?
+                        "uuid": "{{ employee_uuid }}",  # TODO: why is this required?
                     },
                     "Engagement": {
                         "objectClass": "Engagement",

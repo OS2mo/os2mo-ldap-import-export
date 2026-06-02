@@ -33,10 +33,10 @@ def address_mapping(minimal_mapping: dict) -> dict:
                     "objectClass": "Address",
                     "_import_to_mo_": "true",
                     "_ldap_attributes_": ["mail"],
-                    "uuid": "{{ employee_uuid or '' }}",
+                    "uuid": "{{ employee_uuid }}",
                     "value": "{{ldap.mail or ''}}",
                     "address_type": "{{ get_employee_address_type_uuid('EmailEmployee') }}",
-                    "person": "{{ employee_uuid or '' }}",
+                    "person": "{{ employee_uuid }}",
                 }
             }
         },
@@ -66,7 +66,7 @@ def test_cannot_terminate_employee(minimal_mapping: dict) -> None:
                     "_ldap_attributes_": ["employeeID"],
                     "_terminate_": "whatever",
                     "cpr_number": "{{ldap.employeeID or None}}",
-                    "uuid": "{{ employee_uuid or '' }}",
+                    "uuid": "{{ employee_uuid }}",
                 }
             }
         },

@@ -361,7 +361,7 @@ async def test_changed_since(test_client: AsyncClient, ldap_person_uuid: UUID) -
                         "objectClass": "Employee",
                         "_import_to_mo_": "false",
                         "_ldap_attributes_": [],
-                        "uuid": "{{ employee_uuid or '' }}",
+                        "uuid": "{{ employee_uuid }}",
                     },
                     "PublicEmailAddress": {
                         "objectClass": "Address",
@@ -370,7 +370,7 @@ async def test_changed_since(test_client: AsyncClient, ldap_person_uuid: UUID) -
                         "uuid": "{{ get_address_uuid({'address_type': {'user_keys': ['EmailEmployee']}, 'employee': {'uuids': [employee_uuid]}}) }}",
                         "value": "{{ ldap.mail or '' }}",
                         "address_type": "{{ get_employee_address_type_uuid('EmailEmployee') }}",
-                        "person": "{{ employee_uuid or '' }}",
+                        "person": "{{ employee_uuid }}",
                         "visibility": "{{ get_visibility_uuid('Public') }}",
                     },
                 },
@@ -444,7 +444,7 @@ async def test_mismatched_json_key_and_address_type(
                         "objectClass": "Employee",
                         "_import_to_mo_": "false",
                         "_ldap_attributes_": [],
-                        "uuid": "{{ employee_uuid or '' }}",
+                        "uuid": "{{ employee_uuid }}",
                     },
                     "EntryUUID": {
                         "objectClass": "ITUser",
@@ -453,7 +453,7 @@ async def test_mismatched_json_key_and_address_type(
                         "uuid": "{{ get_ituser_uuid({'itsystem': {'user_keys': ['ADUUID']}, 'employee': {'uuids': [employee_uuid]}}) }}",
                         "user_key": "{{ ldap.entryUUID or '' }}",
                         "itsystem": "{{ get_it_system_uuid('ADUUID') }}",
-                        "person": "{{ employee_uuid or '' }}",
+                        "person": "{{ employee_uuid }}",
                     },
                 },
                 "username_generator": {
@@ -528,7 +528,7 @@ async def test_mismatched_json_key_and_itsystem(
                         "objectClass": "Employee",
                         "_import_to_mo_": "false",
                         "_ldap_attributes_": [],
-                        "uuid": "{{ employee_uuid or '' }}",
+                        "uuid": "{{ employee_uuid }}",
                     },
                     "DefaultValidity": {
                         "objectClass": "ITUser",
@@ -537,7 +537,7 @@ async def test_mismatched_json_key_and_itsystem(
                         "uuid": "{{ get_ituser_uuid({'itsystem': {'user_keys': ['ADUUID']}, 'employee': {'uuids': [employee_uuid]}}) }}",
                         "user_key": "{{ ldap.entryUUID or '' }}",
                         "itsystem": "{{ get_it_system_uuid('ADUUID') }}",
-                        "person": "{{ employee_uuid or '' }}",
+                        "person": "{{ employee_uuid }}",
                     },
                 },
                 "username_generator": {
