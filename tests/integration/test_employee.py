@@ -42,7 +42,7 @@ from mo_ldap_import_export.utils import mo_today
                         "objectClass": "Employee",
                         "_import_to_mo_": "true",
                         "_ldap_attributes_": ["employeeNumber", "givenName", "sn"],
-                        "uuid": "{{ employee_uuid or '' }}",  # TODO: why is this required?
+                        "uuid": "{{ employee_uuid }}",  # TODO: why is this required?
                         "cpr_number": "{{ ldap.employeeNumber }}",
                         "given_name": "{{ ldap.givenName }}",
                         "surname": "{{ ldap.sn }}",

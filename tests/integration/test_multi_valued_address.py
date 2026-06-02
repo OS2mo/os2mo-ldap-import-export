@@ -28,7 +28,7 @@ from mo_ldap_import_export.utils import combine_dn_strings
                         "objectClass": "Employee",
                         "_import_to_mo_": "false",
                         "_ldap_attributes_": [],
-                        "uuid": "{{ employee_uuid or '' }}",
+                        "uuid": "{{ employee_uuid }}",
                     },
                     "EmailEmployee": {
                         "objectClass": "Address",

@@ -147,7 +147,7 @@ def integration_test_environment_variables(monkeypatch: pytest.MonkeyPatch) -> N
                 "objectClass": "Employee",
                 "_import_to_mo_": "false",
                 "_ldap_attributes_": ["employeeNumber", "title", "givenName", "sn"],
-                "uuid": "{{ employee_uuid or '' }}",
+                "uuid": "{{ employee_uuid }}",
                 "cpr_number": "{{ldap.employeeNumber|strip_non_digits or ''}}",
                 "user_key": "{{ ldap.title }}",
                 "given_name": "{{ ldap.givenName }}",

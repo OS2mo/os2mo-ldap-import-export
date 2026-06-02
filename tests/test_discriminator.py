@@ -66,7 +66,7 @@ def settings(
                         "_import_to_mo_": "false",
                         "_ldap_attributes_": ["employeeID"],
                         "cpr_number": "{{ldap.employeeID or None}}",
-                        "uuid": "{{ employee_uuid or '' }}",
+                        "uuid": "{{ employee_uuid }}",
                     }
                 },
                 "mo2ldap": """
@@ -567,7 +567,7 @@ async def context(sync_tool_and_context: tuple[SyncTool, Context]) -> Context:
                         "_import_to_mo_": "false",
                         "_ldap_attributes_": ["employeeID"],
                         "cpr_number": "{{ldap.employeeID or None}}",
-                        "uuid": "{{ employee_uuid or '' }}",
+                        "uuid": "{{ employee_uuid }}",
                     }
                 },
             }
