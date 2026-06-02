@@ -3,6 +3,7 @@
 import json
 from datetime import datetime
 from uuid import UUID
+from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
@@ -32,6 +33,18 @@ async def account_name_itsystem(graphql_client: GraphQLClient) -> UUID:
         )
     )
     return account_name.uuid
+
+
+@pytest.fixture
+async def other_itsystem(graphql_client: GraphQLClient) -> UUID:
+    other = await graphql_client.itsystem_create(
+        input=ITSystemCreateInput(
+            user_key="other_itsystem",
+            name="Other",
+            validity=RAOpenValidityInput(from_="1970-01-01T00:00:00Z"),
+        )
+    )
+    return other.uuid
 
 
 @pytest.mark.integration_test
@@ -185,3 +198,72 @@ async def test_non_existing_account_names(
             "validity": {"from_": ituser_start, "to": termination_time},
         },
     }
+
+
+@pytest.mark.integration_test
+@pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+    }
+)
+@pytest.mark.usefixtures("ldap_person")
+async def test_non_existing_account_names_itsystem_user_key_override(
+    test_client: AsyncClient,
+    graphql_client: GraphQLClient,
+    mo_person: UUID,
+    other_itsystem: UUID,
+) -> None:
+    stale = await graphql_client.ituser_create(
+        input=ITUserCreateInput(
+            user_key="stale",
+            itsystem=other_itsystem,
+            person=mo_person,
+            validity=RAValidityInput(from_=datetime(1980, 1, 1, tzinfo=MO_TZ)),
+        )
+    )
+
+    response = await test_client.post(
+        "/fixup/delete_non_existing_account_names",
+        params={
+            "at": datetime(2025, 1, 1, tzinfo=MO_TZ).isoformat(),
+            "itsystem_user_key": "other_itsystem",
+        },
+    )
+    assert response.status_code == 200
+    assert response.json() == [str(stale.uuid)]
+
+
+@pytest.mark.integration_test
+@pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+    }
+)
+@pytest.mark.usefixtures("ldap_person")
+async def test_non_existing_external_ids_itsystem_user_key_override(
+    test_client: AsyncClient,
+    graphql_client: GraphQLClient,
+    mo_person: UUID,
+    other_itsystem: UUID,
+) -> None:
+    stale = await graphql_client.ituser_create(
+        input=ITUserCreateInput(
+            user_key="stale",
+            itsystem=other_itsystem,
+            person=mo_person,
+            external_id=str(uuid4()),
+            validity=RAValidityInput(from_=datetime(1980, 1, 1, tzinfo=MO_TZ)),
+        )
+    )
+
+    response = await test_client.post(
+        "/fixup/delete_non_existing_external_ids",
+        params={
+            "at": datetime(2025, 1, 1, tzinfo=MO_TZ).isoformat(),
+            "itsystem_user_key": "other_itsystem",
+        },
+    )
+    assert response.status_code == 200
+    assert response.json() == [str(stale.uuid)]
