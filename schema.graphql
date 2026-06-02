@@ -1283,7 +1283,7 @@ type Class {
 
   "\nClass children.\n\nAlmost always an empty list as class hierarchies are rare.\nCurrently mostly used to describe (trade) union hierachies.\n\nThe inverse operation of `parent`.\n"
   children_response(
-    filter: ParentsBoundClassFilter
+    filter: ParentBoundClassFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -1294,7 +1294,7 @@ type Class {
 
   "\nClass children.\n\nAlmost always an empty list as class hierarchies are rare.\nCurrently mostly used to describe (trade) union hierachies.\n\nThe inverse operation of `parent`.\n"
   children(
-    filter: ParentsBoundClassFilter
+    filter: ParentBoundClassFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -1887,7 +1887,6 @@ input DescendantParentBoundOrganisationUnitFilter {
   child: OrganisationUnitFilter
   hierarchy: ClassFilter = null
   hierarchies: [UUID!] = null
-  subtree: OrganisationUnitFilter
   ancestor: OrganisationUnitFilter
   engagement: EngagementFilter = null
 }
@@ -1898,7 +1897,7 @@ Employee/identity specific information
 type Employee {
   "\nEngagements for the employee.\n\nMay be an empty list if the employee is not employeed.\n"
   engagements_response(
-    filter: EmployeesBoundEngagementFilter
+    filter: EmployeeBoundEngagementFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -1909,7 +1908,7 @@ type Employee {
 
   "\nEngagements for the employee.\n\nMay be an empty list if the employee is not employeed.\n"
   engagements(
-    filter: EmployeesBoundEngagementFilter
+    filter: EmployeeBoundEngagementFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -1923,7 +1922,7 @@ type Employee {
 
   "\nManagerial roles for the employee.\n\nUsually an empty list as most employees are not managers.\n"
   manager_roles_response(
-    filter: EmployeesBoundManagerFilter
+    filter: EmployeeBoundManagerFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -1937,7 +1936,7 @@ type Employee {
 
   "\nManagerial roles for the employee.\n\nUsually an empty list as most employees are not managers.\n"
   manager_roles(
-    filter: EmployeesBoundManagerFilter
+    filter: EmployeeBoundManagerFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -1954,7 +1953,7 @@ type Employee {
 
   "\nAddresses for the employee.\n\nCommonly contain addresses such as, their:\n* Work location\n* Office number\n* Work phone number\n* Work email\n* Personal phone number\n* Personal email\n"
   addresses_response(
-    filter: EmployeesBoundAddressFilter
+    filter: EmployeeBoundAddressFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -1965,7 +1964,7 @@ type Employee {
 
   "\nAddresses for the employee.\n\nCommonly contain addresses such as, their:\n* Work location\n* Office number\n* Work phone number\n* Work email\n* Personal phone number\n* Personal email\n"
   addresses(
-    filter: EmployeesBoundAddressFilter
+    filter: EmployeeBoundAddressFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -1979,7 +1978,7 @@ type Employee {
 
   "\nLeaves of absence for the employee.\n\nUsually empty as most employees are not on leaves of absence.\n"
   leaves_response(
-    filter: EmployeesBoundLeaveFilter
+    filter: EmployeeBoundLeaveFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -1990,7 +1989,7 @@ type Employee {
 
   "\nLeaves of absence for the employee.\n\nUsually empty as most employees are not on leaves of absence.\n"
   leaves(
-    filter: EmployeesBoundLeaveFilter
+    filter: EmployeeBoundLeaveFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -2004,7 +2003,7 @@ type Employee {
 
   "\nAssociations for the employee.\n\nMay be an empty list if the employee is not associated with projects, etc.\n"
   associations_response(
-    filter: EmployeesBoundAssociationFilter
+    filter: EmployeeBoundAssociationFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -2015,7 +2014,7 @@ type Employee {
 
   "\nAssociations for the employee.\n\nMay be an empty list if the employee is not associated with projects, etc.\n"
   associations(
-    filter: EmployeesBoundAssociationFilter
+    filter: EmployeeBoundAssociationFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -2029,7 +2028,7 @@ type Employee {
 
   "\nIT accounts for the employee.\n\nMay be an empty list if the employee does not have any IT-access whatsoever.\n"
   itusers_response(
-    filter: EmployeesBoundITUserFilter
+    filter: EmployeeBoundITUserFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -2040,7 +2039,7 @@ type Employee {
 
   "\nIT accounts for the employee.\n\nMay be an empty list if the employee does not have any IT-access whatsoever.\n"
   itusers(
-    filter: EmployeesBoundITUserFilter
+    filter: EmployeeBoundITUserFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -2134,6 +2133,95 @@ type Employee {
   Validity of the employee.
   """
   validity: OpenValidity!
+}
+
+input EmployeeBoundAddressFilter {
+  org_unit: OrganisationUnitFilter = null
+  org_units: [UUID!] = null
+  uuids: [UUID!] = null
+  user_keys: [String!] = null
+  from_date: DateTime
+  to_date: DateTime
+  registration_time: DateTime = null
+  registration: AddressRegistrationFilter = null
+  address_type: ClassFilter = null
+  address_types: [UUID!] = null
+  address_type_user_keys: [String!] = null
+  engagement: EngagementFilter = null
+  engagements: [UUID!] = null
+  ituser: ITUserFilter = null
+  visibility: ClassFilter = null
+}
+
+input EmployeeBoundAssociationFilter {
+  org_unit: OrganisationUnitFilter = null
+  org_units: [UUID!] = null
+  uuids: [UUID!] = null
+  user_keys: [String!] = null
+  from_date: DateTime
+  to_date: DateTime
+  registration_time: DateTime = null
+  registration: AssociationRegistrationFilter = null
+  association_type: ClassFilter = null
+  association_types: [UUID!] = null
+  association_type_user_keys: [String!] = null
+  it_association: Boolean = null
+}
+
+input EmployeeBoundEngagementFilter {
+  org_unit: OrganisationUnitFilter = null
+  org_units: [UUID!] = null
+  uuids: [UUID!] = null
+  user_keys: [String!] = null
+  from_date: DateTime
+  to_date: DateTime
+  registration_time: DateTime = null
+  registration: EngagementRegistrationFilter = null
+  job_function: ClassFilter = null
+  engagement_type: ClassFilter = null
+  ituser: ITUserFilter = null
+}
+
+input EmployeeBoundITUserFilter {
+  org_unit: OrganisationUnitFilter = null
+  org_units: [UUID!] = null
+  uuids: [UUID!] = null
+  user_keys: [String!] = null
+  from_date: DateTime
+  to_date: DateTime
+  registration_time: DateTime = null
+  registration: ITUserRegistrationFilter = null
+  itsystem: ITSystemFilter = null
+  itsystem_uuids: [UUID!] = null
+  engagement: EngagementFilter = null
+  external_ids: [String!]
+  binding_types: [String!] = null
+}
+
+input EmployeeBoundLeaveFilter {
+  org_unit: OrganisationUnitFilter = null
+  org_units: [UUID!] = null
+  uuids: [UUID!] = null
+  user_keys: [String!] = null
+  from_date: DateTime
+  to_date: DateTime
+  registration_time: DateTime = null
+  registration: LeaveRegistrationFilter = null
+}
+
+input EmployeeBoundManagerFilter {
+  org_unit: OrganisationUnitFilter = null
+  org_units: [UUID!] = null
+  uuids: [UUID!] = null
+  user_keys: [String!] = null
+  from_date: DateTime
+  to_date: DateTime
+  registration_time: DateTime = null
+  registration: ManagerRegistrationFilter = null
+  engagement: EngagementFilter = null
+  responsibility: ClassFilter = null
+  manager_type: ClassFilter = null
+  exclude: EmployeeFilter = null
 }
 
 input EmployeeCreateInput {
@@ -2388,101 +2476,6 @@ input EmployeeUpdateInput {
   validity: RAValidityInput!
 }
 
-input EmployeesBoundAddressFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
-  employee: EmployeeFilter
-  uuids: [UUID!] = null
-  user_keys: [String!] = null
-  from_date: DateTime
-  to_date: DateTime
-  registration_time: DateTime = null
-  registration: AddressRegistrationFilter = null
-  address_type: ClassFilter = null
-  address_types: [UUID!] = null
-  address_type_user_keys: [String!] = null
-  engagement: EngagementFilter = null
-  engagements: [UUID!] = null
-  ituser: ITUserFilter = null
-  visibility: ClassFilter = null
-}
-
-input EmployeesBoundAssociationFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
-  employee: EmployeeFilter
-  uuids: [UUID!] = null
-  user_keys: [String!] = null
-  from_date: DateTime
-  to_date: DateTime
-  registration_time: DateTime = null
-  registration: AssociationRegistrationFilter = null
-  association_type: ClassFilter = null
-  association_types: [UUID!] = null
-  association_type_user_keys: [String!] = null
-  it_association: Boolean = null
-}
-
-input EmployeesBoundEngagementFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
-  employee: EmployeeFilter
-  uuids: [UUID!] = null
-  user_keys: [String!] = null
-  from_date: DateTime
-  to_date: DateTime
-  registration_time: DateTime = null
-  registration: EngagementRegistrationFilter = null
-  job_function: ClassFilter = null
-  engagement_type: ClassFilter = null
-  ituser: ITUserFilter = null
-}
-
-input EmployeesBoundITUserFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
-  employee: EmployeeFilter
-  uuids: [UUID!] = null
-  user_keys: [String!] = null
-  from_date: DateTime
-  to_date: DateTime
-  registration_time: DateTime = null
-  registration: ITUserRegistrationFilter = null
-  itsystem: ITSystemFilter = null
-  itsystem_uuids: [UUID!] = null
-  engagement: EngagementFilter = null
-  external_ids: [String!] = null
-  binding_types: [String!] = null
-}
-
-input EmployeesBoundLeaveFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
-  employee: EmployeeFilter
-  uuids: [UUID!] = null
-  user_keys: [String!] = null
-  from_date: DateTime
-  to_date: DateTime
-  registration_time: DateTime = null
-  registration: LeaveRegistrationFilter = null
-}
-
-input EmployeesBoundManagerFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
-  employee: EmployeeFilter
-  uuids: [UUID!] = null
-  user_keys: [String!] = null
-  from_date: DateTime
-  to_date: DateTime
-  registration_time: DateTime = null
-  registration: ManagerRegistrationFilter = null
-  engagement: EngagementFilter = null
-  responsibility: ClassFilter = null
-  manager_type: ClassFilter = null
-  exclude: EmployeeFilter = null
-}
-
 """
 Employee engagement in an organisation unit
 """
@@ -2712,7 +2705,7 @@ type Engagement {
 
   "\nManagerial roles for the engagement's organisation unit.\n\nMay be empty in which case managers are usually inherited from parents.\nSee the `inherit`-flag for details.\n"
   managers(
-    filter: OrgUnitsboundmanagerfilter = null
+    filter: OrgUnitboundmanagerfilter = null
 
     "\nWhether to inherit managerial roles or not.\n\nIf managerial roles exist directly on this organisation unit, the flag does nothing and these managerial roles are returned.\nHowever if no managerial roles exist directly, and this flag is:\n* False: An empty list is returned.\n* True: The result from calling `managers` with `inherit=True` on the parent of this organistion unit is returned.\n\nCalling with `inherit=True` can help ensure that a manager is always found.\n"
     inherit: Boolean! = false
@@ -2796,7 +2789,6 @@ input EngagementBoundAddressFilter {
   address_type: ClassFilter = null
   address_types: [UUID!] = null
   address_type_user_keys: [String!] = null
-  engagements: [UUID!] = null
   ituser: ITUserFilter = null
   visibility: ClassFilter = null
 }
@@ -2814,7 +2806,7 @@ input EngagementBoundITUserFilter {
   registration: ITUserRegistrationFilter = null
   itsystem: ITSystemFilter = null
   itsystem_uuids: [UUID!] = null
-  external_ids: [String!] = null
+  external_ids: [String!]
   binding_types: [String!] = null
 }
 
@@ -3282,7 +3274,7 @@ type Facet {
   Associated classes
   """
   classes_responses(
-    filter: FacetsBoundClassFilter
+    filter: FacetBoundClassFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -3295,7 +3287,7 @@ type Facet {
   Associated classes
   """
   classes(
-    filter: FacetsBoundClassFilter
+    filter: FacetBoundClassFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -3326,7 +3318,7 @@ type Facet {
 
   "\nFacet children.\n\nAlmost always an empty list as facet hierarchies are rare.\nCurrently mostly used to describe (trade) union hierachies.\n\nThe inverse operation of `parent`.\n"
   children_response(
-    filter: ParentsBoundFacetFilter
+    filter: ParentBoundFacetFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -3337,7 +3329,7 @@ type Facet {
 
   "\nFacet children.\n\nAlmost always an empty list as facet hierarchies are rare.\nCurrently mostly used to describe (trade) union hierachies.\n\nThe inverse operation of `parent`.\n"
   children(
-    filter: ParentsBoundFacetFilter
+    filter: ParentBoundFacetFilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -3394,6 +3386,22 @@ type Facet {
   Validity of the facet.
   """
   validity: OpenValidity!
+}
+
+input FacetBoundClassFilter {
+  uuids: [UUID!] = null
+  user_keys: [String!] = null
+  from_date: DateTime
+  to_date: DateTime
+  registration_time: DateTime = null
+  registration: ClassRegistrationFilter = null
+  name: [String!] = null
+  parent: ClassFilter = null
+  parents: [UUID!] = null
+  parent_user_keys: [String!] = null
+  it_system: ITSystemFilter = null
+  owner: ClassOwnerFilter = null
+  scope: [String!] = null
 }
 
 input FacetCreateInput {
@@ -3637,24 +3645,6 @@ input FacetUpdateInput {
   Validity range for the facet. Default to ['-infinity', 'infinity']
   """
   validity: ValidityInput!
-}
-
-input FacetsBoundClassFilter {
-  uuids: [UUID!] = null
-  user_keys: [String!] = null
-  from_date: DateTime
-  to_date: DateTime
-  registration_time: DateTime = null
-  registration: ClassRegistrationFilter = null
-  name: [String!] = null
-  facet: FacetFilter = null
-  facet_user_keys: [String!] = null
-  parent: ClassFilter = null
-  parents: [UUID!] = null
-  parent_user_keys: [String!] = null
-  it_system: ITSystemFilter = null
-  owner: ClassOwnerFilter = null
-  scope: [String!] = null
 }
 
 """
@@ -4610,8 +4600,8 @@ input ITUserFilter {
   "Engagement filter limiting which entries are returned.\n"
   engagement: EngagementFilter = null
 
-  "Only return IT users with this `external_id` filter limiting which entries are returned.\n\n| `external_id`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
-  external_ids: [String!] = null
+  "Only return IT users with this `external_id`.\n\n| `external_id` | Elements returned                            |\n|---------------|----------------------------------------------|\n| not provided  | All                                          |\n| `null`        | Only entries where `external_id` is not set  |\n| `[]`          | None                                         |\n| `\"x\"`         | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]`  | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  external_ids: [String!]
 
   "Only return IT users with this `binding_type` filter limiting which entries are returned.\n\n| `binding_type`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   binding_types: [String!] = null
@@ -6775,6 +6765,9 @@ type Mutation {
     input: OrganisationUnitTerminateInput!
   ): OrganisationUnitResponse!
 
+  "Deletes an organization unit.\n**Warning**:\nThis mutator does bitemporal deletion, **not** temporal termination.\nDo **not** use this mutator **unless** you **fully understand** its implications.\n\nBitemporal deletion and temporal termination are **very** different operations and should **not** be confused.\nIf you do not know which of the operations you need, you most likely need temporal termination.\n\nBitemporal deletion works on the bitemporal time-axis, and should **only** be used by clients that **fully understand** the underlying bitemporal model, including how a bitemporal delete affects the registration history.\n\nAfter this call the deleted entity will no longer show up in **any** temporal listing.\n\nNote:\nIt is currently the callers responsibility to ensure that references are dealt with before doing bitemporal deletions.\nFailure to do so **will** leave dangling references breaking temporal foreign-keys, and potentially breaking invariants in the data.\n"
+  org_unit_delete(uuid: UUID!): OrganisationUnitResponse!
+
   """
   Refresh organization units.
   """
@@ -7107,8 +7100,7 @@ type OpenValidity {
   to: DateTime
 }
 
-input OrgUnitsboundaddressfilter {
-  org_unit: OrganisationUnitFilter = null
+input OrgUnitboundaddressfilter {
   employee: EmployeeFilter
   employees: [UUID!] = null
   uuids: [UUID!] = null
@@ -7126,8 +7118,7 @@ input OrgUnitsboundaddressfilter {
   visibility: ClassFilter = null
 }
 
-input OrgUnitsboundassociationfilter {
-  org_unit: OrganisationUnitFilter = null
+input OrgUnitboundassociationfilter {
   employee: EmployeeFilter
   employees: [UUID!] = null
   uuids: [UUID!] = null
@@ -7142,8 +7133,7 @@ input OrgUnitsboundassociationfilter {
   it_association: Boolean = null
 }
 
-input OrgUnitsboundengagementfilter {
-  org_unit: OrganisationUnitFilter = null
+input OrgUnitboundengagementfilter {
   employee: EmployeeFilter
   employees: [UUID!] = null
   uuids: [UUID!] = null
@@ -7157,8 +7147,7 @@ input OrgUnitsboundengagementfilter {
   ituser: ITUserFilter = null
 }
 
-input OrgUnitsboundituserfilter {
-  org_unit: OrganisationUnitFilter = null
+input OrgUnitboundituserfilter {
   employee: EmployeeFilter
   employees: [UUID!] = null
   uuids: [UUID!] = null
@@ -7170,12 +7159,11 @@ input OrgUnitsboundituserfilter {
   itsystem: ITSystemFilter = null
   itsystem_uuids: [UUID!] = null
   engagement: EngagementFilter = null
-  external_ids: [String!] = null
+  external_ids: [String!]
   binding_types: [String!] = null
 }
 
-input OrgUnitsboundklefilter {
-  org_unit: OrganisationUnitFilter = null
+input OrgUnitboundklefilter {
   uuids: [UUID!] = null
   user_keys: [String!] = null
   from_date: DateTime
@@ -7184,8 +7172,7 @@ input OrgUnitsboundklefilter {
   registration: KLERegistrationFilter = null
 }
 
-input OrgUnitsboundleavefilter {
-  org_unit: OrganisationUnitFilter = null
+input OrgUnitboundleavefilter {
   employee: EmployeeFilter
   employees: [UUID!] = null
   uuids: [UUID!] = null
@@ -7196,8 +7183,7 @@ input OrgUnitsboundleavefilter {
   registration: LeaveRegistrationFilter = null
 }
 
-input OrgUnitsboundmanagerfilter {
-  org_unit: OrganisationUnitFilter = null
+input OrgUnitboundmanagerfilter {
   employee: EmployeeFilter
   employees: [UUID!] = null
   uuids: [UUID!] = null
@@ -7212,8 +7198,18 @@ input OrgUnitsboundmanagerfilter {
   exclude: EmployeeFilter = null
 }
 
-input OrgUnitsboundrelatedunitfilter {
-  org_unit: OrganisationUnitFilter = null
+input OrgUnitboundownerfilter {
+  employee: EmployeeFilter
+  employees: [UUID!] = null
+  uuids: [UUID!] = null
+  user_keys: [String!] = null
+  from_date: DateTime
+  to_date: DateTime
+  registration_time: DateTime = null
+  owner: EmployeeFilter = null
+}
+
+input OrgUnitboundrelatedunitfilter {
   uuids: [UUID!] = null
   user_keys: [String!] = null
   from_date: DateTime
@@ -7391,7 +7387,7 @@ type OrganisationUnit {
 
   "\nEngagements for the organistion unit.\n\nMay be an empty list if the organistion unit does not have any people employeed.\nThis situation may occur especially in the middle or the organisation tree.\n"
   engagements_response(
-    filter: OrgUnitsboundengagementfilter
+    filter: OrgUnitboundengagementfilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -7402,7 +7398,7 @@ type OrganisationUnit {
 
   "\nEngagements for the organistion unit.\n\nMay be an empty list if the organistion unit does not have any people employeed.\nThis situation may occur especially in the middle or the organisation tree.\n"
   engagements(
-    filter: OrgUnitsboundengagementfilter
+    filter: OrgUnitboundengagementfilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -7416,7 +7412,7 @@ type OrganisationUnit {
 
   "\nManagerial roles for the organisation unit.\n\nMay be empty in which case managers are usually inherited from parents.\nSee the `inherit`-flag for details.\n"
   managers_response(
-    filter: OrgUnitsboundmanagerfilter
+    filter: OrgUnitboundmanagerfilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -7430,7 +7426,7 @@ type OrganisationUnit {
 
   "\nManagerial roles for the organisation unit.\n\nMay be empty in which case managers are usually inherited from parents.\nSee the `inherit`-flag for details.\n"
   managers(
-    filter: OrgUnitsboundmanagerfilter
+    filter: OrgUnitboundmanagerfilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -7447,7 +7443,7 @@ type OrganisationUnit {
 
   "\nAddresses for the organisation unit.\n\nCommonly contain addresses such as, their:\n* Location\n* Contact phone number\n* Contact email\n"
   addresses_response(
-    filter: OrgUnitsboundaddressfilter
+    filter: OrgUnitboundaddressfilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -7458,7 +7454,7 @@ type OrganisationUnit {
 
   "\nAddresses for the organisation unit.\n\nCommonly contain addresses such as, their:\n* Location\n* Contact phone number\n* Contact email\n"
   addresses(
-    filter: OrgUnitsboundaddressfilter
+    filter: OrgUnitboundaddressfilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -7472,7 +7468,7 @@ type OrganisationUnit {
 
   "\nConnection to employees leaves of absence relevant for the organisation unit.\n"
   leaves_response(
-    filter: OrgUnitsboundleavefilter
+    filter: OrgUnitboundleavefilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -7483,7 +7479,7 @@ type OrganisationUnit {
 
   "\nConnection to employees leaves of absence relevant for the organisation unit.\n"
   leaves(
-    filter: OrgUnitsboundleavefilter
+    filter: OrgUnitboundleavefilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -7497,7 +7493,7 @@ type OrganisationUnit {
 
   "\nAssociations for the organistion unit.\n\nMay be an empty list if the organistion unit is purely hierarchical.\nThis situation may occur especially in the middle or the organisation tree.\n"
   associations_response(
-    filter: OrgUnitsboundassociationfilter
+    filter: OrgUnitboundassociationfilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -7508,7 +7504,7 @@ type OrganisationUnit {
 
   "\nAssociations for the organistion unit.\n\nMay be an empty list if the organistion unit is purely hierarchical.\nThis situation may occur especially in the middle or the organisation tree.\n"
   associations(
-    filter: OrgUnitsboundassociationfilter
+    filter: OrgUnitboundassociationfilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -7522,7 +7518,7 @@ type OrganisationUnit {
 
   "\nIT (service) accounts.\n\nMay be an empty list if the organistion unit does not have any IT (service) accounts whatsoever.\nThis situation may occur especially in the middle or the organisation tree.\n"
   itusers_response(
-    filter: OrgUnitsboundituserfilter
+    filter: OrgUnitboundituserfilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -7533,7 +7529,7 @@ type OrganisationUnit {
 
   "\nIT (service) accounts.\n\nMay be an empty list if the organistion unit does not have any IT (service) accounts whatsoever.\nThis situation may occur especially in the middle or the organisation tree.\n"
   itusers(
-    filter: OrgUnitsboundituserfilter
+    filter: OrgUnitboundituserfilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -7547,7 +7543,7 @@ type OrganisationUnit {
 
   "\nKLE responsibilities for the organisation unit.\n\nCan help out with regards to GDPR by identifying which organisational units operate with sensitive tasks.\n"
   kles_response(
-    filter: OrgUnitsboundklefilter
+    filter: OrgUnitboundklefilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -7558,7 +7554,7 @@ type OrganisationUnit {
 
   "\nKLE responsibilities for the organisation unit.\n\nCan help out with regards to GDPR by identifying which organisational units operate with sensitive tasks.\n"
   kles(
-    filter: OrgUnitsboundklefilter
+    filter: OrgUnitboundklefilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -7572,7 +7568,7 @@ type OrganisationUnit {
 
   "\nRelated units for the organisational unit.\n"
   related_units_response(
-    filter: OrgUnitsboundrelatedunitfilter
+    filter: OrgUnitboundrelatedunitfilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -7583,7 +7579,7 @@ type OrganisationUnit {
 
   "\nRelated units for the organisational unit.\n"
   related_units(
-    filter: OrgUnitsboundrelatedunitfilter
+    filter: OrgUnitboundrelatedunitfilter
 
     "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
     limit: int = null
@@ -7620,7 +7616,7 @@ type OrganisationUnit {
 
   "\nOwner roles for the organisation unit.\n\nMay be empty in which case owners are usually inherited from parents.\nSee the `inherit`-flag for details.\n"
   owners(
-    filter: OwnerFilter = null
+    filter: OrgUnitboundownerfilter = null
 
     "\nWhether to inherit owner roles or not.\n\nIf owner roles exist directly on this organisaion unit, the flag does nothing and these owner roles are returned.\nHowever if no owner roles exist directly, and this flag is:\n* Not set: An empty list is returned.\n* Is set: The result from calling `owners` with `inherit=True` on the parent of this organistion unit is returned.\n\nCalling with `inherit=True` can help ensure that an owner is always found.\n"
     inherit: Boolean! = false
@@ -8305,26 +8301,7 @@ type PageInfo {
   next_cursor: Cursor
 }
 
-input ParentBoundOrganisationUnitFilter {
-  uuids: [UUID!] = null
-  user_keys: [String!] = null
-  from_date: DateTime
-  to_date: DateTime
-  registration_time: DateTime = null
-  registration: OrganisationUnitRegistrationFilter = null
-  query: String
-  names: [String!]
-  parents: [UUID!]
-  child: OrganisationUnitFilter
-  hierarchy: ClassFilter = null
-  hierarchies: [UUID!] = null
-  subtree: OrganisationUnitFilter
-  descendant: OrganisationUnitFilter
-  ancestor: OrganisationUnitFilter
-  engagement: EngagementFilter = null
-}
-
-input ParentsBoundClassFilter {
+input ParentBoundClassFilter {
   uuids: [UUID!] = null
   user_keys: [String!] = null
   from_date: DateTime
@@ -8335,22 +8312,36 @@ input ParentsBoundClassFilter {
   facet: FacetFilter = null
   facets: [UUID!] = null
   facet_user_keys: [String!] = null
-  parent: ClassFilter = null
-  parent_user_keys: [String!] = null
   it_system: ITSystemFilter = null
   owner: ClassOwnerFilter = null
   scope: [String!] = null
 }
 
-input ParentsBoundFacetFilter {
+input ParentBoundFacetFilter {
   uuids: [UUID!] = null
   user_keys: [String!] = null
   from_date: DateTime
   to_date: DateTime
   registration_time: DateTime = null
   registration: FacetRegistrationFilter = null
-  parent: FacetFilter = null
-  parent_user_keys: [String!] = null
+}
+
+input ParentBoundOrganisationUnitFilter {
+  uuids: [UUID!] = null
+  user_keys: [String!] = null
+  from_date: DateTime
+  to_date: DateTime
+  registration_time: DateTime = null
+  registration: OrganisationUnitRegistrationFilter = null
+  query: String
+  names: [String!]
+  child: OrganisationUnitFilter
+  hierarchy: ClassFilter = null
+  hierarchies: [UUID!] = null
+  subtree: OrganisationUnitFilter
+  descendant: OrganisationUnitFilter
+  ancestor: OrganisationUnitFilter
+  engagement: EngagementFilter = null
 }
 
 type PersonRegistration implements IRegistration & RegistrationBase {
@@ -9552,7 +9543,7 @@ input UuidsBoundITUserFilter {
   itsystem: ITSystemFilter = null
   itsystem_uuids: [UUID!] = null
   engagement: EngagementFilter = null
-  external_ids: [String!] = null
+  external_ids: [String!]
   binding_types: [String!] = null
 }
 
