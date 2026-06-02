@@ -1,8 +1,10 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
+import asyncio
 import json
 from asyncio import sleep
 from datetime import timedelta
+from typing import cast
 from uuid import UUID
 
 import pytest
@@ -102,10 +104,26 @@ async def test_no_desync(
             uuids.add(LDAPUUID(event.subject))
         return uuids
 
+    async def assert_events(expected: set[LDAPUUID]) -> None:
+        # `fetch_event` returning `None` only means no event is available right
+        # now, not that the queue is permanently drained: a just-sent event can
+        # briefly be unfetchable. Stopping at the first `None` therefore makes
+        # this test flaky, so - like the real consumer in fastramqpi.events -
+        # we keep polling until every expected event has been delivered,
+        # bounded by a timeout so a genuine regression still fails loudly.
+        async def wait_for_expected() -> set[LDAPUUID]:
+            uuids: set[LDAPUUID] = set()
+            while not expected <= uuids:
+                uuids |= await generate_events()
+                await sleep(0.1)
+            return uuids
+
+        uuids = await asyncio.wait_for(wait_for_expected(), timeout=30)
+        assert uuids == expected
+
     # This checks from the start of the universe till now
     # We expect there to be only our ldap org
-    results = await generate_events()
-    assert results == {ldap_org_unit_uuid}
+    await assert_events({cast(LDAPUUID, ldap_org_unit_uuid)})
 
     # Sleep for one second to to ensure our person is not created in same second as
     # the ldap org. This is required since our timestamps are truncated to suport AD.
@@ -115,20 +133,17 @@ async def test_no_desync(
 
     # This checks from 1 second ago till now, we expect "ldap_org_unit_uuid" to appear again,
     # since we are starting at the second it was in (truncating).
-    results = await generate_events()
-    assert results == {ldap_org_unit_uuid, ldap_person_uuid}
+    await assert_events({cast(LDAPUUID, ldap_org_unit_uuid), ldap_person_uuid})
 
     # We wait another second and check again. We now expect "ldap_org_unit_uuid" to have
     # disappeared, since we are 2 seconds / truncations away, however "ldap_person_uuid"
     # should still appear, since we are within its truncated second.
     await sleep(1)
-    results = await generate_events()
-    assert results == {ldap_person_uuid}
+    await assert_events({ldap_person_uuid})
 
     # We wait another second and check again. We now expect "ldap_person_uuid" to have
     # disappeared, since we are 2 seconds / truncations away.
     # That ldap_person_uuid disappears is important as we otherwise spam the same event
     # over and over forever.
     await sleep(1)
-    results = await generate_events()
-    assert results == set()
+    await assert_events(set())
