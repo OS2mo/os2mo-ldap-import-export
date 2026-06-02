@@ -9,6 +9,7 @@ from collections.abc import Awaitable
 from collections.abc import Callable
 from contextlib import suppress
 from datetime import datetime
+from datetime import time
 from functools import partial
 from itertools import count
 from typing import Annotated
@@ -57,12 +58,19 @@ from .types import LDAPUUID
 from .types import CPRNumber
 from .types import EmployeeUUID
 from .types import ITUserUUID
+from .utils import MO_TZ
 from .utils import combine_dn_strings
 from .utils import ensure_list
 from .utils import extract_ou_from_dn
 from .utils import mo_today
 
 logger = structlog.stdlib.get_logger()
+
+
+def assert_mo_midnight(dt: datetime) -> None:
+    """Fail fast on non-midnight `at` inputs; MO rejects them with E_INVALID_INPUT."""
+    in_mo_tz = (dt if dt.tzinfo else dt.replace(tzinfo=MO_TZ)).astimezone(MO_TZ)
+    assert in_mo_tz.time() == time.min, "'at' is not at midnight"
 
 
 def get_ldap_schema(ldap_connection: Connection):
@@ -605,6 +613,7 @@ def construct_router(settings: Settings) -> APIRouter:
         at: datetime,
         dry_run: bool = True,
     ) -> set[ITUserUUID]:
+        assert_mo_midnight(at)
         bad_itusers = await get_non_existing_unique_ldap_uuids(
             settings, ldap_connection, dataloader
         )
@@ -629,6 +638,7 @@ def construct_router(settings: Settings) -> APIRouter:
         at: datetime,
         dry_run: bool = True,
     ) -> set[ITUserUUID]:
+        assert_mo_midnight(at)
         bad_itusers = await get_non_existing_account_names(
             settings, ldap_connection, dataloader
         )
@@ -653,6 +663,7 @@ def construct_router(settings: Settings) -> APIRouter:
         at: datetime,
         dry_run: bool = True,
     ) -> set[ITUserUUID]:  # pragma: no cover
+        assert_mo_midnight(at)
         bad_itusers = await get_non_existing_external_ids(
             settings, ldap_connection, dataloader
         )
@@ -872,6 +883,8 @@ def construct_router(settings: Settings) -> APIRouter:
 
         The dry-run flag is default as this may severely destroy the data in OS2mo.
         """
+        if at is not None:
+            assert_mo_midnight(at)
         result = await graphql_client.read_cleanup_addresses(
             filter=AddressFilter(
                 address_type=ClassFilter(user_keys=[address_type_user_key])
