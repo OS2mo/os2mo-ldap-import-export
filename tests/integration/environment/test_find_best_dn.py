@@ -26,6 +26,8 @@ def dataloader(test_client: AsyncClient, context: Context) -> DataLoader:
 @pytest.mark.usefixtures("mo_person")
 @pytest.mark.envvar(
     {
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
         "DISCRIMINATOR_FIELDS": json.dumps(["uid"]),
         "DISCRIMINATOR_VALUES": json.dumps(
             [
@@ -54,6 +56,8 @@ async def test_find_best_dn_picks_best_account_for_person(
 @pytest.mark.usefixtures("mo_person")
 @pytest.mark.envvar(
     {
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
         "DISCRIMINATOR_FIELDS": json.dumps(["uid"]),
         "DISCRIMINATOR_VALUES": json.dumps(["{{ 'ass' not in dn }}"]),
         "DISCRIMINATOR_FILTER": "{{ 'class' not in dn }}",
@@ -80,6 +84,8 @@ async def test_find_best_dn_runs_filter_and_apply(
 @pytest.mark.usefixtures("mo_person")
 @pytest.mark.envvar(
     {
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
         "DISCRIMINATOR_FIELDS": json.dumps(["uid"]),
         "DISCRIMINATOR_VALUES": json.dumps(["{{ 'ass' not in dn }}"]),
     }
@@ -101,6 +107,8 @@ async def test_find_best_dn_returns_none_when_all_rejected(
 @pytest.mark.usefixtures("mo_person")
 @pytest.mark.envvar(
     {
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
         "DISCRIMINATOR_FIELDS": json.dumps(["uid"]),
         "DISCRIMINATOR_VALUES": json.dumps(["True"]),
     }
@@ -119,6 +127,12 @@ async def test_find_best_dn_unrelated_dn_not_considered(
 
 
 @pytest.mark.integration_test
+@pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
+    }
+)
 async def test_find_best_dn_no_mo_person(
     dataloader: DataLoader,
     add_ldap_person: AddLdapPerson,
@@ -134,6 +148,8 @@ async def test_find_best_dn_no_mo_person(
 @pytest.mark.usefixtures("mo_person")
 @pytest.mark.envvar(
     {
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
         "DISCRIMINATOR_FIELDS": json.dumps(["uid"]),
         "DISCRIMINATOR_VALUES": json.dumps(["True"]),
     }
