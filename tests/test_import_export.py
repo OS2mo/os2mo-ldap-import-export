@@ -640,7 +640,7 @@ async def test_find_best_dn(sync_tool: SyncTool) -> None:
         # Templates can use globals (and filters)
         (
             "{% set a = now()|mo_datestring %} {{ {'a': a}|tojson }}",
-            {"a": ["2022-08-10T00:00:00"]},
+            {"a": ["2022-08-10T00:00:00+02:00"]},
         ),
         # Generating raw json outside of tojson
         ('{"key": "value"}', {"key": ["value"]}),

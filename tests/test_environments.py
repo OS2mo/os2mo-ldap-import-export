@@ -18,9 +18,16 @@ def test_strip_non_digits() -> None:
 
 
 def test_filter_mo_datestring():
+    # Note: Dates are always at midnight in MO, in Danish time
+    # A naive datetime is assumed to already be in Danish time.
     output = filter_mo_datestring(datetime.datetime(2019, 4, 13, 20, 10, 10))
-    # Note: Dates are always at midnight in MO
-    assert output == "2019-04-13T00:00:00"
+    assert output == "2019-04-13T00:00:00+02:00"
+    # A UTC datetime is converted to Danish time before the date is extracted,
+    # so the late-evening UTC time below rolls over to the next Danish day.
+    output = filter_mo_datestring(
+        datetime.datetime(2019, 4, 13, 23, 10, 10, tzinfo=datetime.UTC)
+    )
+    assert output == "2019-04-14T00:00:00+02:00"
     assert filter_mo_datestring([]) is None
     assert filter_mo_datestring("") is None
     assert filter_mo_datestring(None) is None
