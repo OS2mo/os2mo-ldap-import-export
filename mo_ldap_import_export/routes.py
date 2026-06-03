@@ -238,9 +238,15 @@ async def load_all_current_it_users(
 
 
 async def get_non_existing_unique_ldap_uuids(
-    settings: Settings, ldap_connection: Connection, dataloader: DataLoader
+    settings: Settings,
+    ldap_connection: Connection,
+    dataloader: DataLoader,
+    itsystem_user_key: str | None = None,
 ) -> set[ITUserUUID]:
-    it_system_uuid = await dataloader.moapi.get_ldap_it_system_uuid()
+    if itsystem_user_key is None:
+        it_system_uuid = await dataloader.moapi.get_ldap_it_system_uuid()
+    else:
+        it_system_uuid = await dataloader.moapi.get_it_system_uuid(itsystem_user_key)
     if not it_system_uuid:
         raise ObjectGUIDITSystemNotFound("Could not find it_system_uuid")
 
@@ -264,11 +270,15 @@ async def get_non_existing_unique_ldap_uuids(
 
 
 async def get_non_existing_account_names(
-    settings: Settings, ldap_connection: Connection, dataloader: DataLoader
+    settings: Settings,
+    ldap_connection: Connection,
+    dataloader: DataLoader,
+    itsystem_user_key: str | None = None,
 ) -> set[ITUserUUID]:
-    itsystem_user_key = (
-        settings.conversion_mapping.username_generator.existing_usernames_itsystem
-    )
+    if itsystem_user_key is None:
+        itsystem_user_key = (
+            settings.conversion_mapping.username_generator.existing_usernames_itsystem
+        )
     it_system_uuid = await dataloader.moapi.get_it_system_uuid(itsystem_user_key)
 
     account_name = "uid"
@@ -298,11 +308,15 @@ async def get_non_existing_account_names(
 
 
 async def get_non_existing_external_ids(
-    settings: Settings, ldap_connection: Connection, dataloader: DataLoader
+    settings: Settings,
+    ldap_connection: Connection,
+    dataloader: DataLoader,
+    itsystem_user_key: str | None = None,
 ) -> set[ITUserUUID]:  # pragma: no cover
-    itsystem_user_key = (
-        settings.conversion_mapping.username_generator.existing_usernames_itsystem
-    )
+    if itsystem_user_key is None:
+        itsystem_user_key = (
+            settings.conversion_mapping.username_generator.existing_usernames_itsystem
+        )
     it_system_uuid = await dataloader.moapi.get_it_system_uuid(itsystem_user_key)
 
     # Fetch all LDAP UUIDs in LDAP
@@ -612,10 +626,11 @@ def construct_router(settings: Settings) -> APIRouter:
         dataloader: depends.DataLoader,
         at: datetime,
         dry_run: bool = True,
+        itsystem_user_key: str | None = None,
     ) -> set[ITUserUUID]:
         assert_mo_midnight(at)
         bad_itusers = await get_non_existing_unique_ldap_uuids(
-            settings, ldap_connection, dataloader
+            settings, ldap_connection, dataloader, itsystem_user_key=itsystem_user_key
         )
         if dry_run:
             return bad_itusers
@@ -637,10 +652,11 @@ def construct_router(settings: Settings) -> APIRouter:
         dataloader: depends.DataLoader,
         at: datetime,
         dry_run: bool = True,
+        itsystem_user_key: str | None = None,
     ) -> set[ITUserUUID]:
         assert_mo_midnight(at)
         bad_itusers = await get_non_existing_account_names(
-            settings, ldap_connection, dataloader
+            settings, ldap_connection, dataloader, itsystem_user_key=itsystem_user_key
         )
         if dry_run:
             return bad_itusers
@@ -662,10 +678,11 @@ def construct_router(settings: Settings) -> APIRouter:
         dataloader: depends.DataLoader,
         at: datetime,
         dry_run: bool = True,
+        itsystem_user_key: str | None = None,
     ) -> set[ITUserUUID]:  # pragma: no cover
         assert_mo_midnight(at)
         bad_itusers = await get_non_existing_external_ids(
-            settings, ldap_connection, dataloader
+            settings, ldap_connection, dataloader, itsystem_user_key=itsystem_user_key
         )
         if dry_run:
             return bad_itusers
