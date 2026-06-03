@@ -152,15 +152,15 @@ from .input_types import ClassRegistrationFilter
 from .input_types import ClassTerminateInput
 from .input_types import ClassUpdateInput
 from .input_types import DescendantParentBoundOrganisationUnitFilter
+from .input_types import EmployeeBoundAddressFilter
+from .input_types import EmployeeBoundAssociationFilter
+from .input_types import EmployeeBoundEngagementFilter
+from .input_types import EmployeeBoundITUserFilter
+from .input_types import EmployeeBoundLeaveFilter
+from .input_types import EmployeeBoundManagerFilter
 from .input_types import EmployeeCreateInput
 from .input_types import EmployeeFilter
 from .input_types import EmployeeRegistrationFilter
-from .input_types import EmployeesBoundAddressFilter
-from .input_types import EmployeesBoundAssociationFilter
-from .input_types import EmployeesBoundEngagementFilter
-from .input_types import EmployeesBoundITUserFilter
-from .input_types import EmployeesBoundLeaveFilter
-from .input_types import EmployeesBoundManagerFilter
 from .input_types import EmployeeTerminateInput
 from .input_types import EmployeeUpdateInput
 from .input_types import EngagementBoundAddressFilter
@@ -175,10 +175,10 @@ from .input_types import EventFilter
 from .input_types import EventSendInput
 from .input_types import EventSilenceInput
 from .input_types import EventUnsilenceInput
+from .input_types import FacetBoundClassFilter
 from .input_types import FacetCreateInput
 from .input_types import FacetFilter
 from .input_types import FacetRegistrationFilter
-from .input_types import FacetsBoundClassFilter
 from .input_types import FacetTerminateInput
 from .input_types import FacetUpdateInput
 from .input_types import FileFilter
@@ -230,23 +230,24 @@ from .input_types import OrganisationUnitFilter
 from .input_types import OrganisationUnitRegistrationFilter
 from .input_types import OrganisationUnitTerminateInput
 from .input_types import OrganisationUnitUpdateInput
-from .input_types import OrgUnitsboundaddressfilter
-from .input_types import OrgUnitsboundassociationfilter
-from .input_types import OrgUnitsboundengagementfilter
-from .input_types import OrgUnitsboundituserfilter
-from .input_types import OrgUnitsboundklefilter
-from .input_types import OrgUnitsboundleavefilter
-from .input_types import OrgUnitsboundmanagerfilter
-from .input_types import OrgUnitsboundrelatedunitfilter
+from .input_types import OrgUnitboundaddressfilter
+from .input_types import OrgUnitboundassociationfilter
+from .input_types import OrgUnitboundengagementfilter
+from .input_types import OrgUnitboundituserfilter
+from .input_types import OrgUnitboundklefilter
+from .input_types import OrgUnitboundleavefilter
+from .input_types import OrgUnitboundmanagerfilter
+from .input_types import OrgUnitboundownerfilter
+from .input_types import OrgUnitboundrelatedunitfilter
 from .input_types import OwnerCreateInput
 from .input_types import OwnerFilter
 from .input_types import OwnersBoundListenerFilter
 from .input_types import OwnersBoundNamespaceFilter
 from .input_types import OwnerTerminateInput
 from .input_types import OwnerUpdateInput
+from .input_types import ParentBoundClassFilter
+from .input_types import ParentBoundFacetFilter
 from .input_types import ParentBoundOrganisationUnitFilter
-from .input_types import ParentsBoundClassFilter
-from .input_types import ParentsBoundFacetFilter
 from .input_types import RAOpenValidityInput
 from .input_types import RAValidityInput
 from .input_types import RegistrationFilter
@@ -613,17 +614,17 @@ __all__ = [
     "DeclareEventListener",
     "DeclareEventListenerEventListenerDeclare",
     "DescendantParentBoundOrganisationUnitFilter",
+    "EmployeeBoundAddressFilter",
+    "EmployeeBoundAssociationFilter",
+    "EmployeeBoundEngagementFilter",
+    "EmployeeBoundITUserFilter",
+    "EmployeeBoundLeaveFilter",
+    "EmployeeBoundManagerFilter",
     "EmployeeCreateInput",
     "EmployeeFilter",
     "EmployeeRegistrationFilter",
     "EmployeeTerminateInput",
     "EmployeeUpdateInput",
-    "EmployeesBoundAddressFilter",
-    "EmployeesBoundAssociationFilter",
-    "EmployeesBoundEngagementFilter",
-    "EmployeesBoundITUserFilter",
-    "EmployeesBoundLeaveFilter",
-    "EmployeesBoundManagerFilter",
     "EngagementBoundAddressFilter",
     "EngagementBoundITUserFilter",
     "EngagementCreate",
@@ -644,6 +645,7 @@ __all__ = [
     "EventSendInput",
     "EventSilenceInput",
     "EventUnsilenceInput",
+    "FacetBoundClassFilter",
     "FacetCreate",
     "FacetCreateFacetCreate",
     "FacetCreateInput",
@@ -653,7 +655,6 @@ __all__ = [
     "FacetRegistrationFilter",
     "FacetTerminateInput",
     "FacetUpdateInput",
-    "FacetsBoundClassFilter",
     "FetchEvent",
     "FetchEventEventFetch",
     "FileFilter",
@@ -752,14 +753,15 @@ __all__ = [
     "OrgUnitTerminateOrgUnitTerminate",
     "OrgUnitUpdate",
     "OrgUnitUpdateOrgUnitUpdate",
-    "OrgUnitsboundaddressfilter",
-    "OrgUnitsboundassociationfilter",
-    "OrgUnitsboundengagementfilter",
-    "OrgUnitsboundituserfilter",
-    "OrgUnitsboundklefilter",
-    "OrgUnitsboundleavefilter",
-    "OrgUnitsboundmanagerfilter",
-    "OrgUnitsboundrelatedunitfilter",
+    "OrgUnitboundaddressfilter",
+    "OrgUnitboundassociationfilter",
+    "OrgUnitboundengagementfilter",
+    "OrgUnitboundituserfilter",
+    "OrgUnitboundklefilter",
+    "OrgUnitboundleavefilter",
+    "OrgUnitboundmanagerfilter",
+    "OrgUnitboundownerfilter",
+    "OrgUnitboundrelatedunitfilter",
     "OrganisationCreate",
     "OrganisationUnitCreateInput",
     "OrganisationUnitFilter",
@@ -775,9 +777,9 @@ __all__ = [
     "OwnerUpdateInput",
     "OwnersBoundListenerFilter",
     "OwnersBoundNamespaceFilter",
+    "ParentBoundClassFilter",
+    "ParentBoundFacetFilter",
     "ParentBoundOrganisationUnitFilter",
-    "ParentsBoundClassFilter",
-    "ParentsBoundFacetFilter",
     "PersonCreate",
     "PersonCreateEmployeeCreate",
     "PersonRefresh",

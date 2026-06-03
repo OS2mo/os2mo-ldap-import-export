@@ -547,7 +547,7 @@ query read_org_unit_ancestors($uuid: UUID!) {
 
 query read_engagement_manager(
   $engagement_uuid: UUID!
-  $filter: OrgUnitsboundmanagerfilter
+  $filter: OrgUnitboundmanagerfilter
 ) {
   engagements(filter: { uuids: [$engagement_uuid] }) {
     objects {

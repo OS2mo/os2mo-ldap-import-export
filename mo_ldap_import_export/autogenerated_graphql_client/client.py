@@ -105,7 +105,7 @@ from .input_types import OrganisationUnitCreateInput
 from .input_types import OrganisationUnitFilter
 from .input_types import OrganisationUnitTerminateInput
 from .input_types import OrganisationUnitUpdateInput
-from .input_types import OrgUnitsboundmanagerfilter
+from .input_types import OrgUnitboundmanagerfilter
 from .input_types import RoleBindingCreateInput
 from .input_types import RoleBindingFilter
 from .itsystem_create import ItsystemCreate
@@ -1531,10 +1531,10 @@ class GraphQLClient(AsyncBaseClient):
     async def read_engagement_manager(
         self,
         engagement_uuid: UUID,
-        filter: OrgUnitsboundmanagerfilter | None | UnsetType = UNSET,
+        filter: OrgUnitboundmanagerfilter | None | UnsetType = UNSET,
     ) -> ReadEngagementManagerEngagements:
         query = gql("""
-            query read_engagement_manager($engagement_uuid: UUID!, $filter: OrgUnitsboundmanagerfilter) {
+            query read_engagement_manager($engagement_uuid: UUID!, $filter: OrgUnitboundmanagerfilter) {
               engagements(filter: {uuids: [$engagement_uuid]}) {
                 objects {
                   current {
