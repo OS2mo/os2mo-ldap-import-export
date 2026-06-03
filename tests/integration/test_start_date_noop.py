@@ -88,7 +88,7 @@ async def get_mo_person_address_validities(
 
 @pytest.mark.integration_test
 @pytest.mark.envvar(ENVVAR)
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "email_employee")
 async def test_same_day_sync_is_noop(
     trigger_ldap_person: Callable[[], Awaitable[None]],
     get_mo_person_address_validities: Callable[

@@ -15,7 +15,7 @@ from tests.graphql_mocker import GraphQLMocker
 
 
 @pytest.mark.integration_test
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "root_org")
 async def test_integration_get_org_unit_path_string(
     graphql_client: GraphQLClient,
 ) -> None:

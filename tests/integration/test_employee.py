@@ -452,6 +452,7 @@ async def test_none_handling_clearing(
         ),
     }
 )
+@pytest.mark.usefixtures("aduuid")
 async def test_ituser_link(
     trigger_mo_person: Callable[[], Awaitable[None]],
     graphql_client: GraphQLClient,
@@ -615,6 +616,7 @@ async def test_generate_common_name(
         ),
     }
 )
+@pytest.mark.usefixtures("root_org")
 async def test_generate_common_name_dn_format(
     trigger_sync: Callable[[EmployeeUUID], Awaitable[None]],
     graphql_client: GraphQLClient,
@@ -663,6 +665,7 @@ async def test_generate_common_name_dn_format(
         ),
     }
 )
+@pytest.mark.usefixtures("root_org")
 async def test_generate_common_name_third_collision(
     trigger_sync: Callable[[EmployeeUUID], Awaitable[None]],
     graphql_client: GraphQLClient,
@@ -770,6 +773,7 @@ async def test_generate_common_name_third_collision(
         ),
     ],
 )
+@pytest.mark.usefixtures("root_org")
 async def test_generate_common_name_truncation(
     trigger_sync: Callable[[EmployeeUUID], Awaitable[None]],
     graphql_client: GraphQLClient,

@@ -58,7 +58,7 @@ from tests.integration.conftest import DN2UUID
         ),
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "afdeling")
 async def test_to_mo(
     graphql_client: GraphQLClient,
     ldap_api: LDAPAPI,
@@ -161,6 +161,7 @@ async def test_to_mo(
         ),
     }
 )
+@pytest.mark.usefixtures("afdeling")
 async def test_to_mo_parent(
     graphql_client: GraphQLClient,
     ldap_api: LDAPAPI,
@@ -329,6 +330,7 @@ async def test_to_mo_parent(
         ),
     }
 )
+@pytest.mark.usefixtures("afdeling")
 async def test_to_mo_change_parent(
     graphql_client: GraphQLClient,
     ldap_api: LDAPAPI,
@@ -488,6 +490,9 @@ async def test_to_mo_change_parent(
             }
         ),
     }
+)
+@pytest.mark.usefixtures(
+    "afdeling", "ansat", "primary", "engagement_job_function_facet"
 )
 async def test_to_mo_change_engagement_ou(
     graphql_client: GraphQLClient,

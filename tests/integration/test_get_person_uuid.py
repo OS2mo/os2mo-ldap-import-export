@@ -25,6 +25,7 @@ async def test_get_person_uuid_no_match(graphql_client: GraphQLClient) -> None:
 
 
 @pytest.mark.integration_test
+@pytest.mark.usefixtures("root_org")
 async def test_get_person_uuid_multiple_matches(graphql_client: GraphQLClient) -> None:
     e1 = await graphql_client.person_create(
         input=EmployeeCreateInput(

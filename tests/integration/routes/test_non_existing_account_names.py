@@ -24,7 +24,7 @@ from mo_ldap_import_export.utils import MO_TZ
 
 
 @pytest.fixture
-async def account_name_itsystem(graphql_client: GraphQLClient) -> UUID:
+async def account_name_itsystem(graphql_client: GraphQLClient, root_org: UUID) -> UUID:
     account_name = await graphql_client.itsystem_create(
         input=ITSystemCreateInput(
             user_key="account_name",

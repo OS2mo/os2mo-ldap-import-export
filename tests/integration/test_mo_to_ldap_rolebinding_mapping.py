@@ -133,7 +133,7 @@ from tests.integration.conftest import AnyOrder
         ),
     }
 )
-@pytest.mark.usefixtures("ldap_org_unit")
+@pytest.mark.usefixtures("ldap_org_unit", "role_facet")
 async def test_rolebinding_sync(
     trigger_mo_to_ldap_sync: Callable[[str, UUID], Awaitable[None]],
     ldap_api: LDAPAPI,

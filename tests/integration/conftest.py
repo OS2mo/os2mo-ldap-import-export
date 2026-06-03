@@ -180,7 +180,7 @@ async def ldap_person_dn(ldap_person: list[str]) -> DN:
 
 
 @pytest.fixture
-async def mo_person(graphql_client: GraphQLClient) -> UUID:
+async def mo_person(graphql_client: GraphQLClient, root_org: UUID) -> UUID:
     r = await graphql_client.person_create(
         input=EmployeeCreateInput(
             given_name="Aage",
@@ -463,44 +463,6 @@ async def aduuid(root_org: UUID, graphql_client: GraphQLClient) -> UUID:
 @pytest.fixture
 async def adtitle(root_org: UUID, graphql_client: GraphQLClient) -> UUID:
     return await _create_itsystem(graphql_client, "ADtitle", "Active Directory Title")
-
-
-# --- Seed fixture (pulls in all of the above) ---
-
-
-@pytest.fixture
-async def seed_mo_db(
-    # TODO: Eliminate this fixture by having tests declare their own dependencies.
-    #  Once no implicit dependencies remain, remove seed_mo_db from the
-    #  pytest_collection_modifyitems hook in tests/conftest.py.
-    # Ensure database is clean before seeding
-    empty_db: None,
-    # Classes (transitively pull in their facet fixtures and root_org)
-    phone_unit: UUID,
-    email_unit: UUID,
-    phone_employee: UUID,
-    adresse_post_employee: UUID,
-    email_employee: UUID,
-    string_employee_address_type: UUID,
-    orlov: UUID,
-    intern: UUID,
-    public: UUID,
-    secret: UUID,
-    jurist: UUID,
-    afdeling: UUID,
-    n1: UUID,
-    ansat: UUID,
-    praktikant: UUID,
-    primary: UUID,
-    non_primary: UUID,
-    explicitly_primary: UUID,
-    # Facets without classes
-    role_facet: UUID,
-    # IT systems
-    aduuid: UUID,
-    adtitle: UUID,
-) -> None:
-    """Recreate all facets, classes, and IT systems from init.config.yaml."""
 
 
 @pytest.fixture

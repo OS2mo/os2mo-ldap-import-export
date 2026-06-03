@@ -435,7 +435,7 @@ async def test_generate_username_progressive_allocation(
         ),
     ],
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "root_org")
 async def test_generate_username_with_forbidden_usernames(
     graphql_client: GraphQLClient,
     context: Context,
@@ -492,7 +492,7 @@ async def test_generate_username_with_forbidden_usernames(
         (["Nick", "Gerardus", "Cornelis", "Optimus", "Prime", "Janssen"], "ngcoj"),
     ),
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "root_org")
 async def test_generate_username_expected_usernames(
     graphql_client: GraphQLClient,
     context: Context,

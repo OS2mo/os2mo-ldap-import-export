@@ -54,7 +54,7 @@ async def create_org_unit(
     ],
 )
 @pytest.mark.integration_test
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "root_org")
 async def test_get_ancestors(
     mo_api: MOAPI,
     create_org_unit: Callable[[OrgUnitUUID | None], Awaitable[OrgUnitUUID]],

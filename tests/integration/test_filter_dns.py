@@ -183,7 +183,7 @@ async def test_filter_dns_accepts_pre_moonlanding(
         ),
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "root_org")
 async def test_to_ldap_discriminated_account(
     graphql_client: GraphQLClient,
     trigger_sync: Callable[[EmployeeUUID], Awaitable[None]],

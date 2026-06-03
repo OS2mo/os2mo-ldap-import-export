@@ -73,6 +73,7 @@ def sync_tool(context: Context) -> SyncTool:
         "LDAP_IT_SYSTEM": "ADUUID",
     }
 )
+@pytest.mark.usefixtures("aduuid")
 async def test_find_mo_employee_dn_by_itsystem_ituser_termination(
     read_mo_mapping_uuids: Callable[
         [EmployeeUUID], Awaitable[dict[LDAPUUID, datetime | None]]

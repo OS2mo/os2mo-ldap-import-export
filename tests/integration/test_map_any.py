@@ -49,7 +49,7 @@ from tests.integration.conftest import DN2UUID
         ),
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "afdeling")
 async def test_to_mo_org_unit(
     graphql_client: GraphQLClient,
     ldap_api: LDAPAPI,
@@ -148,7 +148,7 @@ async def test_to_mo_org_unit(
         ),
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "root_org")
 async def test_to_mo_person(
     graphql_client: GraphQLClient,
     ldap_api: LDAPAPI,

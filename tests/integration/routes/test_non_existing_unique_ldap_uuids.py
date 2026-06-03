@@ -51,6 +51,7 @@ conversion_mapping_with_aduuid_itsystem = {
 @pytest.fixture
 async def itsystem_uuid(
     read_itsystem_by_user_key: Callable[[str], Awaitable[UUID]],
+    aduuid: UUID,
 ) -> UUID:
     return await read_itsystem_by_user_key("ADUUID")
 

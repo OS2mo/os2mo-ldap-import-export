@@ -48,6 +48,7 @@ async def test_find_mo_employee_uuid_not_found(
 
 
 @pytest.mark.integration_test
+@pytest.mark.usefixtures("aduuid")
 async def test_find_mo_employee_uuid_ituser_match(
     dataloader: DataLoader,
     add_ldap_person: AddLdapPerson,

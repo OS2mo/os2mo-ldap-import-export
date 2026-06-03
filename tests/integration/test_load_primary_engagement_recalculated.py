@@ -30,7 +30,7 @@ from mo_ldap_import_export.environments.main import load_primary_engagement_reca
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "explicitly_primary")
 async def test_load_primary_engagement(
     graphql_client: GraphQLClient,
     context: Context,
@@ -70,7 +70,7 @@ async def test_load_primary_engagement(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "explicitly_primary")
 async def test_load_primary_engagement_deleted(
     graphql_client: GraphQLClient,
     context: Context,
@@ -111,7 +111,7 @@ async def test_load_primary_engagement_deleted(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "explicitly_primary")
 async def test_load_primary_engagement_no_primary(
     graphql_client: GraphQLClient,
     context: Context,
@@ -147,7 +147,7 @@ async def test_load_primary_engagement_no_primary(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "explicitly_primary")
 async def test_load_primary_engagement_multiple_primaries(
     graphql_client: GraphQLClient,
     context: Context,
@@ -196,7 +196,7 @@ async def test_load_primary_engagement_multiple_primaries(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "explicitly_primary")
 async def test_load_primary_engagement_invalid_employee(context: Context) -> None:
     dataloader = context["user_context"]["dataloader"]
     employee_uuid = uuid4()
@@ -217,7 +217,7 @@ async def test_load_primary_engagement_invalid_employee(context: Context) -> Non
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "explicitly_primary")
 async def test_load_primary_engagement_no_engagement(
     context: Context, mo_person: UUID
 ) -> None:
@@ -237,7 +237,7 @@ async def test_load_primary_engagement_no_engagement(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "explicitly_primary")
 async def test_load_primary_engagement_explicitly_primary(
     graphql_client: GraphQLClient,
     context: Context,
@@ -287,7 +287,7 @@ async def test_load_primary_engagement_explicitly_primary(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "explicitly_primary")
 async def test_load_primary_engagement_multiple_explicitly_primary(
     graphql_client: GraphQLClient,
     context: Context,
@@ -336,7 +336,7 @@ async def test_load_primary_engagement_multiple_explicitly_primary(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "explicitly_primary")
 async def test_load_primary_engagement_non_integer_user_key(
     graphql_client: GraphQLClient,
     context: Context,
@@ -385,7 +385,7 @@ async def test_load_primary_engagement_non_integer_user_key(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "explicitly_primary")
 async def test_load_primary_engagement_user_key_distinction(
     graphql_client: GraphQLClient,
     context: Context,
@@ -434,7 +434,7 @@ async def test_load_primary_engagement_user_key_distinction(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "explicitly_primary")
 async def test_load_primary_engagement_exclude_engagement_types(
     graphql_client: GraphQLClient,
     context: Context,
@@ -518,7 +518,7 @@ async def test_load_primary_engagement_exclude_engagement_types(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "explicitly_primary")
 async def test_load_primary_engagement_prefers_current(
     graphql_client: GraphQLClient,
     context: Context,
@@ -585,7 +585,7 @@ async def test_load_primary_engagement_prefers_current(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "explicitly_primary")
 async def test_load_primary_engagement_prefers_future(
     graphql_client: GraphQLClient,
     context: Context,
@@ -638,7 +638,7 @@ async def test_load_primary_engagement_prefers_future(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "explicitly_primary")
 async def test_load_primary_engagement_prefers_less_futuristic(
     graphql_client: GraphQLClient,
     context: Context,
@@ -691,7 +691,7 @@ async def test_load_primary_engagement_prefers_less_futuristic(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "explicitly_primary")
 async def test_load_primary_engagement_prefers_future_validity(
     graphql_client: GraphQLClient,
     context: Context,
@@ -781,7 +781,7 @@ async def test_load_primary_engagement_prefers_future_validity(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "explicitly_primary")
 async def test_load_primary_engagement_prefers_now_over_past(
     graphql_client: GraphQLClient,
     context: Context,
@@ -832,7 +832,7 @@ async def test_load_primary_engagement_prefers_now_over_past(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
     }
 )
-@pytest.mark.usefixtures("test_client")
+@pytest.mark.usefixtures("test_client", "explicitly_primary")
 async def test_load_primary_engagement_ending_today(
     graphql_client: GraphQLClient,
     context: Context,
