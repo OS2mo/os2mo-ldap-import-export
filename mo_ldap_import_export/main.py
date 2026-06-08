@@ -57,6 +57,7 @@ from .ldapapi import LDAPAPI
 from .moapi import MOAPI
 from .routes import construct_router
 from .routes import ldap_event_router
+from .routes import sync_router
 from .types import EmployeeUUID
 from .usernames import UserNameGenerator
 from .utils import ensure_list
@@ -644,5 +645,6 @@ def create_app(fastramqpi: FastRAMQPI | None = None, **kwargs: Any) -> FastAPI:
     app.include_router(mo2ldap_router)
     app.include_router(ldap2mo_router)
     app.include_router(ldap_event_router)
+    app.include_router(sync_router)
 
     return app
