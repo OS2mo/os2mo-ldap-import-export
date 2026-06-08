@@ -84,6 +84,8 @@ from .address_create import AddressCreate
 from .address_create import AddressCreateAddressCreate
 from .address_refresh import AddressRefresh
 from .address_refresh import AddressRefreshAddressRefresh
+from .address_refresh_all import AddressRefreshAll
+from .address_refresh_all import AddressRefreshAllAddressRefresh
 from .address_terminate import AddressTerminate
 from .address_terminate import AddressTerminateAddressTerminate
 from .address_update import AddressUpdate
@@ -94,12 +96,16 @@ from .addresses import AddressesAddressesObjects
 from .addresses import AddressesAddressesObjectsCurrent
 from .association_refresh import AssociationRefresh
 from .association_refresh import AssociationRefreshAssociationRefresh
+from .association_refresh_all import AssociationRefreshAll
+from .association_refresh_all import AssociationRefreshAllAssociationRefresh
 from .async_base_client import AsyncBaseClient
 from .base_model import BaseModel
 from .class_create import ClassCreate
 from .class_create import ClassCreateClassCreate
 from .class_refresh import ClassRefresh
 from .class_refresh import ClassRefreshClassRefresh
+from .class_refresh_all import ClassRefreshAll
+from .class_refresh_all import ClassRefreshAllClassRefresh
 from .class_terminate import ClassTerminate
 from .class_terminate import ClassTerminateClassTerminate
 from .class_update import ClassUpdate
@@ -111,6 +117,8 @@ from .engagement_create import EngagementCreate
 from .engagement_create import EngagementCreateEngagementCreate
 from .engagement_refresh import EngagementRefresh
 from .engagement_refresh import EngagementRefreshEngagementRefresh
+from .engagement_refresh_all import EngagementRefreshAll
+from .engagement_refresh_all import EngagementRefreshAllEngagementRefresh
 from .engagement_terminate import EngagementTerminate
 from .engagement_terminate import EngagementTerminateEngagementTerminate
 from .engagement_update import EngagementUpdate
@@ -128,6 +136,8 @@ from .facet_create import FacetCreate
 from .facet_create import FacetCreateFacetCreate
 from .facet_refresh import FacetRefresh
 from .facet_refresh import FacetRefreshFacetRefresh
+from .facet_refresh_all import FacetRefreshAll
+from .facet_refresh_all import FacetRefreshAllFacetRefresh
 from .fetch_event import FetchEvent
 from .fetch_event import FetchEventEventFetch
 from .get_event_namespaces import GetEventNamespaces
@@ -271,6 +281,8 @@ from .itsystem_create import ItsystemCreate
 from .itsystem_create import ItsystemCreateItsystemCreate
 from .itsystem_refresh import ItsystemRefresh
 from .itsystem_refresh import ItsystemRefreshItsystemRefresh
+from .itsystem_refresh_all import ItsystemRefreshAll
+from .itsystem_refresh_all import ItsystemRefreshAllItsystemRefresh
 from .itsystem_terminate import ItsystemTerminate
 from .itsystem_terminate import ItsystemTerminateItsystemTerminate
 from .itsystem_update import ItsystemUpdate
@@ -279,6 +291,8 @@ from .ituser_create import ItuserCreate
 from .ituser_create import ItuserCreateItuserCreate
 from .ituser_refresh import ItuserRefresh
 from .ituser_refresh import ItuserRefreshItuserRefresh
+from .ituser_refresh_all import ItuserRefreshAll
+from .ituser_refresh_all import ItuserRefreshAllItuserRefresh
 from .ituser_terminate import ItuserTerminate
 from .ituser_terminate import ItuserTerminateItuserTerminate
 from .ituser_update import ItuserUpdate
@@ -289,13 +303,19 @@ from .itusers import ItusersItusersObjects
 from .itusers import ItusersItusersObjectsCurrent
 from .kle_refresh import KleRefresh
 from .kle_refresh import KleRefreshKleRefresh
+from .kle_refresh_all import KleRefreshAll
+from .kle_refresh_all import KleRefreshAllKleRefresh
 from .leave_refresh import LeaveRefresh
 from .leave_refresh import LeaveRefreshLeaveRefresh
+from .leave_refresh_all import LeaveRefreshAll
+from .leave_refresh_all import LeaveRefreshAllLeaveRefresh
 from .list_events import ListEvents
 from .list_events import ListEventsEvents
 from .list_events import ListEventsEventsObjects
 from .manager_refresh import ManagerRefresh
 from .manager_refresh import ManagerRefreshManagerRefresh
+from .manager_refresh_all import ManagerRefreshAll
+from .manager_refresh_all import ManagerRefreshAllManagerRefresh
 from .org_create import OrgCreate
 from .org_create import OrgCreateOrgCreate
 from .org_unit_create import OrgUnitCreate
@@ -304,16 +324,22 @@ from .org_unit_engagements_refresh import OrgUnitEngagementsRefresh
 from .org_unit_engagements_refresh import OrgUnitEngagementsRefreshEngagementRefresh
 from .org_unit_refresh import OrgUnitRefresh
 from .org_unit_refresh import OrgUnitRefreshOrgUnitRefresh
+from .org_unit_refresh_all import OrgUnitRefreshAll
+from .org_unit_refresh_all import OrgUnitRefreshAllOrgUnitRefresh
 from .org_unit_terminate import OrgUnitTerminate
 from .org_unit_terminate import OrgUnitTerminateOrgUnitTerminate
 from .org_unit_update import OrgUnitUpdate
 from .org_unit_update import OrgUnitUpdateOrgUnitUpdate
 from .owner_refresh import OwnerRefresh
 from .owner_refresh import OwnerRefreshOwnerRefresh
+from .owner_refresh_all import OwnerRefreshAll
+from .owner_refresh_all import OwnerRefreshAllOwnerRefresh
 from .person_create import PersonCreate
 from .person_create import PersonCreateEmployeeCreate
 from .person_refresh import PersonRefresh
 from .person_refresh import PersonRefreshEmployeeRefresh
+from .person_refresh_all import PersonRefreshAll
+from .person_refresh_all import PersonRefreshAllEmployeeRefresh
 from .read_address_relation_uuids import ReadAddressRelationUuids
 from .read_address_relation_uuids import ReadAddressRelationUuidsAddresses
 from .read_address_relation_uuids import ReadAddressRelationUuidsAddressesObjects
@@ -550,6 +576,8 @@ from .read_rolebindings import ReadRolebindingsRolebindingsObjectsCurrentItuserP
 from .read_rolebindings import ReadRolebindingsRolebindingsObjectsCurrentRole
 from .related_unit_refresh import RelatedUnitRefresh
 from .related_unit_refresh import RelatedUnitRefreshRelatedUnitRefresh
+from .related_unit_refresh_all import RelatedUnitRefreshAll
+from .related_unit_refresh_all import RelatedUnitRefreshAllRelatedUnitRefresh
 from .resolve_dar_address import ResolveDarAddress
 from .resolve_dar_address import ResolveDarAddressAddresses
 from .resolve_dar_address import ResolveDarAddressAddressesObjects
@@ -562,6 +590,8 @@ from .resolve_dar_address import (
 )
 from .rolebinding_refresh import RolebindingRefresh
 from .rolebinding_refresh import RolebindingRefreshRolebindingRefresh
+from .rolebinding_refresh_all import RolebindingRefreshAll
+from .rolebinding_refresh_all import RolebindingRefreshAllRolebindingRefresh
 from .send_event import SendEvent
 from .who_am_i import WhoAmI
 from .who_am_i import WhoAmIMe
@@ -577,6 +607,8 @@ __all__ = [
     "AddressFilter",
     "AddressRefresh",
     "AddressRefreshAddressRefresh",
+    "AddressRefreshAll",
+    "AddressRefreshAllAddressRefresh",
     "AddressRegistrationFilter",
     "AddressTerminate",
     "AddressTerminateAddressTerminate",
@@ -591,6 +623,8 @@ __all__ = [
     "AssociationCreateInput",
     "AssociationFilter",
     "AssociationRefresh",
+    "AssociationRefreshAll",
+    "AssociationRefreshAllAssociationRefresh",
     "AssociationRefreshAssociationRefresh",
     "AssociationRegistrationFilter",
     "AssociationTerminateInput",
@@ -603,6 +637,8 @@ __all__ = [
     "ClassFilter",
     "ClassOwnerFilter",
     "ClassRefresh",
+    "ClassRefreshAll",
+    "ClassRefreshAllClassRefresh",
     "ClassRefreshClassRefresh",
     "ClassRegistrationFilter",
     "ClassTerminate",
@@ -632,6 +668,8 @@ __all__ = [
     "EngagementCreateInput",
     "EngagementFilter",
     "EngagementRefresh",
+    "EngagementRefreshAll",
+    "EngagementRefreshAllEngagementRefresh",
     "EngagementRefreshEngagementRefresh",
     "EngagementRegistrationFilter",
     "EngagementTerminate",
@@ -651,6 +689,8 @@ __all__ = [
     "FacetCreateInput",
     "FacetFilter",
     "FacetRefresh",
+    "FacetRefreshAll",
+    "FacetRefreshAllFacetRefresh",
     "FacetRefreshFacetRefresh",
     "FacetRegistrationFilter",
     "FacetTerminateInput",
@@ -689,6 +729,8 @@ __all__ = [
     "ItsystemCreate",
     "ItsystemCreateItsystemCreate",
     "ItsystemRefresh",
+    "ItsystemRefreshAll",
+    "ItsystemRefreshAllItsystemRefresh",
     "ItsystemRefreshItsystemRefresh",
     "ItsystemTerminate",
     "ItsystemTerminateItsystemTerminate",
@@ -699,6 +741,8 @@ __all__ = [
     "ItuserCreate",
     "ItuserCreateItuserCreate",
     "ItuserRefresh",
+    "ItuserRefreshAll",
+    "ItuserRefreshAllItuserRefresh",
     "ItuserRefreshItuserRefresh",
     "ItuserTerminate",
     "ItuserTerminateItuserTerminate",
@@ -714,10 +758,14 @@ __all__ = [
     "KLETerminateInput",
     "KLEUpdateInput",
     "KleRefresh",
+    "KleRefreshAll",
+    "KleRefreshAllKleRefresh",
     "KleRefreshKleRefresh",
     "LeaveCreateInput",
     "LeaveFilter",
     "LeaveRefresh",
+    "LeaveRefreshAll",
+    "LeaveRefreshAllLeaveRefresh",
     "LeaveRefreshLeaveRefresh",
     "LeaveRegistrationFilter",
     "LeaveTerminateInput",
@@ -732,6 +780,8 @@ __all__ = [
     "ManagerCreateInput",
     "ManagerFilter",
     "ManagerRefresh",
+    "ManagerRefreshAll",
+    "ManagerRefreshAllManagerRefresh",
     "ManagerRefreshManagerRefresh",
     "ManagerRegistrationFilter",
     "ManagerTerminateInput",
@@ -748,6 +798,8 @@ __all__ = [
     "OrgUnitEngagementsRefresh",
     "OrgUnitEngagementsRefreshEngagementRefresh",
     "OrgUnitRefresh",
+    "OrgUnitRefreshAll",
+    "OrgUnitRefreshAllOrgUnitRefresh",
     "OrgUnitRefreshOrgUnitRefresh",
     "OrgUnitTerminate",
     "OrgUnitTerminateOrgUnitTerminate",
@@ -772,6 +824,8 @@ __all__ = [
     "OwnerFilter",
     "OwnerInferencePriority",
     "OwnerRefresh",
+    "OwnerRefreshAll",
+    "OwnerRefreshAllOwnerRefresh",
     "OwnerRefreshOwnerRefresh",
     "OwnerTerminateInput",
     "OwnerUpdateInput",
@@ -783,6 +837,8 @@ __all__ = [
     "PersonCreate",
     "PersonCreateEmployeeCreate",
     "PersonRefresh",
+    "PersonRefreshAll",
+    "PersonRefreshAllEmployeeRefresh",
     "PersonRefreshEmployeeRefresh",
     "RAOpenValidityInput",
     "RAValidityInput",
@@ -967,6 +1023,8 @@ __all__ = [
     "RegistrationFilter",
     "RelatedUnitFilter",
     "RelatedUnitRefresh",
+    "RelatedUnitRefreshAll",
+    "RelatedUnitRefreshAllRelatedUnitRefresh",
     "RelatedUnitRefreshRelatedUnitRefresh",
     "RelatedUnitsUpdateInput",
     "ResolveDarAddress",
@@ -981,6 +1039,8 @@ __all__ = [
     "RoleBindingUpdateInput",
     "RoleRegistrationFilter",
     "RolebindingRefresh",
+    "RolebindingRefreshAll",
+    "RolebindingRefreshAllRolebindingRefresh",
     "RolebindingRefreshRolebindingRefresh",
     "SendEvent",
     "TestingAddressRead",

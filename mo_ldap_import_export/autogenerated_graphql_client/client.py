@@ -32,6 +32,8 @@ from .address_create import AddressCreate
 from .address_create import AddressCreateAddressCreate
 from .address_refresh import AddressRefresh
 from .address_refresh import AddressRefreshAddressRefresh
+from .address_refresh_all import AddressRefreshAll
+from .address_refresh_all import AddressRefreshAllAddressRefresh
 from .address_terminate import AddressTerminate
 from .address_terminate import AddressTerminateAddressTerminate
 from .address_update import AddressUpdate
@@ -40,6 +42,8 @@ from .addresses import Addresses
 from .addresses import AddressesAddresses
 from .association_refresh import AssociationRefresh
 from .association_refresh import AssociationRefreshAssociationRefresh
+from .association_refresh_all import AssociationRefreshAll
+from .association_refresh_all import AssociationRefreshAllAssociationRefresh
 from .async_base_client import AsyncBaseClient
 from .base_model import UNSET
 from .base_model import UnsetType
@@ -47,6 +51,8 @@ from .class_create import ClassCreate
 from .class_create import ClassCreateClassCreate
 from .class_refresh import ClassRefresh
 from .class_refresh import ClassRefreshClassRefresh
+from .class_refresh_all import ClassRefreshAll
+from .class_refresh_all import ClassRefreshAllClassRefresh
 from .class_terminate import ClassTerminate
 from .class_terminate import ClassTerminateClassTerminate
 from .class_update import ClassUpdate
@@ -57,6 +63,8 @@ from .engagement_create import EngagementCreate
 from .engagement_create import EngagementCreateEngagementCreate
 from .engagement_refresh import EngagementRefresh
 from .engagement_refresh import EngagementRefreshEngagementRefresh
+from .engagement_refresh_all import EngagementRefreshAll
+from .engagement_refresh_all import EngagementRefreshAllEngagementRefresh
 from .engagement_terminate import EngagementTerminate
 from .engagement_terminate import EngagementTerminateEngagementTerminate
 from .engagement_update import EngagementUpdate
@@ -65,6 +73,8 @@ from .facet_create import FacetCreate
 from .facet_create import FacetCreateFacetCreate
 from .facet_refresh import FacetRefresh
 from .facet_refresh import FacetRefreshFacetRefresh
+from .facet_refresh_all import FacetRefreshAll
+from .facet_refresh_all import FacetRefreshAllFacetRefresh
 from .fetch_event import FetchEvent
 from .fetch_event import FetchEventEventFetch
 from .get_event_namespaces import GetEventNamespaces
@@ -112,6 +122,8 @@ from .itsystem_create import ItsystemCreate
 from .itsystem_create import ItsystemCreateItsystemCreate
 from .itsystem_refresh import ItsystemRefresh
 from .itsystem_refresh import ItsystemRefreshItsystemRefresh
+from .itsystem_refresh_all import ItsystemRefreshAll
+from .itsystem_refresh_all import ItsystemRefreshAllItsystemRefresh
 from .itsystem_terminate import ItsystemTerminate
 from .itsystem_terminate import ItsystemTerminateItsystemTerminate
 from .itsystem_update import ItsystemUpdate
@@ -120,6 +132,8 @@ from .ituser_create import ItuserCreate
 from .ituser_create import ItuserCreateItuserCreate
 from .ituser_refresh import ItuserRefresh
 from .ituser_refresh import ItuserRefreshItuserRefresh
+from .ituser_refresh_all import ItuserRefreshAll
+from .ituser_refresh_all import ItuserRefreshAllItuserRefresh
 from .ituser_terminate import ItuserTerminate
 from .ituser_terminate import ItuserTerminateItuserTerminate
 from .ituser_update import ItuserUpdate
@@ -128,12 +142,18 @@ from .itusers import Itusers
 from .itusers import ItusersItusers
 from .kle_refresh import KleRefresh
 from .kle_refresh import KleRefreshKleRefresh
+from .kle_refresh_all import KleRefreshAll
+from .kle_refresh_all import KleRefreshAllKleRefresh
 from .leave_refresh import LeaveRefresh
 from .leave_refresh import LeaveRefreshLeaveRefresh
+from .leave_refresh_all import LeaveRefreshAll
+from .leave_refresh_all import LeaveRefreshAllLeaveRefresh
 from .list_events import ListEvents
 from .list_events import ListEventsEvents
 from .manager_refresh import ManagerRefresh
 from .manager_refresh import ManagerRefreshManagerRefresh
+from .manager_refresh_all import ManagerRefreshAll
+from .manager_refresh_all import ManagerRefreshAllManagerRefresh
 from .org_create import OrgCreate
 from .org_create import OrgCreateOrgCreate
 from .org_unit_create import OrgUnitCreate
@@ -142,16 +162,22 @@ from .org_unit_engagements_refresh import OrgUnitEngagementsRefresh
 from .org_unit_engagements_refresh import OrgUnitEngagementsRefreshEngagementRefresh
 from .org_unit_refresh import OrgUnitRefresh
 from .org_unit_refresh import OrgUnitRefreshOrgUnitRefresh
+from .org_unit_refresh_all import OrgUnitRefreshAll
+from .org_unit_refresh_all import OrgUnitRefreshAllOrgUnitRefresh
 from .org_unit_terminate import OrgUnitTerminate
 from .org_unit_terminate import OrgUnitTerminateOrgUnitTerminate
 from .org_unit_update import OrgUnitUpdate
 from .org_unit_update import OrgUnitUpdateOrgUnitUpdate
 from .owner_refresh import OwnerRefresh
 from .owner_refresh import OwnerRefreshOwnerRefresh
+from .owner_refresh_all import OwnerRefreshAll
+from .owner_refresh_all import OwnerRefreshAllOwnerRefresh
 from .person_create import PersonCreate
 from .person_create import PersonCreateEmployeeCreate
 from .person_refresh import PersonRefresh
 from .person_refresh import PersonRefreshEmployeeRefresh
+from .person_refresh_all import PersonRefreshAll
+from .person_refresh_all import PersonRefreshAllEmployeeRefresh
 from .read_address_relation_uuids import ReadAddressRelationUuids
 from .read_address_relation_uuids import ReadAddressRelationUuidsAddresses
 from .read_address_uuid import ReadAddressUuid
@@ -246,10 +272,14 @@ from .read_rolebindings import ReadRolebindings
 from .read_rolebindings import ReadRolebindingsRolebindings
 from .related_unit_refresh import RelatedUnitRefresh
 from .related_unit_refresh import RelatedUnitRefreshRelatedUnitRefresh
+from .related_unit_refresh_all import RelatedUnitRefreshAll
+from .related_unit_refresh_all import RelatedUnitRefreshAllRelatedUnitRefresh
 from .resolve_dar_address import ResolveDarAddress
 from .resolve_dar_address import ResolveDarAddressAddresses
 from .rolebinding_refresh import RolebindingRefresh
 from .rolebinding_refresh import RolebindingRefreshRolebindingRefresh
+from .rolebinding_refresh_all import RolebindingRefreshAll
+from .rolebinding_refresh_all import RolebindingRefreshAllRolebindingRefresh
 from .send_event import SendEvent
 from .who_am_i import WhoAmI
 from .who_am_i import WhoAmIMe
@@ -2045,6 +2075,261 @@ class GraphQLClient(AsyncBaseClient):
         response = await self.execute(query=query, variables=variables)
         data = self.get_data(response)
         return OrgUnitEngagementsRefresh.parse_obj(data).engagement_refresh
+
+    async def address_refresh_all(
+        self,
+        listener: UUID | None | UnsetType = UNSET,
+        owner: UUID | None | UnsetType = UNSET,
+    ) -> AddressRefreshAllAddressRefresh:
+        query = gql("""
+            mutation address_refresh_all($listener: UUID, $owner: UUID) {
+              address_refresh(listener: $listener, owner: $owner) {
+                objects
+              }
+            }
+            """)
+        variables: dict[str, object] = {"listener": listener, "owner": owner}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return AddressRefreshAll.parse_obj(data).address_refresh
+
+    async def association_refresh_all(
+        self,
+        listener: UUID | None | UnsetType = UNSET,
+        owner: UUID | None | UnsetType = UNSET,
+    ) -> AssociationRefreshAllAssociationRefresh:
+        query = gql("""
+            mutation association_refresh_all($listener: UUID, $owner: UUID) {
+              association_refresh(listener: $listener, owner: $owner) {
+                objects
+              }
+            }
+            """)
+        variables: dict[str, object] = {"listener": listener, "owner": owner}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return AssociationRefreshAll.parse_obj(data).association_refresh
+
+    async def class_refresh_all(
+        self,
+        listener: UUID | None | UnsetType = UNSET,
+        owner: UUID | None | UnsetType = UNSET,
+    ) -> ClassRefreshAllClassRefresh:
+        query = gql("""
+            mutation class_refresh_all($listener: UUID, $owner: UUID) {
+              class_refresh(listener: $listener, owner: $owner) {
+                objects
+              }
+            }
+            """)
+        variables: dict[str, object] = {"listener": listener, "owner": owner}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return ClassRefreshAll.parse_obj(data).class_refresh
+
+    async def engagement_refresh_all(
+        self,
+        listener: UUID | None | UnsetType = UNSET,
+        owner: UUID | None | UnsetType = UNSET,
+    ) -> EngagementRefreshAllEngagementRefresh:
+        query = gql("""
+            mutation engagement_refresh_all($listener: UUID, $owner: UUID) {
+              engagement_refresh(listener: $listener, owner: $owner) {
+                objects
+              }
+            }
+            """)
+        variables: dict[str, object] = {"listener": listener, "owner": owner}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return EngagementRefreshAll.parse_obj(data).engagement_refresh
+
+    async def facet_refresh_all(
+        self,
+        listener: UUID | None | UnsetType = UNSET,
+        owner: UUID | None | UnsetType = UNSET,
+    ) -> FacetRefreshAllFacetRefresh:
+        query = gql("""
+            mutation facet_refresh_all($listener: UUID, $owner: UUID) {
+              facet_refresh(listener: $listener, owner: $owner) {
+                objects
+              }
+            }
+            """)
+        variables: dict[str, object] = {"listener": listener, "owner": owner}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return FacetRefreshAll.parse_obj(data).facet_refresh
+
+    async def itsystem_refresh_all(
+        self,
+        listener: UUID | None | UnsetType = UNSET,
+        owner: UUID | None | UnsetType = UNSET,
+    ) -> ItsystemRefreshAllItsystemRefresh:
+        query = gql("""
+            mutation itsystem_refresh_all($listener: UUID, $owner: UUID) {
+              itsystem_refresh(listener: $listener, owner: $owner) {
+                objects
+              }
+            }
+            """)
+        variables: dict[str, object] = {"listener": listener, "owner": owner}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return ItsystemRefreshAll.parse_obj(data).itsystem_refresh
+
+    async def ituser_refresh_all(
+        self,
+        listener: UUID | None | UnsetType = UNSET,
+        owner: UUID | None | UnsetType = UNSET,
+    ) -> ItuserRefreshAllItuserRefresh:
+        query = gql("""
+            mutation ituser_refresh_all($listener: UUID, $owner: UUID) {
+              ituser_refresh(listener: $listener, owner: $owner) {
+                objects
+              }
+            }
+            """)
+        variables: dict[str, object] = {"listener": listener, "owner": owner}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return ItuserRefreshAll.parse_obj(data).ituser_refresh
+
+    async def kle_refresh_all(
+        self,
+        listener: UUID | None | UnsetType = UNSET,
+        owner: UUID | None | UnsetType = UNSET,
+    ) -> KleRefreshAllKleRefresh:
+        query = gql("""
+            mutation kle_refresh_all($listener: UUID, $owner: UUID) {
+              kle_refresh(listener: $listener, owner: $owner) {
+                objects
+              }
+            }
+            """)
+        variables: dict[str, object] = {"listener": listener, "owner": owner}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return KleRefreshAll.parse_obj(data).kle_refresh
+
+    async def leave_refresh_all(
+        self,
+        listener: UUID | None | UnsetType = UNSET,
+        owner: UUID | None | UnsetType = UNSET,
+    ) -> LeaveRefreshAllLeaveRefresh:
+        query = gql("""
+            mutation leave_refresh_all($listener: UUID, $owner: UUID) {
+              leave_refresh(listener: $listener, owner: $owner) {
+                objects
+              }
+            }
+            """)
+        variables: dict[str, object] = {"listener": listener, "owner": owner}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return LeaveRefreshAll.parse_obj(data).leave_refresh
+
+    async def manager_refresh_all(
+        self,
+        listener: UUID | None | UnsetType = UNSET,
+        owner: UUID | None | UnsetType = UNSET,
+    ) -> ManagerRefreshAllManagerRefresh:
+        query = gql("""
+            mutation manager_refresh_all($listener: UUID, $owner: UUID) {
+              manager_refresh(listener: $listener, owner: $owner) {
+                objects
+              }
+            }
+            """)
+        variables: dict[str, object] = {"listener": listener, "owner": owner}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return ManagerRefreshAll.parse_obj(data).manager_refresh
+
+    async def org_unit_refresh_all(
+        self,
+        listener: UUID | None | UnsetType = UNSET,
+        owner: UUID | None | UnsetType = UNSET,
+    ) -> OrgUnitRefreshAllOrgUnitRefresh:
+        query = gql("""
+            mutation org_unit_refresh_all($listener: UUID, $owner: UUID) {
+              org_unit_refresh(listener: $listener, owner: $owner) {
+                objects
+              }
+            }
+            """)
+        variables: dict[str, object] = {"listener": listener, "owner": owner}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return OrgUnitRefreshAll.parse_obj(data).org_unit_refresh
+
+    async def owner_refresh_all(
+        self,
+        listener: UUID | None | UnsetType = UNSET,
+        owner: UUID | None | UnsetType = UNSET,
+    ) -> OwnerRefreshAllOwnerRefresh:
+        query = gql("""
+            mutation owner_refresh_all($listener: UUID, $owner: UUID) {
+              owner_refresh(listener: $listener, owner: $owner) {
+                objects
+              }
+            }
+            """)
+        variables: dict[str, object] = {"listener": listener, "owner": owner}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return OwnerRefreshAll.parse_obj(data).owner_refresh
+
+    async def person_refresh_all(
+        self,
+        listener: UUID | None | UnsetType = UNSET,
+        owner: UUID | None | UnsetType = UNSET,
+    ) -> PersonRefreshAllEmployeeRefresh:
+        query = gql("""
+            mutation person_refresh_all($listener: UUID, $owner: UUID) {
+              employee_refresh(listener: $listener, owner: $owner) {
+                objects
+              }
+            }
+            """)
+        variables: dict[str, object] = {"listener": listener, "owner": owner}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return PersonRefreshAll.parse_obj(data).employee_refresh
+
+    async def related_unit_refresh_all(
+        self,
+        listener: UUID | None | UnsetType = UNSET,
+        owner: UUID | None | UnsetType = UNSET,
+    ) -> RelatedUnitRefreshAllRelatedUnitRefresh:
+        query = gql("""
+            mutation related_unit_refresh_all($listener: UUID, $owner: UUID) {
+              related_unit_refresh(listener: $listener, owner: $owner) {
+                objects
+              }
+            }
+            """)
+        variables: dict[str, object] = {"listener": listener, "owner": owner}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return RelatedUnitRefreshAll.parse_obj(data).related_unit_refresh
+
+    async def rolebinding_refresh_all(
+        self,
+        listener: UUID | None | UnsetType = UNSET,
+        owner: UUID | None | UnsetType = UNSET,
+    ) -> RolebindingRefreshAllRolebindingRefresh:
+        query = gql("""
+            mutation rolebinding_refresh_all($listener: UUID, $owner: UUID) {
+              rolebinding_refresh(listener: $listener, owner: $owner) {
+                objects
+              }
+            }
+            """)
+        variables: dict[str, object] = {"listener": listener, "owner": owner}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return RolebindingRefreshAll.parse_obj(data).rolebinding_refresh
 
     async def _testing__address_read(
         self, filter: AddressFilter | None | UnsetType = UNSET

@@ -149,3 +149,95 @@ mutation org_unit_engagements_refresh(
     objects
   }
 }
+
+# Refresh-all variants: refresh every object of the given type for a listener,
+# without filtering by UUIDs. Used by the /sync/mo2ldap endpoint.
+mutation address_refresh_all($listener: UUID, $owner: UUID) {
+  address_refresh(listener: $listener, owner: $owner) {
+    objects
+  }
+}
+
+mutation association_refresh_all($listener: UUID, $owner: UUID) {
+  association_refresh(listener: $listener, owner: $owner) {
+    objects
+  }
+}
+
+mutation class_refresh_all($listener: UUID, $owner: UUID) {
+  class_refresh(listener: $listener, owner: $owner) {
+    objects
+  }
+}
+
+mutation engagement_refresh_all($listener: UUID, $owner: UUID) {
+  engagement_refresh(listener: $listener, owner: $owner) {
+    objects
+  }
+}
+
+mutation facet_refresh_all($listener: UUID, $owner: UUID) {
+  facet_refresh(listener: $listener, owner: $owner) {
+    objects
+  }
+}
+
+mutation itsystem_refresh_all($listener: UUID, $owner: UUID) {
+  itsystem_refresh(listener: $listener, owner: $owner) {
+    objects
+  }
+}
+
+mutation ituser_refresh_all($listener: UUID, $owner: UUID) {
+  ituser_refresh(listener: $listener, owner: $owner) {
+    objects
+  }
+}
+
+mutation kle_refresh_all($listener: UUID, $owner: UUID) {
+  kle_refresh(listener: $listener, owner: $owner) {
+    objects
+  }
+}
+
+mutation leave_refresh_all($listener: UUID, $owner: UUID) {
+  leave_refresh(listener: $listener, owner: $owner) {
+    objects
+  }
+}
+
+mutation manager_refresh_all($listener: UUID, $owner: UUID) {
+  manager_refresh(listener: $listener, owner: $owner) {
+    objects
+  }
+}
+
+mutation org_unit_refresh_all($listener: UUID, $owner: UUID) {
+  org_unit_refresh(listener: $listener, owner: $owner) {
+    objects
+  }
+}
+
+mutation owner_refresh_all($listener: UUID, $owner: UUID) {
+  owner_refresh(listener: $listener, owner: $owner) {
+    objects
+  }
+}
+
+mutation person_refresh_all($listener: UUID, $owner: UUID) {
+  employee_refresh(listener: $listener, owner: $owner) {
+    objects
+  }
+}
+
+mutation related_unit_refresh_all($listener: UUID, $owner: UUID) {
+  related_unit_refresh(listener: $listener, owner: $owner) {
+    objects
+  }
+}
+
+mutation rolebinding_refresh_all($listener: UUID, $owner: UUID) {
+  rolebinding_refresh(listener: $listener, owner: $owner) {
+    objects
+  }
+}

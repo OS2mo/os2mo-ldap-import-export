@@ -88,24 +88,13 @@ To trigger a sync for a single LDAP UUID instead of a full resync, see [HTTP API
 
 ### OS2mo to LDAP
 
-The MO to LDAP direction is event-driven; a full resync is achieved by asking OS2mo to re-emit events for the object types this integration is configured to handle. Which MO object types those are depends entirely on the `CONVERSION_MAPPING.mo_to_ldap` entries you have configured: the integration only acts on routing keys it has a mapping for, so only those need refreshing.
+Call the integration's sync endpoint:
 
-Submit a GraphQL mutation against OS2mo's API using the matching `*_refresh` mutators. For example, if the mapping covers employees and IT users:
-
-```graphql
-mutation Refresh($exchange: String!) {
-  employee_refresh(exchange: $exchange) {
-    objects
-  }
-  ituser_refresh(exchange: $exchange) {
-    objects
-  }
-}
+```sh
+curl -X POST http://localhost:8000/sync/mo2ldap
 ```
 
-OS2mo exposes `*_refresh` mutators for every MO object type (`employee_refresh`, `org_unit_refresh`, `address_refresh`, `engagement_refresh`, `ituser_refresh`, etc., see `schema.graphql`); pick the ones that correspond to the routing keys in your mapping. Filters on the individual mutators can be used to limit the scope further.
-
-The `exchange` value must identify this integration on OS2mo's event system; the exact value depends on how this integration is registered on your OS2mo instance.
+The endpoint inspects the integration's MO event listeners (which are derived from `CONVERSION_MAPPING.mo_to_ldap` together with the static listeners registered at startup) and fires the matching `*_refresh_all` mutator on OS2mo for each one. Only the routing keys this integration actually listens on are refreshed.
 
 ## HTTP API
 
@@ -119,7 +108,7 @@ The endpoints fall into three groups:
 | --- | --- | --- |
 | MO to LDAP event handlers | `POST /mo2ldap/{address,engagement,ituser,person,org_unit,reconcile}`, `POST /mo_to_ldap/{identifier}` (dynamic, one per entry in `CONVERSION_MAPPING.mo_to_ldap`) | FastRAMQPI, on MO events |
 | LDAP to MO event handlers | `POST /ldap2mo/uuid`, `POST /ldap2mo/reconcile` | FastRAMQPI, on events emitted by the integration's LDAP poller |
-| Operational endpoints | `POST /sync/ldap2mo` (full LDAP to OS2mo resync), `POST /ldap_event_generator/emit/{uuid}` (manually emit a single LDAP UUID), `GET /ldap_event_generator/{since}` (changes since a timestamp), `GET /Inspect/...` (read-only debugging: `dn2uuid`, `uuid2dn`, `mo2ldap`, `ldap2mo`, `overview`, ...) | Human operators |
+| Operational endpoints | `POST /sync/ldap2mo` (full LDAP to OS2mo resync), `POST /sync/mo2ldap` (full OS2mo to LDAP resync), `POST /ldap_event_generator/emit/{uuid}` (manually emit a single LDAP UUID), `GET /ldap_event_generator/{since}` (changes since a timestamp), `GET /Inspect/...` (read-only debugging: `dn2uuid`, `uuid2dn`, `mo2ldap`, `ldap2mo`, `overview`, ...) | Human operators |
 
 See `mo_ldap_import_export/main.py`, `mo_ldap_import_export/ldap_amqp.py`, and `mo_ldap_import_export/routes.py` for the full list.
 
