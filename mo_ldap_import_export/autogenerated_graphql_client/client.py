@@ -182,6 +182,12 @@ from .read_classes import ReadClasses
 from .read_classes import ReadClassesClasses
 from .read_cleanup_addresses import ReadCleanupAddresses
 from .read_cleanup_addresses import ReadCleanupAddressesAddresses
+from .read_current_addresses_filtered_with_pagination import (
+    ReadCurrentAddressesFilteredWithPagination,
+)
+from .read_current_addresses_filtered_with_pagination import (
+    ReadCurrentAddressesFilteredWithPaginationAddresses,
+)
 from .read_employee_registrations import ReadEmployeeRegistrations
 from .read_employee_registrations import ReadEmployeeRegistrationsEmployees
 from .read_employee_uuid_by_cpr_number import ReadEmployeeUuidByCprNumber
@@ -775,6 +781,74 @@ class GraphQLClient(AsyncBaseClient):
         response = await self.execute(query=query, variables=variables)
         data = self.get_data(response)
         return ReadEmployeeUuidByCprNumber.parse_obj(data).employees
+
+    async def read_current_addresses_filtered_with_pagination(
+        self,
+        filter: AddressFilter,
+        cursor: Any | None | UnsetType = UNSET,
+        limit: Any | None | UnsetType = UNSET,
+    ) -> ReadCurrentAddressesFilteredWithPaginationAddresses:
+        query = gql("""
+            query read_current_addresses_filtered_with_pagination($filter: AddressFilter!, $cursor: Cursor = null, $limit: int = 100) {
+              addresses(limit: $limit, cursor: $cursor, filter: $filter) {
+                objects {
+                  current {
+                    address_type_response {
+                      current {
+                        uuid
+                        user_key
+                        name
+                      }
+                    }
+                    engagement_response {
+                      current {
+                        uuid
+                        user_key
+                      }
+                    }
+                    person_response {
+                      current {
+                        uuid
+                        user_key
+                        name
+                      }
+                    }
+                    uuid
+                    user_key
+                    value
+                    visibility_response {
+                      current {
+                        uuid
+                        user_key
+                        description
+                        name
+                        facet_response {
+                          uuid
+                        }
+                      }
+                    }
+                    ituser_response {
+                      current {
+                        uuid
+                        user_key
+                      }
+                    }
+                  }
+                }
+                page_info {
+                  next_cursor
+                }
+              }
+            }
+            """)
+        variables: dict[str, object] = {
+            "filter": filter,
+            "cursor": cursor,
+            "limit": limit,
+        }
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return ReadCurrentAddressesFilteredWithPagination.parse_obj(data).addresses
 
     async def read_employees(
         self,
