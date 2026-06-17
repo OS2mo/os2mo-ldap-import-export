@@ -148,6 +148,36 @@ def extract_current_or_latest_validity(validities: list[T]) -> T | None:
     return latest_validity
 
 
+def merge_contiguous_validity_end(validities: list[T], anchor: T) -> datetime | None:
+    """Return the end of the contiguous run of validities starting at ``anchor``.
+
+    MO may store a single object as several adjacent validity segments, for
+    instance when calculate_primary marks an engagement non-primary for the
+    period another engagement overlaps. ``extract_current_or_latest_validity``
+    collapses the object to one segment, so its ``end`` is an internal split
+    boundary rather than the object's true end. Starting from ``anchor``,
+    repeatedly extend across any segment that begins exactly where the run
+    currently ends (``prev.to == next.from_``).
+
+    A gap stops the walk on purpose: the object genuinely does not cover the
+    gap, so the importer must still write (which fills it). ``None`` means the
+    run is open-ended.
+
+    This is deliberately not object-type specific: it operates on any list of
+    validities and is applied to every validity-bearing object on load.
+    """
+    end = anchor.validity.to
+    # Segments for one object are time-partitioned, so following "next starts
+    # where we end" always moves forward and terminates. There is only ever a
+    # handful of validities, so a naive scan per step is plenty fast.
+    while end is not None:
+        nxt = next((v for v in validities if v.validity.from_ == end), None)
+        if nxt is None:
+            break
+        end = nxt.validity.to
+    return end
+
+
 Tc = TypeVar("Tc", covariant=True)
 
 
@@ -356,7 +386,7 @@ class MOAPI:
             unit_type=entry.unit_type.uuid,
             validity=models.Validity(
                 start=entry.validity.from_,
-                end=entry.validity.to,
+                end=merge_contiguous_validity_end(result.validities, entry),
             ),
         )
 
@@ -447,7 +477,7 @@ class MOAPI:
             engagements=entry.engagement_uuids,
             validity=models.Validity(
                 start=entry.validity.from_,
-                end=entry.validity.to,
+                end=merge_contiguous_validity_end(result.validities, entry),
             ),
         )
         return it_user
@@ -473,7 +503,7 @@ class MOAPI:
             name=entry.name,
             validity=models.Validity(
                 start=entry.validity.from_,
-                end=entry.validity.to,
+                end=merge_contiguous_validity_end(result.validities, entry),
             ),
         )
 
@@ -504,7 +534,7 @@ class MOAPI:
             it_system=extract_relation(entry.it_system),
             validity=models.Validity(
                 start=entry.validity.from_,
-                end=entry.validity.to,
+                end=merge_contiguous_validity_end(result.validities, entry),
             ),
         )
 
@@ -542,7 +572,7 @@ class MOAPI:
             visibility=entry.visibility_uuid,
             validity=models.Validity(
                 start=entry.validity.from_,
-                end=entry.validity.to,
+                end=merge_contiguous_validity_end(result.validities, entry),
             ),
         )
 
@@ -565,7 +595,18 @@ class MOAPI:
         entry = extract_current_or_latest_validity(result.validities)
         if entry is None:
             return None
-        return read_engagement_to_engagement(entry)
+        engagement = read_engagement_to_engagement(entry)
+        # read_engagement_to_engagement is shared with the calculate-primary
+        # reimplementation, which needs the raw per-segment validity, so widen
+        # the end to the contiguous run here instead of in that helper.
+        return engagement.copy(
+            update={
+                "validity": models.Validity(
+                    start=engagement.validity.start,
+                    end=merge_contiguous_validity_end(result.validities, entry),
+                )
+            }
+        )
 
     async def load_mo_employee_it_users(
         self,

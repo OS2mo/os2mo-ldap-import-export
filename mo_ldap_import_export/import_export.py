@@ -684,18 +684,37 @@ class SyncTool:
                 message = "Unable to terminate without UUID"
                 logger.info(message)
                 return
-            termination = Termination(mo_class=mo_class, at=termination_date, uuid=uuid)
-            logger.info("Importing object", verb=Verb.TERMINATE, obj=termination, dn=dn)
-            if dry_run:
-                raise DryRunException(
-                    "Would have uploaded changes to MO",
-                    dn,
-                    details={
-                        "verb": str(Verb.TERMINATE),
-                        "obj": jsonable_encoder(termination, exclude={"mo_class"}),
-                    },
+            # MO's terminate mutation is not idempotent: terminating an object
+            # that already ends at this date still writes a registration and
+            # emits an event, which would re-trigger this import indefinitely.
+            # mo_object.validity.end is the contiguous span end (see
+            # merge_contiguous_validity_end), so this skip is reliable.
+            existing_validity = getattr(mo_object, "validity", None)
+            if (
+                existing_validity is not None
+                and existing_validity.end == termination_date
+            ):
+                logger.info(
+                    "Object already terminated at termination date, skipping",
+                    dn=dn,
                 )
-            await self.dataloader.moapi.terminate(termination)
+            else:
+                termination = Termination(
+                    mo_class=mo_class, at=termination_date, uuid=uuid
+                )
+                logger.info(
+                    "Importing object", verb=Verb.TERMINATE, obj=termination, dn=dn
+                )
+                if dry_run:
+                    raise DryRunException(
+                        "Would have uploaded changes to MO",
+                        dn,
+                        details={
+                            "verb": str(Verb.TERMINATE),
+                            "obj": jsonable_encoder(termination, exclude={"mo_class"}),
+                        },
+                    )
+                await self.dataloader.moapi.terminate(termination)
 
         # Handle updates
         try:

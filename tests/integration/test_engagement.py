@@ -311,6 +311,124 @@ async def test_to_ldap(
                         "_ldap_attributes_": [],
                         "uuid": "{{ employee_uuid }}",  # TODO: why is this required?
                     },
+                    # Reflect the engagement straight back from MO so the only
+                    # field that could differ between MO and the desired state
+                    # is the validity -- isolating the reconciliation loop.
+                    "Engagement": {
+                        "objectClass": "Engagement",
+                        "_import_to_mo_": "true",
+                        "_ldap_attributes_": ["title"],
+                        "uuid": "{{ skip_if_none(load_mo_primary_engagement(employee_uuid)).uuid }}",
+                        "user_key": "{{ skip_if_none(load_mo_primary_engagement(employee_uuid)).user_key }}",
+                        "org_unit": "{{ skip_if_none(load_mo_primary_engagement(employee_uuid)).org_unit }}",
+                        "person": "{{ skip_if_none(load_mo_primary_engagement(employee_uuid)).person }}",
+                        "job_function": "{{ skip_if_none(load_mo_primary_engagement(employee_uuid)).job_function }}",
+                        "engagement_type": "{{ skip_if_none(load_mo_primary_engagement(employee_uuid)).engagement_type }}",
+                        "primary": "{{ skip_if_none(load_mo_primary_engagement(employee_uuid)).primary }}",
+                    },
+                },
+                # TODO: why is this required?
+                "username_generator": {
+                    "combinations_to_try": ["FFFX", "LLLX"],
+                },
+            }
+        ),
+    }
+)
+@pytest.mark.usefixtures("test_client")
+async def test_to_mo_split_engagement_is_idempotent(
+    graphql_client: GraphQLClient,
+    mo_person: UUID,
+    mo_org_unit: UUID,
+    ansat: UUID,
+    jurist: UUID,
+    primary: UUID,
+    non_primary: UUID,
+    trigger_ldap_person: Callable[[], Awaitable[None]],
+) -> None:
+    """Reproduces the reconciliation loop and proves it is gone.
+
+    A person has an open-ended engagement. calculate_primary splits it when
+    another engagement overlaps -- here we reproduce that exact effect by
+    marking the engagement non-primary from 2035 onwards (calculate_primary
+    edits ``primary`` per interval the same way). "Today" then falls in the
+    first segment, whose end is the 2035 split boundary even though the
+    engagement is open-ended.
+
+    Importing the LDAP person must be a no-op: the engagement already matches
+    the desired open-ended state. Before the fix the importer read the end as
+    the 2035 split boundary, disagreed with the desired open end, and re-edited
+    on every run -- the infinite loop. The edit also re-asserted ``primary``,
+    waking calculate_primary, which split it again, and so on.
+    """
+
+    async def engagement_validities() -> list[dict[str, Any]]:
+        engagements = await graphql_client._testing__engagement_read(
+            filter=EngagementFilter(
+                from_date=None,
+                to_date=None,
+                employee=EmployeeFilter(uuids=[mo_person]),
+            ),
+        )
+        engagement = one(engagements.objects)
+        return sorted(
+            (v.dict() for v in engagement.validities),
+            key=lambda v: v["validity"]["from_"],
+        )
+
+    engagement = await graphql_client.engagement_create(
+        input=EngagementCreateInput(
+            user_key="engagement",
+            person=mo_person,
+            org_unit=mo_org_unit,
+            engagement_type=ansat,
+            job_function=jurist,
+            primary=primary,
+            validity=RAValidityInput(from_="2001-01-01T00:00:00Z"),
+        )
+    )
+    # The calculate_primary split: non-primary from 2035, leaving two contiguous
+    # segments [2001, 2035) primary and [2035, ∞) non-primary.
+    await graphql_client.engagement_update(
+        input=EngagementUpdateInput(
+            uuid=engagement.uuid,
+            primary=non_primary,
+            validity=RAValidityInput(from_="2035-01-01T00:00:00Z"),
+            # Unchanged, but required by the update input.
+            user_key="engagement",
+            person=mo_person,
+            org_unit=mo_org_unit,
+            engagement_type=ansat,
+            job_function=jurist,
+        )
+    )
+
+    before = await engagement_validities()
+    assert len(before) == 2  # sanity: the split actually happened
+
+    with capture_logs() as cap_logs:
+        await trigger_ldap_person()
+
+    # No write of any kind: the importer recognised the engagement already
+    # reaches the desired (open) end across its contiguous segments.
+    assert [log for log in cap_logs if log["event"] == "Importing object"] == []
+    assert await engagement_validities() == before
+
+
+@pytest.mark.integration_test
+@pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
+        "CONVERSION_MAPPING": json.dumps(
+            {
+                "ldap_to_mo": {
+                    "Employee": {
+                        "objectClass": "Employee",
+                        "_import_to_mo_": "false",
+                        "_ldap_attributes_": [],
+                        "uuid": "{{ employee_uuid }}",  # TODO: why is this required?
+                    },
                     "Engagement": {
                         "objectClass": "Engagement",
                         "_import_to_mo_": "true",
