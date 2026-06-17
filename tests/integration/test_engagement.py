@@ -463,4 +463,6 @@ async def test_to_mo_future_engagement_new_mapping(
     validities = one(engagement.validities)
     assert validities.extension_1 == "Skole underviser"
     assert validities.validity.from_ == mo_today()
-    assert validities.validity.to is None
+    # No _terminate_ template: only the current validity is updated, bounding the
+    # edit to the engagement's own end-date instead of clobbering it to infinity.
+    assert validities.validity.to == datetime(4000, 1, 1, 0, 0, tzinfo=MO_TZ)

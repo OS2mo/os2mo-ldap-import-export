@@ -7,6 +7,7 @@ from datetime import UTC
 from datetime import datetime
 from enum import Enum
 from enum import auto
+from typing import Any
 from typing import Protocol
 from typing import TypeVar
 from typing import cast
@@ -566,6 +567,34 @@ class MOAPI:
         if entry is None:
             return None
         return read_engagement_to_engagement(entry)
+
+    async def get_final_validity_end(
+        self, uuid: UUID, mo_class: type[MOBase]
+    ) -> datetime | None:
+        """Final end-date across all the object's validities; None if open-ended."""
+        collection: Any
+        if issubclass(mo_class, Engagement):
+            collection = await self.graphql_client.read_engagements(
+                EngagementFilter(uuids=[uuid], from_date=None, to_date=None)
+            )
+        elif issubclass(mo_class, Address):
+            collection = await self.graphql_client.read_addresses([uuid], None, None)
+        elif issubclass(mo_class, ITUser):
+            collection = await self.graphql_client.read_itusers([uuid], None, None)
+        elif issubclass(mo_class, ITSystem):
+            collection = await self.graphql_client.read_itsystems([uuid], None, None)
+        elif issubclass(mo_class, Class):
+            collection = await self.graphql_client.read_classes([uuid], None, None)
+        elif issubclass(mo_class, OrganisationUnit):
+            collection = await self.graphql_client.read_org_units([uuid], None, None)
+        else:  # pragma: no cover
+            raise AssertionError(f"Cannot read validities for mo_class: {mo_class}")
+
+        ends = [val.validity.to for val in flatten_validities(collection)]
+        if not ends or any(end is None for end in ends):
+            return None
+        # No None values remain past the check above.
+        return max(cast(list[datetime], ends))
 
     async def load_mo_employee_it_users(
         self,
