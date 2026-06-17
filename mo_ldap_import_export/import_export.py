@@ -5,6 +5,7 @@ import json
 from collections.abc import Awaitable
 from collections.abc import Callable
 from contextlib import ExitStack
+from datetime import date
 from datetime import datetime
 from datetime import time
 from datetime import timedelta
@@ -90,6 +91,13 @@ def with_exitstack(
             return await func(*args, **kwargs, exit_stack=exit_stack)
 
     return inner
+
+
+def _to_mo_date(value: datetime | None) -> date | None:
+    """Normalize a datetime to its day in MOs timezone, passing None through."""
+    if value is None:
+        return None
+    return value.astimezone(MO_TZ).date()
 
 
 class SyncTool:
@@ -676,8 +684,27 @@ class SyncTool:
             await self.dataloader.moapi.create(converted_object)
             return
 
+        assert mo_object is not None
+        assert uuid is not None
+
+        # Only touch the current validity, unless a _terminate_ template gives an
+        # end-date that differs from MOs final end-date.
+        only_update_current_validity = True
+        if mapping.terminate:
+            final_end = await self.dataloader.moapi.get_final_validity_end(
+                uuid, mo_class
+            )
+            if _to_mo_date(termination_date) != _to_mo_date(final_end):
+                # TODO: this clobbers all MO data in [today, termination_date] just
+                # to adjust the end-date; replace with a proper timeline sync.
+                only_update_current_validity = False
+
         # Handle terminations
-        if mapping.do_actually_terminate and termination_date is not None:
+        if (
+            mapping.do_actually_terminate
+            and termination_date is not None
+            and not only_update_current_validity
+        ):
             # Asked to terminate, but uuid template did not return an uuid, i.e.
             # there was no object to actually terminate, so we just skip it.
             if not uuid:  # pragma: no cover
@@ -697,10 +724,18 @@ class SyncTool:
                 )
             await self.dataloader.moapi.terminate(termination)
 
+        # Bound the edit to the current validity's own end (None = infinity) so
+        # other validities are untouched. Employee has no validity, and the clobber
+        # path uses termination_date instead.
+        if only_update_current_validity and not isinstance(mo_object, Employee):
+            validity_end = mo_object.validity.end
+        else:
+            validity_end = termination_date
+
         # Handle updates
         try:
             converted_object = await self._create_converted_object(
-                mapping, template_context, mo_class, termination_date
+                mapping, template_context, mo_class, validity_end
             )
         except EmptyFieldsToSynchronise:
             # Empty fields are okay if the template just wanted to terminate
