@@ -18,6 +18,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.devcontainer/
+.zed/
 
 # mypy
 .mypy_cache/
