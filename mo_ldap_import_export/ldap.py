@@ -18,10 +18,12 @@ import structlog
 from fastramqpi.context import Context
 from jinja2 import Template
 from ldap3 import BASE
+from ldap3 import GSSAPI
 from ldap3 import NO_ATTRIBUTES
 from ldap3 import NTLM
 from ldap3 import RANDOM
 from ldap3 import SAFE_RESTARTABLE
+from ldap3 import SASL
 from ldap3 import SIMPLE
 from ldap3 import Connection
 from ldap3 import Server
@@ -175,6 +177,14 @@ def configure_ldap_connection(settings: Settings) -> Connection:
                 {
                     "user": settings.ldap_user,
                     "authentication": SIMPLE,
+                }
+            )
+        case AuthBackendEnum.GSSAPI:
+            # Credentials come from the krb5 ccache/keytab, not ldap_user/password.
+            connection_kwargs.update(
+                {
+                    "authentication": SASL,
+                    "sasl_mechanism": GSSAPI,
                 }
             )
         case _:

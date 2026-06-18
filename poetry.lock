@@ -844,6 +844,18 @@ files = [
 ]
 
 [[package]]
+name = "decorator"
+version = "5.3.1"
+description = "Decorators for Humans"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "decorator-5.3.1-py3-none-any.whl", hash = "sha256:f47fe6fdbd2edd623ecfe36875d37aba411624e2670dd395dddae1358689bb3c"},
+    {file = "decorator-5.3.1.tar.gz", hash = "sha256:4cbcdd55a6efadb9dbea26b858f4fb3264567b52d69ca0d25b721b553f60ea82"},
+]
+
+[[package]]
 name = "deptry"
 version = "0.20.0"
 description = "A command line utility to check for unused, missing and transitive dependencies in a Python project."
@@ -1369,6 +1381,40 @@ files = [
 [package.extras]
 docs = ["Sphinx", "furo"]
 test = ["objgraph", "psutil", "setuptools"]
+
+[[package]]
+name = "gssapi"
+version = "1.12.0"
+description = "Python GSSAPI Wrapper"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "gssapi-1.12.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:28cac97bc3bd0833802ba428a6f0a6e41255f0b21cea9df64553c261879dbf01"},
+    {file = "gssapi-1.12.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:7d335e7a89bf95cc1c797b38fc1ea9f0828d97843df63b23cdf806a5199ba9e2"},
+    {file = "gssapi-1.12.0-cp310-cp310-win32.whl", hash = "sha256:9e076c12310b203e02d302ff86586d0b80a9302ec7718713cfe24ead9df0d748"},
+    {file = "gssapi-1.12.0-cp310-cp310-win_amd64.whl", hash = "sha256:2616ba4498e7b735f7ad96567c08efed8f2ac9b48484f9a0671973883a986d77"},
+    {file = "gssapi-1.12.0-cp311-abi3-macosx_10_9_x86_64.whl", hash = "sha256:fbcf4213d72bde6f836dc96511d7410c4c95e0470ccc690bc7f85e402c9ff5ec"},
+    {file = "gssapi-1.12.0-cp311-abi3-macosx_11_0_arm64.whl", hash = "sha256:ca29e1d31a6edd78d33ec37d0cf7bfde7e259b376051f742816c08380e23e973"},
+    {file = "gssapi-1.12.0-cp311-abi3-win32.whl", hash = "sha256:06f3363a5d201cf328e4964e491c37b0777636d67ef19549bbb96792b7293dca"},
+    {file = "gssapi-1.12.0-cp311-abi3-win_amd64.whl", hash = "sha256:a953e21f80169bd55fef0d0bf050109ce93d055931558c3b353e8c4e7751f08e"},
+    {file = "gssapi-1.12.0-cp314-cp314t-macosx_10_15_x86_64.whl", hash = "sha256:82fa870b03277494d351912d2f48f55bd305fdc28953dd9c5fd3d82f07bf00c9"},
+    {file = "gssapi-1.12.0-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:ada649cbca078a8c2fb398257c93e66f4807a988d6ad36f8bb12744fb21aaf5a"},
+    {file = "gssapi-1.12.0-cp314-cp314t-win32.whl", hash = "sha256:89d747b301317e9ab2d5776eafa9bb5e1b37a736bf295eb789aeb57752f23fb0"},
+    {file = "gssapi-1.12.0-cp314-cp314t-win_amd64.whl", hash = "sha256:59c601325789d9aa34f14117f534f224031de455174ac01b64b7bbbdff6d2bd0"},
+    {file = "gssapi-1.12.0-cp315-cp315t-macosx_10_15_x86_64.whl", hash = "sha256:9d98f9ad2327ab20d7985d0fd413c02c0cce7459ed226952fd078b29c6a2a40b"},
+    {file = "gssapi-1.12.0-cp315-cp315t-macosx_11_0_arm64.whl", hash = "sha256:6e2bf66d0d02e6cafadc9dc944998a9c2edcd553138b9c68b57236bcc827bd15"},
+    {file = "gssapi-1.12.0-cp315-cp315t-win32.whl", hash = "sha256:8b6c966d70025e044aa1f67d4e333854aa5e426ac2a75f201f627ede6aacf0c9"},
+    {file = "gssapi-1.12.0-cp315-cp315t-win_amd64.whl", hash = "sha256:4f0811ba2df74bb600697d5af5db7e5aecf9361f8081998d7c2cee3f5e59c752"},
+    {file = "gssapi-1.12.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:892ac549291a4f96a9600b3a822dc91df6f081592f7171bf134076b3f0d95fd3"},
+    {file = "gssapi-1.12.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:5a8004c2ef9bd072d682772de8be89fe4b25c80a6ba16cbaf822b6838d10181b"},
+    {file = "gssapi-1.12.0-cp39-cp39-win32.whl", hash = "sha256:3cc29e17d5f0eab27a7e7803b56706c712e3c88c37ec5d64b6a5bb2a49d0f582"},
+    {file = "gssapi-1.12.0-cp39-cp39-win_amd64.whl", hash = "sha256:c909b97f68757a0fd15785bc4e32b958f5433397a03a5d75cbf51a8e788869ed"},
+    {file = "gssapi-1.12.0.tar.gz", hash = "sha256:0b48f17296f869db89221c3bde463fdff35152a4cb99ae4aaa42b0b64333fc6c"},
+]
+
+[package.dependencies]
+decorator = "*"
 
 [[package]]
 name = "h11"
@@ -3809,4 +3855,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "580329a75d06019420c9d79149710fcd5d9e832ed71794eebb67aceda3c5a734"
+content-hash = "f181baebc581f624d4d6eb738e8cd69338c277ed04d8b266c8c59126c86a341c"

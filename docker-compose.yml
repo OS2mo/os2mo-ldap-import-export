@@ -47,8 +47,18 @@ services:
       ADMINPASS: "AdminPassword123"
       INSECURE_LDAP: "true"
       INSECURE_PASSWORDSETTINGS: "true"
+      # smblds disables the KDC by default (`ldap cldap`); the gssapi auth backend
+      # needs it. Runs unprivileged: the KDC only reads sam.ldb.
+      # NOTE: keep synchronised with .gitlab-ci.yml!
+      SERVER_SERVICES: "ldap cldap kdc"
+    volumes:
+      # Registers the ldap/dc.magenta.dk service principal for GSSAPI binds
+      - ./dev-environment/samba/entrypoint.d:/entrypoint.d:ro
     networks:
-      - default
+      default:
+        aliases:
+          # Kerberos clients request ldap/<host>, so connect via the DC's FQDN
+          - dc.magenta.dk
 
   mo-init:
     image: magentaaps/os2mo-init:5

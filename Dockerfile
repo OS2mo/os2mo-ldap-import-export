@@ -4,11 +4,13 @@ FROM python:3.11
 
 WORKDIR /app
 
-# Install ldapsearch and clean up
+# Install ldapsearch + Kerberos (for the GSSAPI auth backend) and clean up.
+# krb5-user provides kinit/ktutil (integration tests); libkrb5-dev provides headers for the
+# gssapi Python package.
 RUN set -ex\
   && export DEBIAN_FRONTEND=noninteractive \
   && apt-get -y update \
-  && apt-get install -y --no-install-recommends ldap-utils \
+  && apt-get install -y --no-install-recommends ldap-utils krb5-user libkrb5-dev \
   && apt-get clean && rm -rf "/var/lib/apt/lists/*" "/tmp/*" "/var/tmp/*" "/usr/share/man/??" "/usr/share/man/??_*"
 
 

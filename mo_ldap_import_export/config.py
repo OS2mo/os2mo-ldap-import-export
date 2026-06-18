@@ -328,6 +328,7 @@ class ConversionMapping(MappingBaseModel):
 class AuthBackendEnum(str, Enum):
     NTLM = "ntlm"
     SIMPLE = "simple"
+    GSSAPI = "gssapi"
 
 
 def yaml_config_settings_source(settings: BaseSettings) -> dict[str, Any]:
