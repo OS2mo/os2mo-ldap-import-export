@@ -307,6 +307,74 @@ async def get_non_existing_account_names(
     }
 
 
+# The ACCOUNTDISABLE bit within Active Directory's userAccountControl attribute.
+# When set, the account is disabled (but still present) in AD.
+# See: https://learn.microsoft.com/en-us/troubleshoot/windows-server/active-directory/useraccountcontrol-manipulate-account-properties
+UF_ACCOUNTDISABLE = 0x2
+
+
+async def load_ldap_disabled_account_names(
+    settings: Settings, ldap_connection: Connection, account_name: str
+) -> set[str]:
+    """Return the account names of all disabled (but still present) LDAP accounts."""
+    searchParameters = {
+        "search_filter": "(objectclass=*)",
+        "attributes": [account_name, "userAccountControl"],
+    }
+    responses = await paged_search(settings, ldap_connection, searchParameters)
+
+    disabled_account_names = set()
+    for response in responses:
+        attributes = response["attributes"]
+        account_names = attributes.get(account_name)
+        user_account_control = attributes.get("userAccountControl")
+        if not account_names or not user_account_control:
+            continue
+        flags = int(one(ensure_list(user_account_control)))
+        if flags & UF_ACCOUNTDISABLE:
+            disabled_account_names.add(one(ensure_list(account_names)))
+    return disabled_account_names
+
+
+async def get_disabled_account_names(
+    settings: Settings,
+    ldap_connection: Connection,
+    dataloader: DataLoader,
+    itsystem_user_key: str | None = None,
+) -> set[ITUserUUID]:
+    """Find MO IT-users pointing at an account that is disabled in LDAP.
+
+    Unlike `get_non_existing_account_names`, the backing LDAP account still
+    exists here; it has merely been disabled (e.g. when an AD account is
+    deactivated rather than deleted). Such IT-users are not cleaned up by the
+    event-driven sync and are returned here so they can be terminated.
+    """
+    if itsystem_user_key is None:
+        itsystem_user_key = (
+            settings.conversion_mapping.username_generator.existing_usernames_itsystem
+        )
+    it_system_uuid = await dataloader.moapi.get_it_system_uuid(itsystem_user_key)
+
+    account_name = "uid"
+    # Handle ADs non-standard username field
+    if settings.ldap_dialect == "AD":  # pragma: no cover
+        account_name = "sAMAccountName"
+
+    disabled_account_names = await load_ldap_disabled_account_names(
+        settings, ldap_connection, account_name
+    )
+
+    # Fetch all MO IT-users and find those pointing at a disabled account
+    all_it_users = await load_all_current_it_users(
+        dataloader.moapi.graphql_client, UUID(it_system_uuid)
+    )
+    return {
+        ITUserUUID(it_user["uuid"])
+        for it_user in all_it_users
+        if it_user["user_key"] in disabled_account_names
+    }
+
+
 async def get_non_existing_external_ids(
     settings: Settings,
     ldap_connection: Connection,
@@ -656,6 +724,30 @@ def construct_router(settings: Settings) -> APIRouter:
     ) -> set[ITUserUUID]:
         assert_mo_midnight(at)
         bad_itusers = await get_non_existing_account_names(
+            settings, ldap_connection, dataloader, itsystem_user_key=itsystem_user_key
+        )
+        if dry_run:
+            return bad_itusers
+
+        deleted = set()
+        for uuid in bad_itusers:
+            result = await dataloader.moapi.graphql_client.ituser_terminate(
+                ITUserTerminateInput(uuid=UUID(str(uuid)), to=at)
+            )
+            deleted.add(cast(ITUserUUID, result.uuid))
+        return deleted
+
+    @router.post("/fixup/delete_disabled_account_names", status_code=200, tags=["LDAP"])
+    async def delete_disabled_account_names_from_MO(
+        settings: depends.Settings,
+        ldap_connection: depends.Connection,
+        dataloader: depends.DataLoader,
+        at: datetime,
+        dry_run: bool = True,
+        itsystem_user_key: str | None = None,
+    ) -> set[ITUserUUID]:
+        assert_mo_midnight(at)
+        bad_itusers = await get_disabled_account_names(
             settings, ldap_connection, dataloader, itsystem_user_key=itsystem_user_key
         )
         if dry_run:
