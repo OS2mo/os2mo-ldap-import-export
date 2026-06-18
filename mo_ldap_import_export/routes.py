@@ -31,6 +31,7 @@ from more_itertools import last
 from more_itertools import one
 from more_itertools import only
 from more_itertools import pairwise
+from pydantic import BaseModel
 from pydantic import parse_obj_as
 
 from . import depends
@@ -335,6 +336,80 @@ async def get_non_existing_external_ids(
         for it_user in all_mo_it_users
         if UUID(it_user["external_id"]) not in unique_ldap_uuids
     }
+
+
+async def get_all_itusers_for_itsystems(
+    dataloader: DataLoader,
+    itsystem_user_keys: list[str],
+) -> set[ITUserUUID]:
+    """Collect the UUIDs of *all* IT-users belonging to the given IT-systems.
+
+    The IT-systems are identified by their user-keys. All IT-users are returned,
+    regardless of validity (i.e. across all of time), so that a subsequent
+    bitemporal deletion can purge their entire registration history.
+    """
+    ituser_uuids: set[ITUserUUID] = set()
+    for itsystem_user_key in itsystem_user_keys:
+        it_system_uuid = await dataloader.moapi.get_it_system_uuid(itsystem_user_key)
+        if not it_system_uuid:
+            raise ObjectGUIDITSystemNotFound(
+                f"Could not find it_system_uuid for {itsystem_user_key!r}"
+            )
+        filter = parse_obj_as(
+            ITUserFilter,
+            {
+                "itsystem": {"uuids": [it_system_uuid]},
+                "from_date": None,
+                "to_date": None,
+            },
+        )
+        read_all_itusers = partial(
+            dataloader.moapi.graphql_client.read_all_itusers, filter
+        )
+        async for entry in paged_query(read_all_itusers):
+            for validity in entry.validities:
+                ituser_uuids.add(ITUserUUID(validity.uuid))
+    return ituser_uuids
+
+
+class DanglingReferences(BaseModel):
+    """Entities that reference IT-users and would be left dangling by a bitemporal
+    deletion of those IT-users."""
+
+    addresses: set[UUID] = set()
+    rolebindings: set[UUID] = set()
+
+    def any(self) -> bool:
+        return bool(self.addresses or self.rolebindings)
+
+
+async def get_dangling_references(
+    dataloader: DataLoader,
+    ituser_uuids: set[ITUserUUID],
+) -> DanglingReferences:
+    """Find entities that reference the given IT-users and would be left dangling
+    (breaking temporal foreign-keys) by a bitemporal deletion of those IT-users.
+
+    Currently checks addresses and rolebindings, the two entity types that can be
+    scoped directly to an IT-user. Engagements are referenced *by* the IT-user
+    rather than the reverse, so they are not left dangling.
+    """
+    if not ituser_uuids:
+        return DanglingReferences()
+
+    uuids = list(ituser_uuids)
+
+    read_addresses = partial(
+        dataloader.moapi.graphql_client.read_all_ituser_addresses, uuids
+    )
+    addresses = {obj.uuid async for obj in paged_query(read_addresses)}
+
+    read_rolebindings = partial(
+        dataloader.moapi.graphql_client.read_all_ituser_rolebindings, uuids
+    )
+    rolebindings = {obj.uuid async for obj in paged_query(read_rolebindings)}
+
+    return DanglingReferences(addresses=addresses, rolebindings=rolebindings)
 
 
 def make_overview_entry(
@@ -691,6 +766,83 @@ def construct_router(settings: Settings) -> APIRouter:
         for uuid in bad_itusers:
             result = await dataloader.moapi.graphql_client.ituser_terminate(
                 ITUserTerminateInput(uuid=UUID(str(uuid)), to=at)
+            )
+            deleted.add(cast(ITUserUUID, result.uuid))
+        return deleted
+
+    @router.post(
+        "/fixup/dangling_references_for_itsystems", status_code=200, tags=["LDAP"]
+    )
+    async def dangling_references_for_itsystems(
+        dataloader: depends.DataLoader,
+        itsystem_user_keys: Annotated[list[str], Body()],
+    ) -> DanglingReferences:
+        """Report entities that reference the IT-users of the given IT-systems.
+
+        Use this *before* `delete_all_itusers_for_itsystems` to check whether a
+        bitemporal deletion would leave dangling references. Returns the UUIDs of
+        addresses and rolebindings scoped to those IT-users, which would have to be
+        dealt with separately to avoid breaking temporal foreign-keys.
+        """
+        ituser_uuids = await get_all_itusers_for_itsystems(
+            dataloader, itsystem_user_keys
+        )
+        return await get_dangling_references(dataloader, ituser_uuids)
+
+    @router.post(
+        "/fixup/delete_all_itusers_for_itsystems", status_code=200, tags=["LDAP"]
+    )
+    async def delete_all_itusers_for_itsystems(
+        dataloader: depends.DataLoader,
+        itsystem_user_keys: Annotated[list[str], Body()],
+        dry_run: bool = True,
+        force: bool = False,
+    ) -> set[ITUserUUID]:
+        """Bitemporally delete *all* IT-users belonging to the given IT-systems.
+
+        **Warning**: This performs a bitemporal deletion (`ituser_delete`), *not* a
+        temporal termination. After the call the IT-users leave **no trace** in any
+        temporal listing and the operation **cannot be undone**.
+
+        Intended for purging deprecated IT-systems, e.g. old Active Directory GUID
+        systems such as `Skole-AD` / `Sprogcenter-AD`. The IT-systems are identified
+        by their user-keys passed in the request body, e.g.
+        `["Skole-AD", "Sprogcenter-AD", "Active Directory GUID"]`.
+
+        While `dry_run` is true (the default) only the IT-user UUIDs that *would* be
+        deleted are returned. Set `dry_run=False` to actually delete them.
+
+        Before deleting, the IT-users are checked for dangling references (addresses
+        and rolebindings scoped to them). If any exist the deletion is aborted with a
+        `409 Conflict` listing them, as bitemporal deletion does not clean them up.
+        Pass `force=true` to delete the IT-users anyway (see also
+        `/fixup/dangling_references_for_itsystems`).
+        """
+        ituser_uuids = await get_all_itusers_for_itsystems(
+            dataloader, itsystem_user_keys
+        )
+        if dry_run:
+            return ituser_uuids
+
+        if not force:
+            dangling = await get_dangling_references(dataloader, ituser_uuids)
+            if dangling.any():
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "message": (
+                            "Refusing to delete IT-users with dangling references. "
+                            "Deal with the referencing entities first, or pass "
+                            "force=true to delete anyway."
+                        ),
+                        "dangling_references": jsonable_encoder(dangling),
+                    },
+                )
+
+        deleted: set[ITUserUUID] = set()
+        for uuid in ituser_uuids:
+            result = await dataloader.moapi.graphql_client.ituser_delete(
+                UUID(str(uuid))
             )
             deleted.add(cast(ITUserUUID, result.uuid))
         return deleted

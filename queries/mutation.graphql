@@ -110,6 +110,15 @@ mutation ituser_terminate($input: ITUserTerminateInput!) {
   }
 }
 
+# Warning: bitemporal deletion, NOT temporal termination. Leaves no trace in any
+# temporal listing and cannot be undone. Only use when fully purging IT-users
+# (e.g. when decommissioning a deprecated IT-system).
+mutation ituser_delete($uuid: UUID!) {
+  ituser_delete(uuid: $uuid) {
+    uuid
+  }
+}
+
 # Organisation Unit
 mutation org_unit_create($input: OrganisationUnitCreateInput!) {
   org_unit_create(input: $input) {

@@ -118,6 +118,8 @@ from .itsystem_update import ItsystemUpdate
 from .itsystem_update import ItsystemUpdateItsystemUpdate
 from .ituser_create import ItuserCreate
 from .ituser_create import ItuserCreateItuserCreate
+from .ituser_delete import ItuserDelete
+from .ituser_delete import ItuserDeleteItuserDelete
 from .ituser_refresh import ItuserRefresh
 from .ituser_refresh import ItuserRefreshItuserRefresh
 from .ituser_terminate import ItuserTerminate
@@ -160,6 +162,10 @@ from .read_address_validities import ReadAddressValidities
 from .read_address_validities import ReadAddressValiditiesAddresses
 from .read_addresses import ReadAddresses
 from .read_addresses import ReadAddressesAddresses
+from .read_all_ituser_addresses import ReadAllItuserAddresses
+from .read_all_ituser_addresses import ReadAllItuserAddressesAddresses
+from .read_all_ituser_rolebindings import ReadAllItuserRolebindings
+from .read_all_ituser_rolebindings import ReadAllItuserRolebindingsRolebindings
 from .read_all_ituser_user_keys_by_itsystem_uuid import (
     ReadAllItuserUserKeysByItsystemUuid,
 )
@@ -612,6 +618,19 @@ class GraphQLClient(AsyncBaseClient):
         response = await self.execute(query=query, variables=variables)
         data = self.get_data(response)
         return ItuserTerminate.parse_obj(data).ituser_terminate
+
+    async def ituser_delete(self, uuid: UUID) -> ItuserDeleteItuserDelete:
+        query = gql("""
+            mutation ituser_delete($uuid: UUID!) {
+              ituser_delete(uuid: $uuid) {
+                uuid
+              }
+            }
+            """)
+        variables: dict[str, object] = {"uuid": uuid}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return ItuserDelete.parse_obj(data).ituser_delete
 
     async def org_unit_create(
         self, input: OrganisationUnitCreateInput
@@ -1164,6 +1183,68 @@ class GraphQLClient(AsyncBaseClient):
         response = await self.execute(query=query, variables=variables)
         data = self.get_data(response)
         return ReadAllItusers.parse_obj(data).itusers
+
+    async def read_all_ituser_addresses(
+        self,
+        itusers: list[UUID],
+        cursor: Any | None | UnsetType = UNSET,
+        limit: Any | None | UnsetType = UNSET,
+    ) -> ReadAllItuserAddressesAddresses:
+        query = gql("""
+            query read_all_ituser_addresses($itusers: [UUID!]!, $cursor: Cursor = null, $limit: int = 100) {
+              addresses(
+                limit: $limit
+                cursor: $cursor
+                filter: {ituser: {uuids: $itusers, from_date: null, to_date: null}, from_date: null, to_date: null}
+              ) {
+                objects {
+                  uuid
+                }
+                page_info {
+                  next_cursor
+                }
+              }
+            }
+            """)
+        variables: dict[str, object] = {
+            "itusers": itusers,
+            "cursor": cursor,
+            "limit": limit,
+        }
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return ReadAllItuserAddresses.parse_obj(data).addresses
+
+    async def read_all_ituser_rolebindings(
+        self,
+        itusers: list[UUID],
+        cursor: Any | None | UnsetType = UNSET,
+        limit: Any | None | UnsetType = UNSET,
+    ) -> ReadAllItuserRolebindingsRolebindings:
+        query = gql("""
+            query read_all_ituser_rolebindings($itusers: [UUID!]!, $cursor: Cursor = null, $limit: int = 100) {
+              rolebindings(
+                limit: $limit
+                cursor: $cursor
+                filter: {ituser: {uuids: $itusers, from_date: null, to_date: null}, from_date: null, to_date: null}
+              ) {
+                objects {
+                  uuid
+                }
+                page_info {
+                  next_cursor
+                }
+              }
+            }
+            """)
+        variables: dict[str, object] = {
+            "itusers": itusers,
+            "cursor": cursor,
+            "limit": limit,
+        }
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return ReadAllItuserRolebindings.parse_obj(data).rolebindings
 
     async def read_filtered_addresses(
         self, filter: AddressFilter

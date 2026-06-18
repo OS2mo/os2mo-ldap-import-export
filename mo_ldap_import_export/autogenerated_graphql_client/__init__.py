@@ -277,6 +277,8 @@ from .itsystem_update import ItsystemUpdate
 from .itsystem_update import ItsystemUpdateItsystemUpdate
 from .ituser_create import ItuserCreate
 from .ituser_create import ItuserCreateItuserCreate
+from .ituser_delete import ItuserDelete
+from .ituser_delete import ItuserDeleteItuserDelete
 from .ituser_refresh import ItuserRefresh
 from .ituser_refresh import ItuserRefreshItuserRefresh
 from .ituser_terminate import ItuserTerminate
@@ -340,6 +342,14 @@ from .read_addresses import ReadAddressesAddressesObjectsValidities
 from .read_addresses import ReadAddressesAddressesObjectsValiditiesAddressType
 from .read_addresses import ReadAddressesAddressesObjectsValiditiesPerson
 from .read_addresses import ReadAddressesAddressesObjectsValiditiesValidity
+from .read_all_ituser_addresses import ReadAllItuserAddresses
+from .read_all_ituser_addresses import ReadAllItuserAddressesAddresses
+from .read_all_ituser_addresses import ReadAllItuserAddressesAddressesObjects
+from .read_all_ituser_addresses import ReadAllItuserAddressesAddressesPageInfo
+from .read_all_ituser_rolebindings import ReadAllItuserRolebindings
+from .read_all_ituser_rolebindings import ReadAllItuserRolebindingsRolebindings
+from .read_all_ituser_rolebindings import ReadAllItuserRolebindingsRolebindingsObjects
+from .read_all_ituser_rolebindings import ReadAllItuserRolebindingsRolebindingsPageInfo
 from .read_all_ituser_user_keys_by_itsystem_uuid import (
     ReadAllItuserUserKeysByItsystemUuid,
 )
@@ -698,6 +708,8 @@ __all__ = [
     "ItuserBoundRoleBindingFilter",
     "ItuserCreate",
     "ItuserCreateItuserCreate",
+    "ItuserDelete",
+    "ItuserDeleteItuserDelete",
     "ItuserRefresh",
     "ItuserRefreshItuserRefresh",
     "ItuserTerminate",
@@ -806,6 +818,14 @@ __all__ = [
     "ReadAddressesAddressesObjectsValiditiesAddressType",
     "ReadAddressesAddressesObjectsValiditiesPerson",
     "ReadAddressesAddressesObjectsValiditiesValidity",
+    "ReadAllItuserAddresses",
+    "ReadAllItuserAddressesAddresses",
+    "ReadAllItuserAddressesAddressesObjects",
+    "ReadAllItuserAddressesAddressesPageInfo",
+    "ReadAllItuserRolebindings",
+    "ReadAllItuserRolebindingsRolebindings",
+    "ReadAllItuserRolebindingsRolebindingsObjects",
+    "ReadAllItuserRolebindingsRolebindingsPageInfo",
     "ReadAllItuserUserKeysByItsystemUuid",
     "ReadAllItuserUserKeysByItsystemUuidItusers",
     "ReadAllItuserUserKeysByItsystemUuidItusersObjects",
