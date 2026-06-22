@@ -326,6 +326,56 @@ query read_all_itusers(
   }
 }
 
+# Addresses referencing the given IT-users (across all of time). Used to detect
+# references that would be left dangling by a bitemporal deletion of the IT-users.
+query read_all_ituser_addresses(
+  $itusers: [UUID!]!
+  $cursor: Cursor = null
+  $limit: int = 100
+) {
+  addresses(
+    limit: $limit
+    cursor: $cursor
+    filter: {
+      ituser: { uuids: $itusers, from_date: null, to_date: null }
+      from_date: null
+      to_date: null
+    }
+  ) {
+    objects {
+      uuid
+    }
+    page_info {
+      next_cursor
+    }
+  }
+}
+
+# Rolebindings referencing the given IT-users (across all of time). Used to detect
+# references that would be left dangling by a bitemporal deletion of the IT-users.
+query read_all_ituser_rolebindings(
+  $itusers: [UUID!]!
+  $cursor: Cursor = null
+  $limit: int = 100
+) {
+  rolebindings(
+    limit: $limit
+    cursor: $cursor
+    filter: {
+      ituser: { uuids: $itusers, from_date: null, to_date: null }
+      from_date: null
+      to_date: null
+    }
+  ) {
+    objects {
+      uuid
+    }
+    page_info {
+      next_cursor
+    }
+  }
+}
+
 query read_filtered_addresses($filter: AddressFilter!) {
   addresses(filter: $filter) {
     objects {
