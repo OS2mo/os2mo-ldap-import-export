@@ -22,7 +22,8 @@ async def test_changed_since(test_client: AsyncClient, ldap_person_uuid: UUID) -
     headers = {"Content-Type": "text/plain"}
     result = await test_client.request(
         "GET",
-        "/ldap_event_generator/2000-01-01T00:00:00Z",
+        "/ldap_event_generator/since",
+        params={"since": "2000-01-01T00:00:00Z"},
         content=content,
         headers=headers,
     )
@@ -49,7 +50,8 @@ async def test_changed_since_pagination(
     headers = {"Content-Type": "text/plain"}
     result = await test_client.request(
         "GET",
-        "/ldap_event_generator/2000-01-01T00:00:00Z",
+        "/ldap_event_generator/since",
+        params={"since": "2000-01-01T00:00:00Z"},
         content=content,
         headers=headers,
     )

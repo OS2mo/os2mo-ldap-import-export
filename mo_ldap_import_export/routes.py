@@ -1119,12 +1119,25 @@ def construct_router(settings: Settings) -> APIRouter:
 ldap_event_router = APIRouter(prefix="/ldap_event_generator")
 
 
-@ldap_event_router.get("/{since}")
+@ldap_event_router.get("/since")
 async def fetch_changes_since(
     ldap_event_generator: depends.LDAPEventGenerator,
-    since: datetime,
     search_base: Annotated[str, Body()],
+    since: datetime = MICROSOFT_EPOCH,
 ) -> set[LDAPUUID]:
+    """Find every object in a subtree changed since a given time.
+
+    Only objects with an object class the integration synchronises are matched,
+    mirroring the periodic poller.
+
+    Args:
+        search_base: LDAP DN to search beneath, inclusive.
+        since: Only consider objects modified at or after this time; defaults
+            to the Microsoft epoch, i.e. the whole subtree.
+
+    Returns:
+        The LDAP UUIDs of the matching objects.
+    """
     uuids, _ = await ldap_event_generator.poll(search_base, since)
     return uuids
 
