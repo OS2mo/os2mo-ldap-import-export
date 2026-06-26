@@ -4,11 +4,15 @@
 
 from collections.abc import AsyncIterable
 from contextlib import ExitStack as _ExitStack
+from time import perf_counter
 from typing import Annotated
+from uuid import UUID
 from uuid import uuid4
 
+import structlog
 from fastapi import Depends
 from fastramqpi.depends import from_user_context
+from fastramqpi.events import Event
 from fastramqpi.ramqp.depends import Message
 from fastramqpi.ramqp.depends import from_context
 from ldap3 import Connection as _Connection
@@ -42,6 +46,25 @@ async def request_id() -> AsyncIterable[None]:
     request_id = str(uuid4())
     with bound_contextvars(request_id=request_id):
         yield
+
+
+logger = structlog.stdlib.get_logger()
+
+
+async def canonical_logline(event: Event[UUID]) -> AsyncIterable[None]:
+    """Log the event subject and how long processing it took.
+
+    Handles both directions (MO -> LDAP and LDAP -> MO).
+    """
+    start = perf_counter()
+    try:
+        yield
+    finally:
+        logger.info(
+            "Request handled",
+            subject=str(event.subject),
+            duration=perf_counter() - start,
+        )
 
 
 async def exit_stack() -> AsyncIterable[_ExitStack]:
