@@ -26,7 +26,9 @@ from .types import LDAPUUID
 logger = structlog.stdlib.get_logger()
 
 
-ldap2mo_router = APIRouter(prefix="/ldap2mo")
+ldap2mo_router = APIRouter(
+    prefix="/ldap2mo", dependencies=[Depends(depends.canonical_logline)]
+)
 
 PayloadUUID = Annotated[LDAPUUID, Depends(get_payload_as_type(LDAPUUID))]
 

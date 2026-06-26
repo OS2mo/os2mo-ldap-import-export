@@ -36,10 +36,12 @@ from structlog.testing import capture_logs
 async def test_rolebinding_sync(
     trigger_mo_to_ldap_sync: Callable[[str, UUID], Awaitable[None]],
 ) -> None:
+    uuid = uuid4()
     with capture_logs() as cap_logs:
-        await trigger_mo_to_ldap_sync("person2skip", uuid4())
+        await trigger_mo_to_ldap_sync("person2skip", uuid)
 
-    assert cap_logs == [
+    *skip_logs, handled = cap_logs
+    assert skip_logs == [
         {
             "event": "Registered change in handler",
             "log_level": "info",
@@ -49,3 +51,7 @@ async def test_rolebinding_sync(
             "log_level": "info",
         },
     ]
+    assert handled["event"] == "Request handled"
+    assert handled["log_level"] == "info"
+    assert handled["subject"] == str(uuid)
+    assert handled["duration"] >= 0

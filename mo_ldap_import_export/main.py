@@ -13,6 +13,7 @@ from uuid import UUID
 
 import structlog
 from fastapi import APIRouter
+from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import Query
@@ -66,7 +67,9 @@ GRAPHQL_VERSION = 29
 
 logger = structlog.stdlib.get_logger()
 
-mo2ldap_router = APIRouter(prefix="/mo2ldap")
+mo2ldap_router = APIRouter(
+    prefix="/mo2ldap", dependencies=[Depends(depends.canonical_logline)]
+)
 
 
 @mo2ldap_router.post("/address")
@@ -616,7 +619,9 @@ def create_fastramqpi(**kwargs: Any) -> FastRAMQPI:
     fastramqpi.add_context(settings=settings)
 
     # Install dynamic endpoints router
-    router = APIRouter(prefix="/mo_to_ldap")
+    router = APIRouter(
+        prefix="/mo_to_ldap", dependencies=[Depends(depends.canonical_logline)]
+    )
     for mapping in settings.conversion_mapping.mo_to_ldap:
         handler = mo_to_ldap_handler(
             mapping.identifier, mapping.template, mapping.object_class
