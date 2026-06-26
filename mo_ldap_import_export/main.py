@@ -55,6 +55,7 @@ from .ldap_emit import publish_uuids
 from .ldap_event_generator import LDAPEventGenerator
 from .ldapapi import LDAPAPI
 from .moapi import MOAPI
+from .request_id import install_request_id_forwarding
 from .routes import construct_router
 from .routes import ldap_event_router
 from .types import EmployeeUUID
@@ -348,6 +349,7 @@ async def lifespan(
 
         context = fastramqpi.get_context()
         graphql_client: GraphQLClient = context["graphql_client"]
+        install_request_id_forwarding(graphql_client.http_client)
 
         logger.info("Initializing MOAPI")
         moapi = MOAPI(settings, graphql_client)
