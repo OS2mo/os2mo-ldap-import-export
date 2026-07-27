@@ -484,9 +484,9 @@ async def load_primary_engagement_recalculated(
 
 async def load_engagement(moapi: MOAPI, uuid: UUID) -> Engagement | None:
     fetched_engagement = await moapi.load_mo_engagement(uuid, start=None, end=None)
-    if fetched_engagement is None:  # pragma: no cover
-        logger.error("Unable to load mo engagement", uuid=uuid)
-        raise RequeueException("Unable to load mo engagement")
+    if fetched_engagement is None:
+        logger.info("Engagement has no validities", uuid=uuid)
+        return None
     delete = get_delete_flag(fetched_engagement)
     if delete:
         logger.debug("Engagement is terminated", uuid=uuid)
@@ -496,9 +496,9 @@ async def load_engagement(moapi: MOAPI, uuid: UUID) -> Engagement | None:
 
 async def load_org_unit(moapi: MOAPI, uuid: UUID) -> OrganisationUnit | None:
     fetched_org_unit = await moapi.load_mo_org_unit(uuid, current_objects_only=False)
-    if fetched_org_unit is None:  # pragma: no cover
-        logger.error("Unable to load mo org_unit", uuid=uuid)
-        raise RequeueException("Unable to load mo org_unit")
+    if fetched_org_unit is None:
+        logger.info("Org unit has no validities", uuid=uuid)
+        return None
     delete = get_delete_flag(fetched_org_unit)
     if delete:
         logger.debug("Org unit is terminated", uuid=uuid)
