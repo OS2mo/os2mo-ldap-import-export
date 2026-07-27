@@ -36,6 +36,11 @@ from mo_ldap_import_export.models import Employee
 from mo_ldap_import_export.models import ITUser
 from mo_ldap_import_export.models import Validity
 from mo_ldap_import_export.types import DN
+
+# TEMPORARY: importing this patches FastRAMQPI's `run_server` to dump the stack
+# of every pending asyncio task if teardown stalls, to diagnose the flaky
+# integration-test teardown hang. Remove once the root cause is fixed.
+from tests import teardown_watchdog  # noqa: E402,F401
 from tests.graphql_mocker import GraphQLMocker
 
 
