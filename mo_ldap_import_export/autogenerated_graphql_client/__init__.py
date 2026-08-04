@@ -300,8 +300,6 @@ from .list_events import ListEventsEvents
 from .list_events import ListEventsEventsObjects
 from .manager_refresh import ManagerRefresh
 from .manager_refresh import ManagerRefreshManagerRefresh
-from .org_create import OrgCreate
-from .org_create import OrgCreateOrgCreate
 from .org_unit_create import OrgUnitCreate
 from .org_unit_create import OrgUnitCreateOrgUnitCreate
 from .org_unit_engagements_refresh import OrgUnitEngagementsRefresh
@@ -757,8 +755,6 @@ __all__ = [
     "NamespaceDeleteInput",
     "NamespaceFilter",
     "NamespacesBoundListenerFilter",
-    "OrgCreate",
-    "OrgCreateOrgCreate",
     "OrgUnitCreate",
     "OrgUnitCreateOrgUnitCreate",
     "OrgUnitEngagementsRefresh",
