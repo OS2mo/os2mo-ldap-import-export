@@ -51,7 +51,6 @@ async def test_no_itsystem(
         RAOpenValidityInput(from_="3000-01-01T00:00:00Z"),
     ],
 )
-@pytest.mark.usefixtures("root_org")
 async def test_no_role_itsystem(
     graphql_client: GraphQLClient,
     validity: RAOpenValidityInput,

@@ -100,7 +100,6 @@ from .input_types import ListenerFilter
 from .input_types import ManagerCreateInput
 from .input_types import ManagerFilter
 from .input_types import NamespaceFilter
-from .input_types import OrganisationCreate
 from .input_types import OrganisationUnitCreateInput
 from .input_types import OrganisationUnitFilter
 from .input_types import OrganisationUnitTerminateInput
@@ -138,8 +137,6 @@ from .list_events import ListEvents
 from .list_events import ListEventsEvents
 from .manager_refresh import ManagerRefresh
 from .manager_refresh import ManagerRefreshManagerRefresh
-from .org_create import OrgCreate
-from .org_create import OrgCreateOrgCreate
 from .org_unit_create import OrgUnitCreate
 from .org_unit_create import OrgUnitCreateOrgUnitCreate
 from .org_unit_engagements_refresh import OrgUnitEngagementsRefresh
@@ -422,19 +419,6 @@ class GraphQLClient(AsyncBaseClient):
         response = await self.execute(query=query, variables=variables)
         data = self.get_data(response)
         return AddressTerminate.parse_obj(data).address_terminate
-
-    async def org_create(self, input: OrganisationCreate) -> OrgCreateOrgCreate:
-        query = gql("""
-            mutation org_create($input: OrganisationCreate!) {
-              org_create(input: $input) {
-                uuid
-              }
-            }
-            """)
-        variables: dict[str, object] = {"input": input}
-        response = await self.execute(query=query, variables=variables)
-        data = self.get_data(response)
-        return OrgCreate.parse_obj(data).org_create
 
     async def facet_create(self, input: FacetCreateInput) -> FacetCreateFacetCreate:
         query = gql("""

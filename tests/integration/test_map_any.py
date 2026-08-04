@@ -148,7 +148,7 @@ async def test_to_mo_org_unit(
         ),
     }
 )
-@pytest.mark.usefixtures("test_client", "root_org")
+@pytest.mark.usefixtures("test_client")
 async def test_to_mo_person(
     graphql_client: GraphQLClient,
     ldap_api: LDAPAPI,

@@ -55,7 +55,7 @@ from mo_ldap_import_export.types import EmployeeUUID
         ),
     }
 )
-@pytest.mark.usefixtures("test_client", "ldap_org_unit", "root_org")
+@pytest.mark.usefixtures("test_client", "ldap_org_unit")
 async def test_to_ldap(
     trigger_sync: Callable[[EmployeeUUID], Awaitable[None]],
     graphql_client: GraphQLClient,
