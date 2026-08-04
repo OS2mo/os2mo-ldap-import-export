@@ -491,9 +491,7 @@ async def test_to_mo_change_parent(
         ),
     }
 )
-@pytest.mark.usefixtures(
-    "afdeling", "ansat", "primary", "engagement_job_function_facet"
-)
+@pytest.mark.usefixtures("afdeling", "ansat", "primary", "engagement_job_function_facet")
 async def test_to_mo_change_engagement_ou(
     graphql_client: GraphQLClient,
     ldap_api: LDAPAPI,
