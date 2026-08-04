@@ -20,13 +20,6 @@ mutation address_terminate($input: AddressTerminateInput!) {
   }
 }
 
-# Organisation
-mutation org_create($input: OrganisationCreate!) {
-  org_create(input: $input) {
-    uuid
-  }
-}
-
 # Facet
 mutation facet_create($input: FacetCreateInput!) {
   facet_create(input: $input) {

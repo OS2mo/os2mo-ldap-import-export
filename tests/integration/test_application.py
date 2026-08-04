@@ -43,7 +43,7 @@ from mo_ldap_import_export.utils import mo_today
 
 
 @pytest.mark.integration_test
-@pytest.mark.usefixtures("test_client", "root_org")
+@pytest.mark.usefixtures("test_client")
 async def test_process_person(
     graphql_client: GraphQLClient,
     context: Context,
@@ -155,7 +155,6 @@ async def test_endpoint_mo_uuid_to_ldap_dn(
 
 
 @pytest.mark.integration_test
-@pytest.mark.usefixtures("root_org")
 async def test_endpoint_mo2ldap_templating(
     test_client: AsyncClient,
     graphql_client: GraphQLClient,
@@ -191,7 +190,7 @@ async def test_endpoint_mo2ldap_templating(
 
 
 @pytest.mark.integration_test
-@pytest.mark.usefixtures("test_client", "ldap_person", "root_org")
+@pytest.mark.usefixtures("test_client", "ldap_person")
 async def test_create_ldap_person(
     test_client: AsyncClient, graphql_client: GraphQLClient
 ) -> None:
@@ -231,7 +230,7 @@ async def test_create_ldap_person(
 @pytest.mark.envvar(
     {"IT_USER_TO_CHECK": "SynchronizeToLDAP", "LISTEN_TO_CHANGES_IN_LDAP": "False"}
 )
-@pytest.mark.usefixtures("ldap_person", "root_org")
+@pytest.mark.usefixtures("ldap_person")
 async def test_create_ldap_person_blocked_by_itsystem_check(
     test_client: AsyncClient, graphql_client: GraphQLClient
 ) -> None:

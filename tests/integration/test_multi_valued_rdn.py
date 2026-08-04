@@ -191,7 +191,7 @@ def test_parse_dn_handles_multi_valued_rdns(
         ),
     }
 )
-@pytest.mark.usefixtures("test_client", "root_org")
+@pytest.mark.usefixtures("test_client")
 async def test_renaming_multi_valued_rdns(
     trigger_sync: Callable[[EmployeeUUID], Awaitable[None]],
     graphql_client: GraphQLClient,
