@@ -39,6 +39,10 @@ The development stack MAY be started using `docker compose up --build --detach`
 
 ## Writing Tests
 
+- Integration-tests start with an empty OS2mo database, save for the root
+  organisation, which always exists.
+  Objects they need (facets, classes, IT-systems, etc.) MUST be created by the
+  test itself, using the fixtures in `tests/integration/conftest.py`.
 - Tests SHOULD be added for new functionality.
 - Integration-tests SHOULD be preferred over unit-tests.
 - Unit-tests SHOULD only be written for pure functions.

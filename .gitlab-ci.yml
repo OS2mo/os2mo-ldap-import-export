@@ -25,7 +25,12 @@ variables:
   POETRY_VERSION: "1.8"
   PRECOMMIT_USE_POETRY: "true"
 
-  OS2MO_INIT_CONFIG: "/builds/$CI_PROJECT_PATH/init.config.yaml"
+  # Integration tests start with an empty OS2mo database - the root organisation
+  # is created by a migration - and create the objects they need themselves (see
+  # tests/integration/conftest.py), so there is no need to run OS2mo-init. An
+  # empty value skips the service entirely.
+  # NOTE: init.config.yaml is still used by the docker-compose dev environment.
+  OS2MO_INIT_CONFIG: ""
 
 # Conditions
 #############
