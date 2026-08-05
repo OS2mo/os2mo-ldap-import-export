@@ -51,7 +51,7 @@ from tests.integration.conftest import DN2UUID
         ),
     }
 )
-@pytest.mark.usefixtures("test_client", "root_org")
+@pytest.mark.usefixtures("test_client")
 async def test_to_mo(
     trigger_ldap_sync: Callable[[LDAPUUID], Awaitable[None]],
     dn2uuid: DN2UUID,
