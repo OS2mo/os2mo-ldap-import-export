@@ -59,6 +59,10 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 asyncio_mode="auto"
+# Dump the stacks of all threads if a test, including its setup and teardown,
+# takes more than ten minutes. Without this, a hanging test tells us nothing
+# but "job exceeded the timeout".
+faulthandler_timeout=600
 
 [tool.mypy]
 warn_return_any = "True"

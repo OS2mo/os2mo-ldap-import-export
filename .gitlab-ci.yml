@@ -28,6 +28,8 @@ variables:
   # FastRAMQPI 15 no longer uses OS2mo-init for integration tests
   OS2MO_INIT_CONFIG: ""
 
+  CI_DEBUG_SERVICES: "true"
+
 # Conditions
 #############
 # Global Conditions
