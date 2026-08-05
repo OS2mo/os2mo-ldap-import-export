@@ -97,9 +97,15 @@ async def test_no_desync(
     async def generate_events() -> set[LDAPUUID]:
         await event_generator._generate_events(search_base)
         uuids = set()
-        while (event := await graphql_client.fetch_event(listener.uuid)) is not None:
-            await graphql_client.acknowledge_event(event.token)
-            uuids.add(LDAPUUID(event.subject))
+        # `event_fetch` uses `for update skip locked` in MO, so it returns null
+        # if it overlaps with FastRAMQPI's `graphql_events_quick_retry`
+        # fixture. `list_events` is a plain read, which never skips locked
+        # rows, so we ask that instead.
+        while (await graphql_client.list_events(listener.uuid)).objects:
+            event = await graphql_client.fetch_event(listener.uuid)
+            if event is not None:
+                await graphql_client.acknowledge_event(event.token)
+                uuids.add(LDAPUUID(event.subject))
         return uuids
 
     # This checks from the start of the universe till now
