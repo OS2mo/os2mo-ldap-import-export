@@ -10,6 +10,7 @@ from uuid import uuid4
 
 import pytest
 from fastramqpi.context import Context
+from jinja2.nativetypes import NativeEnvironment
 from mergedeep import Strategy  # type: ignore
 from mergedeep import merge
 from pydantic import ValidationError
@@ -170,11 +171,12 @@ def context(
 
 @pytest.fixture
 async def converter(context: Context) -> LdapConverter:
-    template_environment = construct_environment(
-        context["user_context"]["settings"],
-        context["user_context"]["dataloader"],
+    settings = context["user_context"]["settings"]
+    dataloader = context["user_context"]["dataloader"]
+    converter = LdapConverter(
+        construct_environment(settings, dataloader),
+        construct_environment(settings, dataloader, NativeEnvironment),
     )
-    converter = LdapConverter(template_environment)
     return converter
 
 
@@ -186,14 +188,6 @@ async def dataloader(context: Context) -> AsyncMock:
 @pytest.fixture
 async def graphql_client(dataloader: AsyncMock) -> AsyncMock:
     return cast(AsyncMock, dataloader.graphql_client)
-
-
-def test_str_to_dict(converter: LdapConverter):
-    output = converter.str_to_dict("{'foo':2}")
-    assert output == {"foo": 2}
-
-    output = converter.str_to_dict("{'foo':Undefined}")
-    assert output == {"foo": None}
 
 
 EMPLOYEE_OBJ = {

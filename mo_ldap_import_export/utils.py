@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
 import re
+from ast import literal_eval
+from contextlib import suppress
 from datetime import UTC
 from datetime import datetime
 from datetime import time
@@ -108,6 +110,32 @@ def is_list(x: Any | list[Any]) -> bool:
         Whether the provided argument is a list or not.
     """
     return isinstance(x, list)
+
+
+def native_value(rendered: Any) -> Any:
+    """Interpret the output of a template rendered on a native environment.
+
+    Jinja only evaluates the rendered template as a Python literal if the
+    template is a single expression, so the indentation of a multi-line
+    template makes it fall back to a string. We retry the evaluation on the
+    stripped output, so a template yields the same value no matter how it is
+    formatted.
+
+    Args:
+        rendered: The rendered template.
+
+    Returns:
+        The provided argument unmodified, if it is not a string.
+        The value the string holds, if it is a Python literal.
+        The stripped string otherwise.
+    """
+    if not isinstance(rendered, str):
+        return rendered
+    stripped = rendered.strip()
+    # NOTE: Same exceptions as caught by jinja2.nativetypes.native_concat
+    with suppress(ValueError, SyntaxError, MemoryError):
+        return literal_eval(stripped)
+    return stripped
 
 
 def ensure_list(x: Any | list[Any]) -> list[Any]:

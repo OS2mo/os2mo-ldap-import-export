@@ -23,6 +23,7 @@ from fastramqpi.events import Listener
 from fastramqpi.events import Namespace
 from fastramqpi.main import FastRAMQPI
 from fastramqpi.ramqp.depends import handle_exclusively_decorator
+from jinja2.nativetypes import NativeEnvironment
 from ldap3 import Connection
 from ldap3.core.exceptions import LDAPNoSuchObjectResult
 from ldap3.core.exceptions import LDAPObjectClassViolationResult
@@ -372,9 +373,12 @@ async def lifespan(
 
         logger.info("Initializing jinja template environment")
         template_environment = construct_environment(settings, dataloader)
+        native_environment = construct_environment(
+            settings, dataloader, NativeEnvironment
+        )
 
         logger.info("Initializing converters")
-        converter = LdapConverter(template_environment)
+        converter = LdapConverter(template_environment, native_environment)
         fastramqpi.add_context(converter=converter)
 
         logger.info("Initializing Sync tool")

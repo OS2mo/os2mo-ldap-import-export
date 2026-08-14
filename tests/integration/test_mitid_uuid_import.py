@@ -33,7 +33,8 @@ from tests.conftest import construct_mitid_nl3uuid
                         "_import_to_mo_": "true",
                         "_ldap_attributes_": ["carLicense"],
                         "uuid": "{{ get_address_uuid({'address_type': {'user_keys': ['StringEmployee']}, 'employee': {'uuids': [employee_uuid]}}) }}",
-                        "value": "{{ ldap.carLicense | extract_mitid_uuid }}",
+                        # The filter yields an UUID, but the address value is a string
+                        "value": "{{ ldap.carLicense | extract_mitid_uuid | string }}",
                         "address_type": "{{ get_employee_address_type_uuid('StringEmployee') }}",
                         "person": "{{ employee_uuid }}",
                         "visibility": "{{ get_visibility_uuid('Public') }}",

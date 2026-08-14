@@ -61,12 +61,11 @@ async def read_engagements(
                         # Call load engagement on each UUID in the carLicense list,
                         # exposing the MO engagement objects as each for the mapping.
                         "_for_each_": """
-                            [
-                                {% for v in ldap.carLicense %}
-                                    {{ load_mo_engagement(v).json() }}
-                                    {% if not loop.last %},{% endif %}
-                                {% endfor %}
-                            ]
+                            {%- set engagements = [] -%}
+                            {%- for v in ldap.carLicense -%}
+                                {%- set _ = engagements.append(load_mo_engagement(v)) -%}
+                            {%- endfor -%}
+                            {{- engagements -}}
                         """,
                         "uuid": "{{ each.uuid }}",
                         "user_key": "{{ each.user_key }}",
@@ -188,18 +187,17 @@ async def test_for_each_rejects_non_list(
                                 "employeeNumber",
                             ],
                             "_for_each_": """
-                                {% set mo_employee = find_mo_employee_uuid_by_guid_and_cpr(
+                                {%- set mo_employee = find_mo_employee_uuid_by_guid_and_cpr(
                                     ldap.entryUUID, ldap.employeeNumber
-                                ) %}
-                                {% set engagements = get_engagement_uuids(
+                                ) -%}
+                                {%- set engagement_uuids = get_engagement_uuids(
                                     {"employee": {"uuids": [mo_employee]}}
-                                ) %}
-                                [
-                                    {% for engagement in engagements %}
-                                        {{ load_mo_engagement(engagement).json() }}
-                                        {% if not loop.last %},{% endif %}
-                                    {% endfor %}
-                                ]
+                                ) -%}
+                                {%- set engagements = [] -%}
+                                {%- for engagement in engagement_uuids -%}
+                                    {%- set _ = engagements.append(load_mo_engagement(engagement)) -%}
+                                {%- endfor -%}
+                                {{- engagements -}}
                             """,
                             "uuid": "{{ each.uuid }}",
                             "user_key": "{{ each.user_key }}",

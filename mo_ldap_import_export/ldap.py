@@ -17,6 +17,7 @@ import ldap3.core.exceptions
 import structlog
 from fastramqpi.context import Context
 from jinja2 import Template
+from jinja2.nativetypes import NativeEnvironment
 from ldap3 import BASE
 from ldap3 import NO_ATTRIBUTES
 from ldap3 import NTLM
@@ -51,6 +52,7 @@ from .types import RDN
 from .types import EmployeeUUID
 from .utils import combine_dn_strings
 from .utils import ensure_list
+from .utils import native_value
 
 logger = structlog.stdlib.get_logger()
 
@@ -368,7 +370,7 @@ def ldapobject2discriminator(
 def construct_template(template: str) -> Template:
     from .environments.main import construct_default_environment
 
-    environment = construct_default_environment()
+    environment = construct_default_environment(NativeEnvironment)
     return environment.from_string(template)
 
 
@@ -386,7 +388,9 @@ async def evaluate_template(
         value=mapping2value(mapping),
         **mapping,
     )
-    return result.strip() == "True"
+    # The native environment renders 'True' / '{{ x == y }}' to an actual boolean,
+    # anything else (a non-boolean literal, a plain string, None, ...) is not a match.
+    return native_value(result) is True
 
 
 def calculate_discriminator_mapping(

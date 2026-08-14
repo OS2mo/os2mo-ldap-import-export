@@ -6,9 +6,9 @@ from uuid import uuid4
 
 import pytest
 from fastramqpi.context import Context
+from pydantic import ValidationError
 
 from mo_ldap_import_export.customer_specific_checks import ExportChecks
-from mo_ldap_import_export.exceptions import IncorrectMapping
 from mo_ldap_import_export.import_export import SyncTool
 from mo_ldap_import_export.ldap_classes import LdapObject
 
@@ -36,7 +36,10 @@ from mo_ldap_import_export.ldap_classes import LdapObject
 )
 @pytest.mark.integration_test
 async def test_ldap_to_mo_dict_error(context: Context) -> None:
-    """Test for IncorrectMapping when a Jinja template produces malformed JSON."""
+    """Test that a template that is not a Python literal yields a string.
+
+    The string is then rejected by the MO model it is a field on.
+    """
     user_context = context["user_context"]
     dataloader = user_context["dataloader"]
     sync_tool = SyncTool(
@@ -48,10 +51,12 @@ async def test_ldap_to_mo_dict_error(context: Context) -> None:
     )
     # Mock moapi to avoid side-effects
     sync_tool.dataloader.moapi = AsyncMock()
+    # Mock fetch_uuid_object to return None so we always get Verb.CREATE
+    sync_tool.fetch_uuid_object = AsyncMock(return_value=None)  # type: ignore[method-assign]
     settings = user_context["settings"]
 
-    with pytest.raises(IncorrectMapping) as exc_info:
-        assert settings.conversion_mapping.ldap_to_mo is not None
+    assert settings.conversion_mapping.ldap_to_mo is not None
+    with pytest.raises(ValidationError) as exc_info:
         await sync_tool.import_entity(
             mapping=settings.conversion_mapping.ldap_to_mo["Active Directory"],
             ldap_object=LdapObject(
@@ -64,11 +69,7 @@ async def test_ldap_to_mo_dict_error(context: Context) -> None:
             },
             dry_run=False,
         )
-        assert "Could not convert { 'hep': 'hey } in 'itsystem' to dict" in str(
-            exc_info.value
-        )
-        # Check that context contains some expected keys, since order might vary
-        error_msg = str(exc_info.value)
-        assert "msSFU30Name" in error_msg
-        assert "itSystemName" in error_msg
-        assert "'dn': ''" in error_msg
+    error_msg = str(exc_info.value)
+    assert "1 validation error for ITUser" in error_msg
+    assert "itsystem" in error_msg
+    assert "value is not a valid uuid" in error_msg

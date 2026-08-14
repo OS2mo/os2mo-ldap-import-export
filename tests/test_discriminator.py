@@ -11,6 +11,7 @@ from uuid import uuid4
 
 import pytest
 from fastramqpi.ramqp.depends import Context
+from jinja2.nativetypes import NativeEnvironment
 from ldap3 import BASE
 from ldap3 import MOCK_SYNC
 from ldap3 import SUBTREE
@@ -479,8 +480,10 @@ async def sync_tool_and_context(
     )
     context["user_context"]["dataloader"] = dataloader
 
-    template_environment = construct_environment(settings, dataloader)
-    converter = LdapConverter(template_environment)
+    converter = LdapConverter(
+        construct_environment(settings, dataloader),
+        construct_environment(settings, dataloader, NativeEnvironment),
+    )
     context["user_context"]["converter"] = converter
 
     export_checks = ExportChecks(dataloader)

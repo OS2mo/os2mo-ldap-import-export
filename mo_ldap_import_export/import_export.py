@@ -627,7 +627,8 @@ class SyncTool:
             logger.info("Skipping object", field="uuid", dn=dn)
             return
 
-        uuid = UUID(uuid_str) if uuid_str else None
+        # NOTE: 'str' as the template may yield an UUID, f.x. '{{ each.uuid }}'
+        uuid = UUID(str(uuid_str)) if uuid_str else None
 
         mo_class = mapping.as_mo_class()
         mo_object = await self.fetch_uuid_object(uuid, mo_class) if uuid else None
@@ -648,7 +649,10 @@ class SyncTool:
                 # template does not specify a timezone, this will assume Danish
                 # time.
                 # TODO: enforce explicit timezone from template string.
-                template_termination_date = datetime.fromisoformat(termination_date_str)
+                # NOTE: 'str' as the template may yield a datetime, f.x. '{{ now() }}'
+                template_termination_date = datetime.fromisoformat(
+                    str(termination_date_str)
+                )
                 danish_termination_date = template_termination_date.astimezone(MO_TZ)
                 termination_date = datetime.combine(
                     date=danish_termination_date,
@@ -878,7 +882,13 @@ class SyncTool:
             raise ValueError("Missing attributes in dict to model conversion")
 
         # Remove empty values
-        mo_dict = {key: value for key, value in mo_dict.items() if value}
+        # NOTE: Not by truthiness, as templates yield native types, and thus a
+        #       field rendering '0' or 'False' is a value, not a missing one.
+        mo_dict = {
+            key: value
+            for key, value in mo_dict.items()
+            if value not in (None, "", [], {})
+        }
         # If any required attributes are missing
         missing_attributes = required_attributes - set(mo_dict.keys())
         if missing_attributes:  # pragma: no cover

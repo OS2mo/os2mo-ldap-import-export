@@ -1305,12 +1305,17 @@ class NeverUndefined(StrictUndefined):
         ) from exc
 
 
-def construct_default_environment() -> Environment:
+def construct_default_environment(
+    environment_class: type[Environment] = Environment,
+) -> Environment:
     # We intentionally use 'StrictUndefined' here so undefined accesses yield exceptions
     # instead of silently coercing to falsy values as is the case with 'Undefined'
     # See: https://jinja.palletsprojects.com/en/3.1.x/api/#undefined-types
     # For more details.
-    environment = Environment(undefined=NeverUndefined, enable_async=True)
+    # NOTE: 'NativeEnvironment' can be passed to render templates to the Python
+    #       object they evaluate to, instead of to its string representation.
+    #       See: https://jinja.palletsprojects.com/en/3.1.x/nativetypes/
+    environment = environment_class(undefined=NeverUndefined, enable_async=True)
 
     environment.filters["bitwise_and"] = bitwise_and
     environment.filters["mo_datestring"] = filter_mo_datestring
@@ -1342,8 +1347,12 @@ def construct_default_environment() -> Environment:
     return environment
 
 
-def construct_environment(settings: Settings, dataloader: DataLoader) -> Environment:
-    environment = construct_default_environment()
+def construct_environment(
+    settings: Settings,
+    dataloader: DataLoader,
+    environment_class: type[Environment] = Environment,
+) -> Environment:
+    environment = construct_default_environment(environment_class)
     environment.filters.update(construct_filters_dict(dataloader))
     environment.globals.update(construct_globals_dict(settings, dataloader))
     return environment
