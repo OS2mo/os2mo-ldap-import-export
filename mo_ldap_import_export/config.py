@@ -613,3 +613,25 @@ class Settings(BaseSettings):
         default=False,
         description="Disallow processing LDAP events between 7:45 and 8:45.",
     )
+
+    @property
+    def relevant_ldap_attributes(self) -> set[str]:
+        """All LDAP attributes relevant for synchronization."""
+        attributes = {"objectClass", self.ldap_unique_id_field}
+        if self.ldap_cpr_attribute:
+            attributes.add(self.ldap_cpr_attribute)
+        if self.conversion_mapping.ldap_to_mo:
+            attributes |= {
+                attr
+                for mapping in self.conversion_mapping.ldap_to_mo.values()
+                for attr in mapping.ldap_attributes
+            }
+        if self.discriminator_fields:
+            attributes.update(self.discriminator_fields)
+        attributes |= {
+            attr
+            for mappings in self.conversion_mapping.ldap_to_mo_any.values()
+            for mapping in mappings
+            for attr in mapping.ldap_attributes
+        }
+        return attributes

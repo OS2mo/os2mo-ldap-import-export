@@ -71,26 +71,7 @@ async def http_process_uuid(
         logger.warning("LDAP event ignored due to ignore-list", ldap_uuid=uuid)
         return
 
-    attributes_to_fetch = {"objectClass", settings.ldap_unique_id_field}
-    if settings.ldap_cpr_attribute:
-        attributes_to_fetch.add(settings.ldap_cpr_attribute)
-
-    if settings.conversion_mapping.ldap_to_mo:
-        attributes_to_fetch |= {
-            attr
-            for mapping in settings.conversion_mapping.ldap_to_mo.values()
-            for attr in mapping.ldap_attributes
-        }
-
-    if settings.discriminator_fields:  # pragma: no cover
-        attributes_to_fetch.update(settings.discriminator_fields)
-
-    attributes_to_fetch |= {
-        attr
-        for mappings in settings.conversion_mapping.ldap_to_mo_any.values()
-        for mapping in mappings
-        for attr in mapping.ldap_attributes
-    }
+    attributes_to_fetch = settings.relevant_ldap_attributes
 
     ldap_object = await dataloader.ldapapi.get_object_by_uuid(
         uuid, attributes=attributes_to_fetch
