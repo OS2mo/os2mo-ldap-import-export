@@ -196,6 +196,38 @@ def test_dialect_settings(monkeypatch: pytest.MonkeyPatch) -> None:
         assert settings.ldap_unique_id_field == "myCustomField"
 
 
+@pytest.mark.usefixtures("minimal_valid_environmental_variables")
+@pytest.mark.envvar({"LDAP_DIALECT": "AD", "LDAP_EVENT_GENERATOR_TYPE": "dirsync"})
+def test_dirsync_works_with_ad_dialect() -> None:
+    settings = Settings()
+    assert settings.ldap_event_generator_type.value == "dirsync"
+    assert settings.ldap_dialect == "AD"
+
+
+@pytest.mark.usefixtures("minimal_valid_environmental_variables")
+@pytest.mark.envvar(
+    {"LDAP_DIALECT": "Standard", "LDAP_EVENT_GENERATOR_TYPE": "dirsync"}
+)
+def test_dirsync_fails_with_standard_dialect() -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+    assert "1 validation error for Settings" in str(exc_info.value)
+    assert (
+        "__root__\n  The 'dirsync' event generator can only be used with the 'AD' dialect"
+        in str(exc_info.value)
+    )
+
+
+@pytest.mark.usefixtures("minimal_valid_environmental_variables")
+@pytest.mark.envvar(
+    {"LDAP_DIALECT": "Standard", "LDAP_EVENT_GENERATOR_TYPE": "modifytimestamp"}
+)
+def test_modifytimestamp_works_with_standard_dialect() -> None:
+    settings = Settings()
+    assert settings.ldap_event_generator_type.value == "modifytimestamp"
+    assert settings.ldap_dialect == "Standard"
+
+
 @pytest.mark.parametrize(
     "object_class",
     (
