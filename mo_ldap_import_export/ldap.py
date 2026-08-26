@@ -124,6 +124,20 @@ def get_auth_kwargs(settings: Settings) -> dict[str, Any]:
             raise ValueError("Unknown authentication backend")
 
 
+def get_base_connection_kwargs(settings: Settings) -> dict[str, Any]:
+    """Return connection kwargs shared by all LDAP connections.
+
+    Includes credentials, binding, and authentication settings; callers add
+    the connection-specific server/strategy/timeout kwargs.
+    """
+    return {
+        "password": settings.ldap_password.get_secret_value(),
+        "auto_bind": True,
+        "raise_exceptions": True,
+        **get_auth_kwargs(settings),
+    }
+
+
 def construct_server_pool(settings: Settings) -> ServerPool:
     servers = [construct_server(c) for c in settings.ldap_controllers]
     # Pick the next server to use at random, retry connections 10 times,
@@ -169,9 +183,6 @@ def configure_ldap_connection(settings: Settings) -> Connection:
     connection_kwargs = {
         "server": server_pool,
         "client_strategy": client_strategy,
-        "password": settings.ldap_password.get_secret_value(),
-        "auto_bind": True,
-        "raise_exceptions": True,
         # Configure non-blocking IO, with maximum time to wait for each reply
         "receive_timeout": settings.ldap_receive_timeout,
         # NOTE: It appears that this flag does not in fact work
@@ -180,9 +191,8 @@ def configure_ldap_connection(settings: Settings) -> Connection:
     }
     set_config_parameter("RESPONSE_WAITING_TIMEOUT", settings.ldap_response_timeout)
     try:
-        connection_kwargs.update(get_auth_kwargs(settings))
+        connection_kwargs.update(get_base_connection_kwargs(settings))
     except ValueError:
-        # Turn off the alarm
         signal.alarm(0)
         raise
 
