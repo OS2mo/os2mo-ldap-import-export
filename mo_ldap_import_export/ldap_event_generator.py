@@ -98,8 +98,8 @@ class LDAPEventGenerator(AbstractAsyncContextManager):
     ) -> None:
         """Periodically poll LDAP for changes."""
         self.sessionmaker = sessionmaker
-        self.graphql_client = graphql_client
         self.settings = settings
+        self.graphql_client = graphql_client
         self.ldap_connection = ldap_connection
 
         self._pollers: set[asyncio.Task] = set()

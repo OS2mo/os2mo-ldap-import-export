@@ -32,6 +32,8 @@ from pydantic import Extra
 from pydantic import ValidationError
 from pydantic import parse_raw_as
 from pydantic import validator
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import async_sessionmaker
 from structlog.contextvars import bound_contextvars
 
 from . import depends
@@ -44,6 +46,7 @@ from .converters import LdapConverter
 from .customer_specific_checks import ExportChecks
 from .database import Base
 from .dataloaders import DataLoader
+from .dirsync_event_generator import DirSyncEventGenerator
 from .environments.main import construct_environment
 from .exceptions import NoObjectsReturnedException
 from .exceptions import ReadOnlyException
@@ -340,15 +343,26 @@ async def open_ldap_connection(ldap_connection: Connection) -> AsyncIterator[Non
 
 
 def construct_ldap_event_generator(
+    sessionmaker: async_sessionmaker[AsyncSession],
     settings: Settings,
-    sessionmaker: Any,
     graphql_client: GraphQLClient,
     ldap_connection: Connection,
-) -> LDAPEventGenerator:
+) -> LDAPEventGenerator | DirSyncEventGenerator:
     """Construct the appropriate LDAP event generator based on settings.
 
+    Args:
+        sessionmaker: SQLAlchemy async sessionmaker used by the generator to
+            persist and query LDAP change state.
+        settings: Top-level settings instance used to select and configure the
+            generator implementation.
+        graphql_client: GraphQL client used by the generator to read/write
+            OS2mo objects.
+        ldap_connection: Bound LDAP connection used to poll for changes. Only
+            used by the modifytimestamp generator; the dirsync generator opens
+            its own dedicated connection.
+
     Returns:
-        An LDAPEventGenerator instance.
+        An LDAPEventGenerator or DirSyncEventGenerator instance.
     """
     match settings.ldap_event_generator_type:
         case LDAPEventGeneratorEnum.MODIFYTIMESTAMP:
@@ -357,6 +371,12 @@ def construct_ldap_event_generator(
                 settings=settings,
                 graphql_client=graphql_client,
                 ldap_connection=ldap_connection,
+            )
+        case LDAPEventGeneratorEnum.DIRSYNC:
+            return DirSyncEventGenerator(
+                sessionmaker=sessionmaker,
+                settings=settings,
+                graphql_client=graphql_client,
             )
 
 
@@ -411,8 +431,8 @@ async def lifespan(
 
         logger.info("Initializing LDAP listener")
         ldap_event_generator = construct_ldap_event_generator(
-            settings=settings,
             sessionmaker=fastramqpi.get_context()["sessionmaker"],
+            settings=settings,
             graphql_client=graphql_client,
             ldap_connection=ldap_connection,
         )
@@ -421,8 +441,7 @@ async def lifespan(
             logger.info("Initializing LDAP event generator")
             await stack.enter_async_context(ldap_event_generator)
             fastramqpi.add_healthcheck(
-                name="LDAPEventGenerator",
-                healthcheck=ldap_event_generator.healthcheck,
+                name="LDAPEventGenerator", healthcheck=ldap_event_generator.healthcheck
             )
 
         logger.info("Starting program")

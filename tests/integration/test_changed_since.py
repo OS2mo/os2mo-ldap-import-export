@@ -80,6 +80,30 @@ async def test_changed_since(emit_subtree: EmitSubtree, ldap_person_uuid: UUID) 
 
 @pytest.mark.integration_test
 @pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
+        "LDAP_DIALECT": "AD",
+        "LDAP_EVENT_GENERATOR_TYPE": "dirsync",
+    }
+)
+async def test_changed_since_rejected_with_dirsync(
+    test_client: AsyncClient,
+) -> None:
+    result = await test_client.request(
+        "GET",
+        "/ldap_event_generator/since",
+        content="ou=os2mo,o=magenta,dc=magenta,dc=dk",
+        headers={"Content-Type": "text/plain"},
+    )
+    assert result.status_code == 501
+    assert result.json()["detail"] == (
+        "This endpoint is not supported with the DirSync event generator"
+    )
+
+
+@pytest.mark.integration_test
+@pytest.mark.envvar(
     {"LISTEN_TO_CHANGES_IN_MO": "False", "LISTEN_TO_CHANGES_IN_LDAP": "False"}
 )
 async def test_changed_since_pagination(
