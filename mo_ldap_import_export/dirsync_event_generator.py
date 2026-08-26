@@ -10,8 +10,9 @@ domain-controller failovers and replication delays.
 
 Constraints imposed by the DirSync protocol:
 * The search base MUST be a naming context (root DN), not an arbitrary subtree.
-* The caller MUST have the "Replicate Directory Changes" privilege (granted to
-  Domain Admins by default).
+* The caller MUST have read access to in-scope objects and attributes.  For
+  deletion detection, the caller MUST also have read access to the
+  ``CN=Deleted Objects`` container.
 """
 
 import asyncio
@@ -23,6 +24,8 @@ from typing import Self
 import ldap3
 import structlog
 from fastramqpi.context import Context
+from ldap3 import BASE
+from ldap3 import NO_ATTRIBUTES
 from ldap3 import SAFE_SYNC
 from more_itertools import one
 from sqlalchemy import LargeBinary
@@ -101,6 +104,7 @@ class DirSyncEventGenerator(AbstractAsyncContextManager):
 
     async def __aenter__(self) -> Self:
         """Start event generator."""
+        await asyncio.to_thread(self._check_deleted_objects_readable)
         self._poller_task = self.setup_poller()
         return self
 
@@ -116,6 +120,48 @@ class DirSyncEventGenerator(AbstractAsyncContextManager):
 
     async def healthcheck(self, context: dict | Context) -> bool:
         return self._poller_task is not None and not self._poller_task.done()
+
+    def _check_deleted_objects_readable(self) -> None:
+        """Probe whether the bind account can read the Deleted Objects container.
+
+        Under DirSync OBJECT_SECURITY mode, deletion events are only reported
+        for objects the account could read before deletion, and only if the
+        account can read the tombstone in ``CN=Deleted Objects``.  This probe
+        surfaces a missing grant at startup / healthcheck time rather than
+        silently dropping deletion events.
+
+        Raises:
+            RuntimeError: If the container is not readable, with the exact
+                ``dsacls`` command needed to grant access.
+        """
+        deleted_objects_dn = f"CN=Deleted Objects,{self.settings.ldap_search_base}"
+        conn = self.dirsync_connection
+
+        def _probe() -> bool:
+            return conn.search(
+                search_base=deleted_objects_dn,
+                search_filter="(objectClass=*)",
+                search_scope=BASE,
+                attributes=NO_ATTRIBUTES,
+            )
+
+        try:
+            readable = _probe()
+        except Exception as exc:
+            raise RuntimeError(
+                f"Unable to read {deleted_objects_dn}. "
+                f"Deletion detection requires read access to the Deleted Objects "
+                f"container. Grant it with: "
+                f'dsacls "{deleted_objects_dn}" /G "<domain>\\<service-account>:RP;LC"'
+            ) from exc
+
+        if not readable:
+            raise RuntimeError(
+                f"Unable to read {deleted_objects_dn}. "
+                f"Deletion detection requires read access to the Deleted Objects "
+                f"container. Grant it with: "
+                f'dsacls "{deleted_objects_dn}" /G "<domain>\\<service-account>:RP;LC"'
+            )
 
     def setup_poller(self) -> asyncio.Task:
         def done_callback(future):
@@ -173,6 +219,7 @@ class DirSyncEventGenerator(AbstractAsyncContextManager):
                 sync_filter=sync_filter,
                 attributes=attributes,
                 cookie=cookie,
+                object_security=True,
             )
             response = ds.loop()
             entries = [e for e in response if e["type"] == "searchResEntry"]
