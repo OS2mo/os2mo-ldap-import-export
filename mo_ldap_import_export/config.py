@@ -299,7 +299,6 @@ class UsernameGeneratorConfig(MappingBaseModel):
 
 
 class MO2LDAPMapping(MappingBaseModel):
-    identifier: str
     routing_key: MORoutingKey
     template: JinjaTemplate
     object_class: str
@@ -318,8 +317,8 @@ class ConversionMapping(MappingBaseModel):
     mo2ldap: JinjaTemplate | None = Field(
         None, description="MO to LDAP mapping template"
     )
-    mo_to_ldap: list[MO2LDAPMapping] = Field(
-        default_factory=list, description="MO to LDAP mappings"
+    mo_to_ldap: dict[str, MO2LDAPMapping] = Field(
+        default_factory=dict, description="MO to LDAP mappings"
     )
     username_generator: UsernameGeneratorConfig = Field(
         default_factory=UsernameGeneratorConfig

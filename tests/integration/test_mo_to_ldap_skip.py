@@ -18,16 +18,15 @@ from structlog.testing import capture_logs
         "LDAP_CPR_ATTRIBUTE": "employeeNumber",
         "CONVERSION_MAPPING": json.dumps(
             {
-                "mo_to_ldap": [
-                    {
-                        "identifier": "person2skip",
+                "mo_to_ldap": {
+                    "person2skip": {
                         "routing_key": "person",
                         "object_class": "inetOrgPerson",
                         "template": """
                         {{ skip_if_none(None) }}
                     """,
                     },
-                ],
+                },
             }
         ),
     }

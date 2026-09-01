@@ -23,14 +23,13 @@ from mo_ldap_import_export.ldapapi import LDAPAPI
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
         "CONVERSION_MAPPING": json.dumps(
             {
-                "mo_to_ldap": [
-                    {
-                        "identifier": "known",
+                "mo_to_ldap": {
+                    "known": {
                         "routing_key": "person",
                         "object_class": "inetOrgPerson",
                         "template": "empty",
-                    }
-                ]
+                    },
+                }
             }
         ),
     }
@@ -67,15 +66,14 @@ async def test_endpoint_setup(
                 {
                     "CONVERSION_MAPPING": json.dumps(
                         {
-                            "mo_to_ldap": [
-                                {
-                                    "identifier": "known",
+                            "mo_to_ldap": {
+                                "known": {
                                     "routing_key": "person",
                                     "object_class": "inetOrgPerson",
                                     # This is not JSON
                                     "template": "empty",
-                                }
-                            ]
+                                },
+                            }
                         }
                     )
                 }
@@ -87,16 +85,15 @@ async def test_endpoint_setup(
                 {
                     "CONVERSION_MAPPING": json.dumps(
                         {
-                            "mo_to_ldap": [
-                                {
-                                    "identifier": "known",
+                            "mo_to_ldap": {
+                                "known": {
                                     "routing_key": "person",
                                     "object_class": "inetOrgPerson",
                                     # This does not fulfill the JinjaOutput model
                                     # Missing 'dn', 'create' and 'attributes'
                                     "template": "{{ {}|tojson }}",
-                                }
-                            ]
+                                },
+                            }
                         }
                     )
                 }
@@ -108,9 +105,8 @@ async def test_endpoint_setup(
                 {
                     "CONVERSION_MAPPING": json.dumps(
                         {
-                            "mo_to_ldap": [
-                                {
-                                    "identifier": "known",
+                            "mo_to_ldap": {
+                                "known": {
                                     "routing_key": "person",
                                     "object_class": "inetOrgPerson",
                                     # This does not fulfill the JinjaOutput model
@@ -123,8 +119,8 @@ async def test_endpoint_setup(
                                     }|tojson
                                 }}
                                 """,
-                                }
-                            ]
+                                },
+                            }
                         }
                     )
                 }
@@ -136,9 +132,8 @@ async def test_endpoint_setup(
                 {
                     "CONVERSION_MAPPING": json.dumps(
                         {
-                            "mo_to_ldap": [
-                                {
-                                    "identifier": "known",
+                            "mo_to_ldap": {
+                                "known": {
                                     "routing_key": "person",
                                     "object_class": "inetOrgPerson",
                                     # This does not fulfill the JinjaOutput model
@@ -152,8 +147,8 @@ async def test_endpoint_setup(
                                     }|tojson
                                 }}
                                 """,
-                                }
-                            ]
+                                },
+                            }
                         }
                     )
                 }
@@ -165,9 +160,8 @@ async def test_endpoint_setup(
                 {
                     "CONVERSION_MAPPING": json.dumps(
                         {
-                            "mo_to_ldap": [
-                                {
-                                    "identifier": "known",
+                            "mo_to_ldap": {
+                                "known": {
                                     "routing_key": "person",
                                     "object_class": "inetOrgPerson",
                                     # This does not fulfills the JinjaOutput model
@@ -182,8 +176,8 @@ async def test_endpoint_setup(
                                         }|tojson
                                     }}
                                     """,
-                                }
-                            ]
+                                },
+                            }
                         }
                     )
                 }
@@ -195,9 +189,8 @@ async def test_endpoint_setup(
                 {
                     "CONVERSION_MAPPING": json.dumps(
                         {
-                            "mo_to_ldap": [
-                                {
-                                    "identifier": "known",
+                            "mo_to_ldap": {
+                                "known": {
                                     "routing_key": "person",
                                     "object_class": "inetOrgPerson",
                                     # This fulfills the JinjaOutput model
@@ -211,8 +204,8 @@ async def test_endpoint_setup(
                                     }|tojson
                                 }}
                                 """,
-                                }
-                            ]
+                                },
+                            }
                         }
                     )
                 }
@@ -224,9 +217,8 @@ async def test_endpoint_setup(
                 {
                     "CONVERSION_MAPPING": json.dumps(
                         {
-                            "mo_to_ldap": [
-                                {
-                                    "identifier": "known",
+                            "mo_to_ldap": {
+                                "known": {
                                     "routing_key": "person",
                                     "object_class": "inetOrgPerson",
                                     # This fulfills the JinjaOutput model and is create
@@ -240,8 +232,8 @@ async def test_endpoint_setup(
                                     }|tojson
                                 }}
                                 """,
-                                }
-                            ]
+                                },
+                            }
                         }
                     )
                 }
@@ -253,9 +245,8 @@ async def test_endpoint_setup(
                 {
                     "CONVERSION_MAPPING": json.dumps(
                         {
-                            "mo_to_ldap": [
-                                {
-                                    "identifier": "known",
+                            "mo_to_ldap": {
+                                "known": {
                                     "routing_key": "person",
                                     "object_class": "inetOrgPerson",
                                     # This fulfills the JinjaOutput model and is create
@@ -270,8 +261,8 @@ async def test_endpoint_setup(
                                     }|tojson
                                 }}
                                 """,
-                                }
-                            ]
+                                },
+                            }
                         }
                     )
                 }
@@ -283,9 +274,8 @@ async def test_endpoint_setup(
                 {
                     "CONVERSION_MAPPING": json.dumps(
                         {
-                            "mo_to_ldap": [
-                                {
-                                    "identifier": "known",
+                            "mo_to_ldap": {
+                                "known": {
                                     "routing_key": "person",
                                     "object_class": "inetOrgPerson",
                                     # This fulfills the JinjaOutput model and is create
@@ -302,8 +292,8 @@ async def test_endpoint_setup(
                                     }|tojson
                                 }}
                                 """,
-                                }
-                            ]
+                                },
+                            }
                         }
                     )
                 }
@@ -329,9 +319,8 @@ async def test_endpoint_handler_failures(
         "LDAP_READ_ONLY": "True",
         "CONVERSION_MAPPING": json.dumps(
             {
-                "mo_to_ldap": [
-                    {
-                        "identifier": "known",
+                "mo_to_ldap": {
+                    "known": {
                         "routing_key": "person",
                         "object_class": "inetOrgPerson",
                         # This fulfills the JinjaOutput model and is create
@@ -348,8 +337,8 @@ async def test_endpoint_handler_failures(
                         }|tojson
                     }}
                     """,
-                    }
-                ]
+                    },
+                }
             }
         ),
     }
@@ -376,9 +365,8 @@ async def test_endpoint_handler_read_only(test_client: AsyncClient) -> None:
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
         "CONVERSION_MAPPING": json.dumps(
             {
-                "mo_to_ldap": [
-                    {
-                        "identifier": "known",
+                "mo_to_ldap": {
+                    "known": {
                         "routing_key": "person",
                         "object_class": "inetOrgPerson",
                         "template": """
@@ -392,8 +380,8 @@ async def test_endpoint_handler_read_only(test_client: AsyncClient) -> None:
                             }|tojson
                         }}
                         """,
-                    }
-                ]
+                    },
+                }
             }
         ),
     }
@@ -415,9 +403,8 @@ async def test_mismatched_attributes(test_client: AsyncClient) -> None:
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
         "CONVERSION_MAPPING": json.dumps(
             {
-                "mo_to_ldap": [
-                    {
-                        "identifier": "known",
+                "mo_to_ldap": {
+                    "known": {
                         "routing_key": "person",
                         "object_class": "inetOrgPerson",
                         # This fulfills the JinjaOutput model and is create
@@ -434,8 +421,8 @@ async def test_mismatched_attributes(test_client: AsyncClient) -> None:
                             }|tojson
                         }}
                         """,
-                    }
-                ]
+                    },
+                }
             }
         ),
     }
@@ -469,14 +456,13 @@ owner_uuid = UUID("d1fec000-baad-c0de-0000-004449504558")
         "LISTEN_TO_CHANGES_IN_MO": "False",
         "CONVERSION_MAPPING": json.dumps(
             {
-                "mo_to_ldap": [
-                    {
-                        "identifier": "id1",
+                "mo_to_ldap": {
+                    "id1": {
                         "routing_key": "person",
                         "object_class": "inetOrgPerson",
                         "template": "template1",
                     },
-                ]
+                }
             }
         ),
     }
@@ -499,14 +485,13 @@ async def test_listeners_no_listen(graphql_client: GraphQLClient) -> None:
         "LISTEN_TO_CHANGES_IN_MO": "True",
         "CONVERSION_MAPPING": json.dumps(
             {
-                "mo_to_ldap": [
-                    {
-                        "identifier": "id1",
+                "mo_to_ldap": {
+                    "id1": {
                         "routing_key": "person",
                         "object_class": "inetOrgPerson",
                         "template": "template1",
                     },
-                ]
+                }
             }
         ),
     }

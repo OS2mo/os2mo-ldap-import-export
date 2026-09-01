@@ -45,10 +45,9 @@ from tests.integration.conftest import AnyOrder
         "LDAP_CPR_ATTRIBUTE": "employeeNumber",
         "CONVERSION_MAPPING": json.dumps(
             {
-                "mo_to_ldap": [
+                "mo_to_ldap": {
                     # Itsystem to group mapping
-                    {
-                        "identifier": "itsystem2group",
+                    "itsystem2group": {
                         "routing_key": "itsystem",
                         "object_class": "groupOfNames",
                         "template": """
@@ -70,8 +69,7 @@ from tests.integration.conftest import AnyOrder
                 """,
                     },
                     # Role to group mapping
-                    {
-                        "identifier": "role2group",
+                    "role2group": {
                         "routing_key": "class",
                         "object_class": "groupOfNames",
                         "template": """
@@ -97,8 +95,7 @@ from tests.integration.conftest import AnyOrder
                 """,
                     },
                     # Person to inetOrgPerson mapping
-                    {
-                        "identifier": "person2person",
+                    "person2person": {
                         "routing_key": "person",
                         "object_class": "inetOrgPerson",
                         "template": """
@@ -125,7 +122,7 @@ from tests.integration.conftest import AnyOrder
                     }}
                 """,
                     },
-                ],
+                },
                 "username_generator": {
                     "combinations_to_try": ["FFFX", "LLLX"],
                 },

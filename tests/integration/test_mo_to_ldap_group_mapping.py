@@ -50,9 +50,8 @@ async def get_groups(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
         "CONVERSION_MAPPING": json.dumps(
             {
-                "mo_to_ldap": [
-                    {
-                        "identifier": "itsystem2group",
+                "mo_to_ldap": {
+                    "itsystem2group": {
                         "routing_key": "itsystem",
                         "object_class": "groupOfNames",
                         "template": """
@@ -71,7 +70,7 @@ async def get_groups(
                     }}
                 """,
                     }
-                ]
+                }
             }
         ),
     }

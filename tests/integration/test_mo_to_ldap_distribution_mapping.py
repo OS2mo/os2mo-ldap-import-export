@@ -57,9 +57,8 @@ async def trigger_sync(identifier: str, uuid: UUID) -> None:
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
         "CONVERSION_MAPPING": json.dumps(
             {
-                "mo_to_ldap": [
-                    {
-                        "identifier": "itsystem_to_roles",
+                "mo_to_ldap": {
+                    "itsystem_to_roles": {
                         "routing_key": "itsystem",
                         "object_class": "-",
                         "template": """
@@ -67,8 +66,7 @@ async def trigger_sync(identifier: str, uuid: UUID) -> None:
                         {{ skip_if_none(refresh("class", role_uuids)) }}
                         """,
                     },
-                    {
-                        "identifier": "ituser_to_rolebindings",
+                    "ituser_to_rolebindings": {
                         "routing_key": "ituser",
                         "object_class": "-",
                         "template": """
@@ -76,8 +74,7 @@ async def trigger_sync(identifier: str, uuid: UUID) -> None:
                         {{ skip_if_none(refresh("rolebinding", rolebinding_uuids)) }}
                         """,
                     },
-                    {
-                        "identifier": "rolebinding_to_roles",
+                    "rolebinding_to_roles": {
                         "routing_key": "rolebinding",
                         "object_class": "-",
                         "template": """
@@ -85,8 +82,7 @@ async def trigger_sync(identifier: str, uuid: UUID) -> None:
                         {{ skip_if_none(refresh("class", [role_uuid]|set)) }}
                         """,
                     },
-                    {
-                        "identifier": "role_to_group",
+                    "role_to_group": {
                         "routing_key": "class",
                         "object_class": "groupOfNames",
                         "template": """
@@ -115,7 +111,7 @@ async def trigger_sync(identifier: str, uuid: UUID) -> None:
                     }}
                     """,
                     },
-                ]
+                }
             }
         ),
     }
