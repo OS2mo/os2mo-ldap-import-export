@@ -12,9 +12,8 @@ from mo_ldap_import_export.exceptions import NoObjectsReturnedException
 from mo_ldap_import_export.ldapapi import LDAPAPI
 
 DRY_RUN_CONVERSION_MAPPING = {
-    "mo_to_ldap": [
-        {
-            "identifier": "person",
+    "mo_to_ldap": {
+        "person": {
             "routing_key": "person",
             "object_class": "inetOrgPerson",
             "template": """
@@ -31,7 +30,7 @@ DRY_RUN_CONVERSION_MAPPING = {
                 }}
             """,
         }
-    ]
+    }
 }
 
 EXPECTED_DN = "cn=Aage Bach Klarskov,ou=os2mo,o=magenta,dc=magenta,dc=dk"

@@ -66,9 +66,8 @@ async def test_refresh_no_uuids(graphql_client: GraphQLClient) -> None:
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
         "CONVERSION_MAPPING": json.dumps(
             {
-                "mo_to_ldap": [
-                    {
-                        "identifier": "person2person",
+                "mo_to_ldap": {
+                    "person2person": {
                         "routing_key": "person",
                         "object_class": "inetOrgPerson",
                         "template": """
@@ -97,7 +96,7 @@ async def test_refresh_no_uuids(graphql_client: GraphQLClient) -> None:
                         }}
                     """,
                     },
-                ],
+                },
                 "username_generator": {
                     "combinations_to_try": ["FFFX", "LLLX"],
                 },
@@ -226,9 +225,8 @@ async def test_mo2ldap(
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
         "CONVERSION_MAPPING": json.dumps(
             {
-                "mo_to_ldap": [
-                    {
-                        "identifier": "person2person",
+                "mo_to_ldap": {
+                    "person2person": {
                         "routing_key": "person",
                         "object_class": "inetOrgPerson",
                         "template": """
@@ -257,8 +255,7 @@ async def test_mo2ldap(
                         }}
                     """,
                     },
-                    {
-                        "identifier": "itsystem2persons",
+                    "itsystem2persons": {
                         "routing_key": "itsystem",
                         "object_class": "inetOrgPerson",
                         "template": """
@@ -266,7 +263,7 @@ async def test_mo2ldap(
                         {{ skip_if_none(refresh("person", person_uuids)) }}
                     """,
                     },
-                ],
+                },
                 "username_generator": {
                     "combinations_to_try": ["FFFX", "LLLX"],
                 },

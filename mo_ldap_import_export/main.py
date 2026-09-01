@@ -106,8 +106,8 @@ async def http_process_address(
                     f"{settings.event_namespace}_internal_reconcile_person",
                 ]
                 + [
-                    f"{settings.event_namespace}_{mapping.identifier}"
-                    for mapping in settings.conversion_mapping.mo_to_ldap
+                    f"{settings.event_namespace}_{identifier}"
+                    for identifier, mapping in settings.conversion_mapping.mo_to_ldap.items()
                     if mapping.routing_key == "person"
                 ],
             ),
@@ -127,8 +127,8 @@ async def http_process_address(
                     f"{settings.event_namespace}_internal_process_org_unit",
                 ]
                 + [
-                    f"{settings.event_namespace}_{mapping.identifier}"
-                    for mapping in settings.conversion_mapping.mo_to_ldap
+                    f"{settings.event_namespace}_{identifier}"
+                    for identifier, mapping in settings.conversion_mapping.mo_to_ldap.items()
                     if mapping.routing_key == "org_unit"
                 ],
             ),
@@ -166,8 +166,8 @@ async def http_process_engagement(
                 f"{settings.event_namespace}_internal_process_person",
             ]
             + [
-                f"{settings.event_namespace}_{mapping.identifier}"
-                for mapping in settings.conversion_mapping.mo_to_ldap
+                f"{settings.event_namespace}_{identifier}"
+                for identifier, mapping in settings.conversion_mapping.mo_to_ldap.items()
                 if mapping.routing_key == "person"
             ],
         ),
@@ -211,8 +211,8 @@ async def http_process_ituser(
                     f"{settings.event_namespace}_internal_process_person",
                 ]
                 + [
-                    f"{settings.event_namespace}_{mapping.identifier}"
-                    for mapping in settings.conversion_mapping.mo_to_ldap
+                    f"{settings.event_namespace}_{identifier}"
+                    for identifier, mapping in settings.conversion_mapping.mo_to_ldap.items()
                     if mapping.routing_key == "person"
                 ],
             ),
@@ -232,8 +232,8 @@ async def http_process_ituser(
                     f"{settings.event_namespace}_internal_process_org_unit",
                 ]
                 + [
-                    f"{settings.event_namespace}_{mapping.identifier}"
-                    for mapping in settings.conversion_mapping.mo_to_ldap
+                    f"{settings.event_namespace}_{identifier}"
+                    for identifier, mapping in settings.conversion_mapping.mo_to_ldap.items()
                     if mapping.routing_key == "org_unit"
                 ],
             ),
@@ -314,8 +314,8 @@ async def http_process_org_unit(
                 f"{settings.event_namespace}_internal_process_engagement",
             ]
             + [
-                f"{settings.event_namespace}_{mapping.identifier}"
-                for mapping in settings.conversion_mapping.mo_to_ldap
+                f"{settings.event_namespace}_{identifier}"
+                for identifier, mapping in settings.conversion_mapping.mo_to_ldap.items()
                 if mapping.routing_key == "engagement"
             ],
         ),
@@ -575,12 +575,12 @@ def create_fastramqpi(**kwargs: Any) -> FastRAMQPI:
         listeners.extend(
             Listener(
                 namespace="mo",
-                user_key=f"{settings.event_namespace}_{mapping.identifier}",
+                user_key=f"{settings.event_namespace}_{identifier}",
                 routing_key=mapping.routing_key,
-                path=f"/mo_to_ldap/{mapping.identifier}",
+                path=f"/mo_to_ldap/{identifier}",
                 parallelism=3,
             )
-            for mapping in settings.conversion_mapping.mo_to_ldap
+            for identifier, mapping in settings.conversion_mapping.mo_to_ldap.items()
         )
     if settings.listen_to_changes_in_ldap:
         listeners.extend(
@@ -622,11 +622,9 @@ def create_fastramqpi(**kwargs: Any) -> FastRAMQPI:
     router = APIRouter(
         prefix="/mo_to_ldap", dependencies=[Depends(depends.canonical_logline)]
     )
-    for mapping in settings.conversion_mapping.mo_to_ldap:
-        handler = mo_to_ldap_handler(
-            mapping.identifier, mapping.template, mapping.object_class
-        )
-        router.post(f"/{mapping.identifier}")(handler)
+    for identifier, mapping in settings.conversion_mapping.mo_to_ldap.items():
+        handler = mo_to_ldap_handler(identifier, mapping.template, mapping.object_class)
+        router.post(f"/{identifier}")(handler)
     app = fastramqpi.get_app()
     app.include_router(router)
 
