@@ -557,13 +557,6 @@ def create_fastramqpi(**kwargs: Any) -> FastRAMQPI:
                 ),
                 Listener(
                     namespace="mo",
-                    user_key=f"{settings.event_namespace}_internal_reconcile_person",
-                    routing_key="person",
-                    path="/mo2ldap/reconcile",
-                    parallelism=3,
-                ),
-                Listener(
-                    namespace="mo",
                     user_key=f"{settings.event_namespace}_internal_process_org_unit",
                     routing_key="org_unit",
                     path="/mo2ldap/org_unit",
@@ -582,24 +575,37 @@ def create_fastramqpi(**kwargs: Any) -> FastRAMQPI:
             )
             for identifier, mapping in settings.conversion_mapping.mo_to_ldap.items()
         )
+        # Crossed on purpose: the LDAP-observing reconcile re-exports MO -> LDAP,
+        # so it guards the LDAP objects maintained by this MO -> LDAP mapping.
+        listeners.append(
+            Listener(
+                namespace=settings.event_namespace,
+                user_key="internal_reconcile_uuid",
+                routing_key="uuid",
+                path="/ldap2mo/reconcile",
+                parallelism=3,
+            )
+        )
     if settings.listen_to_changes_in_ldap:
-        listeners.extend(
-            [
-                Listener(
-                    namespace=settings.event_namespace,
-                    user_key="internal_process_uuid",
-                    routing_key="uuid",
-                    path="/ldap2mo/uuid",
-                    parallelism=3,
-                ),
-                Listener(
-                    namespace=settings.event_namespace,
-                    user_key="internal_reconcile_uuid",
-                    routing_key="uuid",
-                    path="/ldap2mo/reconcile",
-                    parallelism=3,
-                ),
-            ]
+        listeners.append(
+            Listener(
+                namespace=settings.event_namespace,
+                user_key="internal_process_uuid",
+                routing_key="uuid",
+                path="/ldap2mo/uuid",
+                parallelism=3,
+            )
+        )
+        # Crossed on purpose: the MO-observing reconcile re-imports LDAP -> MO,
+        # so it guards the MO objects maintained by this LDAP -> MO mapping.
+        listeners.append(
+            Listener(
+                namespace="mo",
+                user_key=f"{settings.event_namespace}_internal_reconcile_person",
+                routing_key="person",
+                path="/mo2ldap/reconcile",
+                parallelism=3,
+            )
         )
 
     logger.info("Setting up FastRAMQPI")
