@@ -32,10 +32,6 @@ from mo_ldap_import_export.depends import GraphQLClient
                         "LISTEN_TO_CHANGES_IN_LDAP": "False",
                     },
                 ),
-                pytest.mark.xfail(
-                    strict=True,
-                    reason="gated by its own namespace, not the mapping it protects",
-                ),
             ],
         ),
         pytest.param(
@@ -46,10 +42,6 @@ from mo_ldap_import_export.depends import GraphQLClient
                         "LISTEN_TO_CHANGES_IN_MO": "False",
                         "LISTEN_TO_CHANGES_IN_LDAP": "True",
                     },
-                ),
-                pytest.mark.xfail(
-                    strict=True,
-                    reason="gated by its own namespace, not the mapping it protects",
                 ),
             ],
         ),
