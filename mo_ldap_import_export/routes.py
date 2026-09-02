@@ -12,11 +12,13 @@ from datetime import datetime
 from datetime import time
 from functools import partial
 from itertools import count
+from pprint import pprint
 from typing import Annotated
 from typing import Any
 from typing import cast
 from uuid import UUID
 
+from numpy.ma.core import add
 import structlog
 from fastapi import APIRouter
 from fastapi import Body
@@ -65,7 +67,7 @@ from .utils import combine_dn_strings
 from .utils import ensure_list
 from .utils import extract_ou_from_dn
 from .utils import mo_today
-from .utils import rec_flatten_current_in_response
+from .utils import AddressValidation
 
 logger = structlog.stdlib.get_logger()
 
@@ -389,15 +391,16 @@ async def get_ituser_rolebindings(
 
 async def get_addresses_governed_by_ldap(
     gql_client: GraphQLClient, address_type_user_keys: list[str]
-) -> list[dict]:
+) -> list[AddressValidation]:
     find_addresses = partial(
         gql_client.read_current_addresses_filtered_with_pagination,
         AddressFilter(address_type_user_keys=address_type_user_keys),
     )
-    return [
-        rec_flatten_current_in_response(jsonable_encoder(entry))
-        async for entry in paged_query(find_addresses)
-    ]
+    address_validations: list[AddressValidation] = []
+    async for entry in paged_query(find_addresses):
+        address_validations.append(AddressValidation.from_obj_in_read_current_addresses_filtered_with_pagination(entry))
+
+    return address_validations
 
 
 async def find_orphaned_addresses(
@@ -405,37 +408,34 @@ async def find_orphaned_addresses(
     settings: Settings,
     ldap_connection: Connection,
     dataloader: DataLoader,
-) -> list[UUID]:
-    mo_addresses_to_clean: list[UUID] = []
+) -> list[AddressValidation]:
+    mo_addresses_to_clean: list[AddressValidation] = []
 
-    mo_addresses_governed_by_ldap = await get_addresses_governed_by_ldap(
+    mo_addresses_governed_by_ldap: list[AddressValidation] = await get_addresses_governed_by_ldap(
         dataloader.moapi.graphql_client, address_type_user_keys_to_clean
     )
+
+    print(f"kwp: Found {len(mo_addresses_governed_by_ldap)} addresses governed by LDAP")
+    # pprint(mo_addresses_governed_by_ldap)
+
 
     # Fetch all entity UUIDs in LDAP
     ldap_uuid_attributes = await load_ldap_attribute_values(
         settings, ldap_connection, settings.ldap_unique_id_field
     )
     ldap_uuid_attributes.discard(tuple())
+    print(f"kwp: Found {len(ldap_uuid_attributes)} LDAP UUIDs")
 
-    unique_ldap_uuids = set(map(LDAPUUID, map(one, ldap_uuid_attributes)))
-
-    for mo_address in mo_addresses_governed_by_ldap:
-        # If the address does not have an active ituser or engagement, delete it
-        # no reason to keep checking it
-        if (
-            mo_address.get("ituser_response") is None
-            or mo_address.get("engagement_response") is None
-        ):
-            mo_addresses_to_clean.append(UUID(mo_address.get("uuid")))
+    unique_ldap_uuids = set(map(one, ldap_uuid_attributes))
+    for validation in mo_addresses_governed_by_ldap:
+        if validation.set_for_deletion:
+            # print(f"kwp: set_for_deletion")
+            mo_addresses_to_clean.append(validation)
         else:
-            it_user_response = mo_address.get("ituser_response")
-            # If the ituser is not in active LDAP, delete the address
-            if it_user_response is not None:
-                mo_address_ituser_user_key = it_user_response.get("user_key")
-                mo_address_uuid_in_ldap = UUID(mo_address_ituser_user_key)
-                if mo_address_uuid_in_ldap not in unique_ldap_uuids:
-                    mo_addresses_to_clean.append(UUID(mo_address.get("uuid")))
+            if validation.ldap_uuid not in unique_ldap_uuids:
+                print(f"kwp: ldap_uuid not in unique_ldap_uuids")
+                validation.set_for_deletion = True
+                mo_addresses_to_clean.append(validation)
 
     return mo_addresses_to_clean
 
@@ -854,8 +854,9 @@ def construct_router(settings: Settings) -> APIRouter:
         dataloader: depends.DataLoader,
         dry_run: bool = True,
         address_type_user_keys: Annotated[list[str] | None, Query()] = None,
-    ) -> list[UUID]:
+    ) -> list[str]:
         if address_type_user_keys is None:
+            print("kwp: address_type_user_keys is None")
             return []
 
         addresses_to_delete = await find_orphaned_addresses(
@@ -864,13 +865,17 @@ def construct_router(settings: Settings) -> APIRouter:
             dataloader=dataloader,
             address_type_user_keys_to_clean=address_type_user_keys,
         )
+        print(f"kwp: found {len(addresses_to_delete)} orphaned addresses")
+
 
         if not dry_run:
-            for address in addresses_to_delete:
+            for validation in addresses_to_delete:
                 await dataloader.moapi.graphql_client.address_terminate(
-                    AddressTerminateInput(uuid=address, to=mo_today())
+                    AddressTerminateInput(uuid=validation.address_uuid, to=mo_today())
                 )
-        return addresses_to_delete
+        print(f"kwp: post terminate")
+
+        return jsonable_encoder([validation.dict) for validation in addresses_to_delete])
 
     @router.get("/Inspect/duplicate_cpr_numbers", status_code=202, tags=["LDAP"])
     async def get_duplicate_cpr_numbers_from_LDAP(

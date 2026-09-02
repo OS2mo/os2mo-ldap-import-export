@@ -818,19 +818,6 @@ class GraphQLClient(AsyncBaseClient):
                         name
                       }
                     }
-                    engagement_response {
-                      current {
-                        uuid
-                        user_key
-                      }
-                    }
-                    person_response {
-                      current {
-                        uuid
-                        user_key
-                        name
-                      }
-                    }
                     uuid
                     user_key
                     value
@@ -849,6 +836,13 @@ class GraphQLClient(AsyncBaseClient):
                       current {
                         uuid
                         user_key
+                        external_id
+                        engagements {
+                          current {
+                            uuid
+                            user_key
+                          }
+                        }
                       }
                     }
                   }

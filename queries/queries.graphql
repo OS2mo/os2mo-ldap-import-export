@@ -2,67 +2,67 @@
 # SPDX-License-Identifier: MPL-2.0
 
 query WhoAmI {
-  me {
-    actor {
-      uuid
+    me {
+        actor {
+            uuid
+        }
     }
-  }
 }
 
 query read_facet_uuid($filter: FacetFilter!) {
-  facets(filter: $filter) {
-    objects {
-      uuid
+    facets(filter: $filter) {
+        objects {
+            uuid
+        }
     }
-  }
 }
 
 query read_class_uuid($filter: ClassFilter!) {
-  classes(filter: $filter) {
-    objects {
-      uuid
+    classes(filter: $filter) {
+        objects {
+            uuid
+        }
     }
-  }
 }
 
 query read_engagements($filter: EngagementFilter!) {
-  engagements(filter: $filter) {
-    objects {
-      validities {
-        uuid
-        user_key
-        extension_1
-        extension_2
-        extension_3
-        extension_4
-        extension_5
-        extension_6
-        extension_7
-        extension_8
-        extension_9
-        extension_10
-        fraction
-        leave_uuid
-        primary_uuid
-        job_function_uuid
-        org_unit_uuid
-        engagement_type_uuid
-        employee_uuid
-        validity {
-          from
-          to
+    engagements(filter: $filter) {
+        objects {
+            validities {
+                uuid
+                user_key
+                extension_1
+                extension_2
+                extension_3
+                extension_4
+                extension_5
+                extension_6
+                extension_7
+                extension_8
+                extension_9
+                extension_10
+                fraction
+                leave_uuid
+                primary_uuid
+                job_function_uuid
+                org_unit_uuid
+                engagement_type_uuid
+                employee_uuid
+                validity {
+                    from
+                    to
+                }
+            }
         }
-      }
     }
-  }
 }
 
 query read_employee_uuid_by_cpr_number($cpr_number: CPR!) {
-  employees(filter: { cpr_numbers: [$cpr_number] }) {
-    objects {
-      uuid
+    employees(filter: { cpr_numbers: [$cpr_number] }) {
+        objects {
+            uuid
+        }
     }
-  }
 }
 
 query read_current_addresses_filtered_with_pagination(
@@ -74,19 +74,6 @@ query read_current_addresses_filtered_with_pagination(
         objects {
             current {
                 address_type_response {
-                    current {
-                        uuid
-                        user_key
-                        name
-                    }
-                }
-                engagement_response {
-                    current {
-                        uuid
-                        user_key
-                    }
-                }
-                person_response {
                     current {
                         uuid
                         user_key
@@ -111,6 +98,13 @@ query read_current_addresses_filtered_with_pagination(
                     current {
                         uuid
                         user_key
+                        external_id
+                        engagements {
+                            current {
+                                uuid
+                                user_key
+                            }
+                        }
                     }
                 }
             }
@@ -122,264 +116,268 @@ query read_current_addresses_filtered_with_pagination(
 }
 
 query read_employees(
-  $uuids: [UUID!]!
-  $from_date: DateTime
-  $to_date: DateTime
+    $uuids: [UUID!]!
+    $from_date: DateTime
+    $to_date: DateTime
 ) {
-  employees(
-    filter: { from_date: $from_date, to_date: $to_date, uuids: $uuids }
-  ) {
-    objects {
-      validities {
-        uuid
-        user_key
-        cpr_number
-        given_name
-        surname
-        nickname_given_name
-        nickname_surname
-        validity {
-          to
-          from
+    employees(
+        filter: { from_date: $from_date, to_date: $to_date, uuids: $uuids }
+    ) {
+        objects {
+            validities {
+                uuid
+                user_key
+                cpr_number
+                given_name
+                surname
+                nickname_given_name
+                nickname_surname
+                validity {
+                    to
+                    from
+                }
+            }
         }
-      }
     }
-  }
 }
 
 query read_org_units(
-  $uuids: [UUID!]!
-  $from_date: DateTime
-  $to_date: DateTime
+    $uuids: [UUID!]!
+    $from_date: DateTime
+    $to_date: DateTime
 ) {
-  org_units(
-    filter: { from_date: $from_date, to_date: $to_date, uuids: $uuids }
-  ) {
-    objects {
-      validities {
-        uuid
-        user_key
-        name
-        parent {
-          uuid
+    org_units(
+        filter: { from_date: $from_date, to_date: $to_date, uuids: $uuids }
+    ) {
+        objects {
+            validities {
+                uuid
+                user_key
+                name
+                parent {
+                    uuid
+                }
+                unit_type {
+                    uuid
+                }
+                validity {
+                    to
+                    from
+                }
+            }
         }
-        unit_type {
-          uuid
-        }
-        validity {
-          to
-          from
-        }
-      }
     }
-  }
 }
 
 query read_itsystems(
-  $uuids: [UUID!]!
-  $from_date: DateTime
-  $to_date: DateTime
+    $uuids: [UUID!]!
+    $from_date: DateTime
+    $to_date: DateTime
 ) {
-  itsystems(
-    filter: { from_date: $from_date, to_date: $to_date, uuids: $uuids }
-  ) {
-    objects {
-      validities {
-        uuid
-        user_key
-        name
-        validity {
-          from
-          to
+    itsystems(
+        filter: { from_date: $from_date, to_date: $to_date, uuids: $uuids }
+    ) {
+        objects {
+            validities {
+                uuid
+                user_key
+                name
+                validity {
+                    from
+                    to
+                }
+                roles {
+                    uuid
+                }
+            }
         }
-        roles {
-          uuid
-        }
-      }
     }
-  }
 }
 
 query read_classes($uuids: [UUID!]!, $from_date: DateTime, $to_date: DateTime) {
-  classes(filter: { from_date: $from_date, to_date: $to_date, uuids: $uuids }) {
-    objects {
-      validities {
-        uuid
-        user_key
-        name
-        scope
-        owner
-        published
-        facet {
-          uuid
+    classes(
+        filter: { from_date: $from_date, to_date: $to_date, uuids: $uuids }
+    ) {
+        objects {
+            validities {
+                uuid
+                user_key
+                name
+                scope
+                owner
+                published
+                facet {
+                    uuid
+                }
+                parent {
+                    uuid
+                }
+                it_system {
+                    uuid
+                }
+                validity {
+                    from
+                    to
+                }
+            }
         }
-        parent {
-          uuid
-        }
-        it_system {
-          uuid
-        }
-        validity {
-          from
-          to
-        }
-      }
     }
-  }
 }
 
 query read_itusers($uuids: [UUID!]!, $from_date: DateTime, $to_date: DateTime) {
-  itusers(filter: { from_date: $from_date, to_date: $to_date, uuids: $uuids }) {
-    objects {
-      validities {
-        user_key
-        validity {
-          from
-          to
+    itusers(
+        filter: { from_date: $from_date, to_date: $to_date, uuids: $uuids }
+    ) {
+        objects {
+            validities {
+                user_key
+                validity {
+                    from
+                    to
+                }
+                employee_uuid
+                itsystem_uuid
+                engagement_uuids
+                rolebindings {
+                    uuid
+                }
+                external_id
+                binding_type
+            }
         }
-        employee_uuid
-        itsystem_uuid
-        engagement_uuids
-        rolebindings {
-          uuid
-        }
-        external_id
-        binding_type
-      }
     }
-  }
 }
 
 query itusers($filter: ITUserFilter!) {
-  itusers(filter: $filter) {
-    objects {
-      uuid
-      current {
-        external_id
-        binding_type
-      }
+    itusers(filter: $filter) {
+        objects {
+            uuid
+            current {
+                external_id
+                binding_type
+            }
+        }
     }
-  }
 }
 
 query addresses($filter: AddressFilter!) {
-  addresses(filter: $filter) {
-    objects {
-      uuid
-      current {
-        ituser_uuid
-      }
+    addresses(filter: $filter) {
+        objects {
+            uuid
+            current {
+                ituser_uuid
+            }
+        }
     }
-  }
 }
 
 query read_employee_uuid_by_ituser_user_key($user_key: String!) {
-  itusers(filter: { user_keys: [$user_key] }) {
-    objects {
-      current {
-        employee_uuid
-      }
+    itusers(filter: { user_keys: [$user_key] }) {
+        objects {
+            current {
+                employee_uuid
+            }
+        }
     }
-  }
 }
 
 query read_ituser_by_employee_and_itsystem_uuid(
-  $employee_uuid: UUID!
-  $itsystem_uuid: UUID!
+    $employee_uuid: UUID!
+    $itsystem_uuid: UUID!
 ) {
-  itusers(
-    filter: {
-      employee: { uuids: [$employee_uuid] }
-      itsystem: { uuids: [$itsystem_uuid] }
+    itusers(
+        filter: {
+            employee: { uuids: [$employee_uuid] }
+            itsystem: { uuids: [$itsystem_uuid] }
+        }
+    ) {
+        objects {
+            uuid
+        }
     }
-  ) {
-    objects {
-      uuid
-    }
-  }
 }
 
 query read_class_uuid_by_facet_and_class_user_key(
-  $facet_user_key: String!
-  $class_user_key: String!
+    $facet_user_key: String!
+    $class_user_key: String!
 ) {
-  classes(
-    filter: {
-      facet: { user_keys: [$facet_user_key] }
-      user_keys: [$class_user_key]
+    classes(
+        filter: {
+            facet: { user_keys: [$facet_user_key] }
+            user_keys: [$class_user_key]
+        }
+    ) {
+        objects {
+            uuid
+        }
     }
-  ) {
-    objects {
-      uuid
-    }
-  }
 }
 
 query read_class_name_by_class_uuid($class_uuid: UUID!) {
-  classes(filter: { uuids: [$class_uuid] }) {
-    objects {
-      current {
-        name
-      }
+    classes(filter: { uuids: [$class_uuid] }) {
+        objects {
+            current {
+                name
+            }
+        }
     }
-  }
 }
 
 query read_addresses(
-  $uuids: [UUID!]!
-  $from_date: DateTime
-  $to_date: DateTime
+    $uuids: [UUID!]!
+    $from_date: DateTime
+    $to_date: DateTime
 ) {
-  addresses(
-    filter: { uuids: $uuids, from_date: $from_date, to_date: $to_date }
-  ) {
-    objects {
-      validities {
-        value: name
-        value2
-        uuid
-        user_key
-        visibility_uuid
-        employee_uuid
-        org_unit_uuid
-        engagement_uuid
-        ituser_uuid
-        person: employee {
-          cpr_number
+    addresses(
+        filter: { uuids: $uuids, from_date: $from_date, to_date: $to_date }
+    ) {
+        objects {
+            validities {
+                value: name
+                value2
+                uuid
+                user_key
+                visibility_uuid
+                employee_uuid
+                org_unit_uuid
+                engagement_uuid
+                ituser_uuid
+                person: employee {
+                    cpr_number
+                }
+                validity {
+                    from
+                    to
+                }
+                address_type {
+                    user_key
+                    uuid
+                }
+            }
         }
-        validity {
-          from
-          to
-        }
-        address_type {
-          user_key
-          uuid
-        }
-      }
     }
-  }
 }
 
 query read_all_itusers(
-  $filter: ITUserFilter!
-  $cursor: Cursor = null
-  $limit: int = 100
+    $filter: ITUserFilter!
+    $cursor: Cursor = null
+    $limit: int = 100
 ) {
-  itusers(limit: $limit, cursor: $cursor, filter: $filter) {
-    objects {
-      validities {
-        itsystem_uuid
-        employee_uuid
-        user_key
-        external_id
-        binding_type
-        uuid
-      }
+    itusers(limit: $limit, cursor: $cursor, filter: $filter) {
+        objects {
+            validities {
+                itsystem_uuid
+                employee_uuid
+                user_key
+                external_id
+                binding_type
+                uuid
+            }
+        }
+        page_info {
+            next_cursor
+        }
     }
-    page_info {
-      next_cursor
-    }
-  }
 }
 
 # Addresses referencing the given IT-users (across all of time). Used to detect
@@ -433,323 +431,323 @@ query read_all_ituser_rolebindings(
 }
 
 query read_filtered_addresses($filter: AddressFilter!) {
-  addresses(filter: $filter) {
-    objects {
-      validities {
-        address_type {
-          user_key
+    addresses(filter: $filter) {
+        objects {
+            validities {
+                address_type {
+                    user_key
+                }
+                uuid
+                validity {
+                    from
+                    to
+                }
+            }
         }
-        uuid
-        validity {
-          from
-          to
-        }
-      }
     }
-  }
 }
 
 query read_filtered_itusers($filter: ITUserFilter!) {
-  itusers(filter: $filter) {
-    objects {
-      validities {
-        employee_uuid
-        itsystem {
-          user_key
+    itusers(filter: $filter) {
+        objects {
+            validities {
+                employee_uuid
+                itsystem {
+                    user_key
+                }
+                uuid
+                validity {
+                    from
+                    to
+                }
+            }
         }
-        uuid
-        validity {
-          from
-          to
-        }
-      }
     }
-  }
 }
 
 query read_engagements_is_primary($filter: EngagementFilter!) {
-  engagements(filter: $filter) {
-    objects {
-      validities {
-        is_primary
-        uuid
-        validity {
-          from
-          to
+    engagements(filter: $filter) {
+        objects {
+            validities {
+                is_primary
+                uuid
+                validity {
+                    from
+                    to
+                }
+            }
         }
-      }
     }
-  }
 }
 
 query read_ituser_relation_uuids($ituser_uuid: UUID!) {
-  itusers(filter: { uuids: [$ituser_uuid], from_date: null, to_date: null }) {
-    objects {
-      validities {
-        employee_uuid
-        org_unit_uuid
-      }
+    itusers(filter: { uuids: [$ituser_uuid], from_date: null, to_date: null }) {
+        objects {
+            validities {
+                employee_uuid
+                org_unit_uuid
+            }
+        }
     }
-  }
 }
 
 query read_engagement_employee_uuid($engagement_uuid: UUID!) {
-  engagements(
-    filter: { uuids: [$engagement_uuid], from_date: null, to_date: null }
-  ) {
-    objects {
-      validities {
-        employee_uuid
-      }
+    engagements(
+        filter: { uuids: [$engagement_uuid], from_date: null, to_date: null }
+    ) {
+        objects {
+            validities {
+                employee_uuid
+            }
+        }
     }
-  }
 }
 
 query read_address_relation_uuids($address_uuid: UUID!) {
-  addresses(
-    filter: { uuids: [$address_uuid], from_date: null, to_date: null }
-  ) {
-    objects {
-      validities {
-        employee_uuid
-        org_unit_uuid
-      }
+    addresses(
+        filter: { uuids: [$address_uuid], from_date: null, to_date: null }
+    ) {
+        objects {
+            validities {
+                employee_uuid
+                org_unit_uuid
+            }
+        }
     }
-  }
 }
 
 query read_all_ituser_user_keys_by_itsystem_uuid($itsystem_uuid: UUID!) {
-  itusers(
-    filter: {
-      itsystem: { uuids: [$itsystem_uuid] }
-      from_date: null
-      to_date: null
+    itusers(
+        filter: {
+            itsystem: { uuids: [$itsystem_uuid] }
+            from_date: null
+            to_date: null
+        }
+    ) {
+        objects {
+            validities {
+                user_key
+            }
+        }
     }
-  ) {
-    objects {
-      validities {
-        user_key
-      }
-    }
-  }
 }
 
 query read_org_unit_name($org_unit_uuid: UUID!) {
-  org_units(filter: { uuids: [$org_unit_uuid] }) {
-    objects {
-      current {
-        name
-      }
+    org_units(filter: { uuids: [$org_unit_uuid] }) {
+        objects {
+            current {
+                name
+            }
+        }
     }
-  }
 }
 
 query read_itsystem_uuid($filter: ITSystemFilter!) {
-  itsystems(filter: $filter) {
-    objects {
-      uuid
+    itsystems(filter: $filter) {
+        objects {
+            uuid
+        }
     }
-  }
 }
 
 query read_org_unit_ancestor_names($uuid: UUID!) {
-  org_units(filter: { uuids: [$uuid] }) {
-    objects {
-      current {
-        name
-        ancestors {
-          name
+    org_units(filter: { uuids: [$uuid] }) {
+        objects {
+            current {
+                name
+                ancestors {
+                    name
+                }
+            }
         }
-      }
     }
-  }
 }
 
 query read_address_uuid($filter: AddressFilter!) {
-  addresses(filter: $filter) {
-    objects {
-      uuid
+    addresses(filter: $filter) {
+        objects {
+            uuid
+        }
     }
-  }
 }
 
 query read_ituser_uuid($filter: ITUserFilter!) {
-  itusers(filter: $filter) {
-    objects {
-      uuid
+    itusers(filter: $filter) {
+        objects {
+            uuid
+        }
     }
-  }
 }
 
 query read_engagement_uuid($filter: EngagementFilter!) {
-  engagements(filter: $filter) {
-    objects {
-      uuid
+    engagements(filter: $filter) {
+        objects {
+            uuid
+        }
     }
-  }
 }
 
 query read_org_unit_uuid($filter: OrganisationUnitFilter!) {
-  org_units(filter: $filter) {
-    objects {
-      uuid
+    org_units(filter: $filter) {
+        objects {
+            uuid
+        }
     }
-  }
 }
 
 query read_manager_person_uuid($filter: ManagerFilter!, $inherit: Boolean!) {
-  managers(filter: $filter, inherit: $inherit) {
-    objects {
-      current {
-        person {
-          uuid
+    managers(filter: $filter, inherit: $inherit) {
+        objects {
+            current {
+                person {
+                    uuid
+                }
+            }
         }
-      }
     }
-  }
 }
 
 query read_person_uuid($filter: EmployeeFilter) {
-  employees(filter: $filter) {
-    objects {
-      uuid
+    employees(filter: $filter) {
+        objects {
+            uuid
+        }
     }
-  }
 }
 
 query read_engagement_enddate($employee_uuid: UUID!) {
-  engagements(
-    filter: {
-      employee: { uuids: [$employee_uuid] }
-      from_date: null
-      to_date: null
-    }
-  ) {
-    objects {
-      validities {
-        engagement_type_response {
-          uuid
+    engagements(
+        filter: {
+            employee: { uuids: [$employee_uuid] }
+            from_date: null
+            to_date: null
         }
-        validity {
-          from
-          to
+    ) {
+        objects {
+            validities {
+                engagement_type_response {
+                    uuid
+                }
+                validity {
+                    from
+                    to
+                }
+            }
         }
-      }
     }
-  }
 }
 
 query read_org_unit_ancestors($uuid: UUID!) {
-  org_units(filter: { uuids: [$uuid] }) {
-    objects {
-      current {
-        ancestors {
-          uuid
+    org_units(filter: { uuids: [$uuid] }) {
+        objects {
+            current {
+                ancestors {
+                    uuid
+                }
+            }
         }
-      }
     }
-  }
 }
 
 query read_engagement_manager(
-  $engagement_uuid: UUID!
-  $filter: OrgUnitboundmanagerfilter
+    $engagement_uuid: UUID!
+    $filter: OrgUnitboundmanagerfilter
 ) {
-  engagements(filter: { uuids: [$engagement_uuid] }) {
-    objects {
-      current {
-        managers(filter: $filter, inherit: true, exclude_self: true) {
-          person {
-            uuid
-          }
+    engagements(filter: { uuids: [$engagement_uuid] }) {
+        objects {
+            current {
+                managers(filter: $filter, inherit: true, exclude_self: true) {
+                    person {
+                        uuid
+                    }
+                }
+            }
         }
-      }
     }
-  }
 }
 
 query read_cleanup_addresses($filter: AddressFilter) {
-  addresses(filter: $filter) {
-    objects {
-      current {
-        employee_uuid
-        uuid
-      }
+    addresses(filter: $filter) {
+        objects {
+            current {
+                employee_uuid
+                uuid
+            }
+        }
     }
-  }
 }
 
 query read_address_validities($address_uuid: UUID!) {
-  addresses(
-    filter: { uuids: [$address_uuid], from_date: null, to_date: null }
-  ) {
-    objects {
-      validities {
-        uuid
-        user_key
-        value
-        visibility_uuid
-        employee_uuid
-        org_unit_uuid
-        engagement_uuid
-        ituser_uuid
-        validity {
-          from
-          to
+    addresses(
+        filter: { uuids: [$address_uuid], from_date: null, to_date: null }
+    ) {
+        objects {
+            validities {
+                uuid
+                user_key
+                value
+                visibility_uuid
+                employee_uuid
+                org_unit_uuid
+                engagement_uuid
+                ituser_uuid
+                validity {
+                    from
+                    to
+                }
+                address_type {
+                    uuid
+                }
+            }
         }
-        address_type {
-          uuid
-        }
-      }
     }
-  }
 }
 
 query read_employee_registrations($employee_uuid: UUID!) {
-  employees(filter: { uuids: [$employee_uuid] }) {
-    objects {
-      registrations {
-        uuid
-      }
+    employees(filter: { uuids: [$employee_uuid] }) {
+        objects {
+            registrations {
+                uuid
+            }
+        }
     }
-  }
 }
 
 query read_rolebindings($filter: RoleBindingFilter) {
-  rolebindings(filter: $filter) {
-    objects {
-      current {
-        ituser {
-          person {
-            uuid
-          }
+    rolebindings(filter: $filter) {
+        objects {
+            current {
+                ituser {
+                    person {
+                        uuid
+                    }
+                }
+                role {
+                    uuid
+                }
+            }
         }
-        role {
-          uuid
-        }
-      }
     }
-  }
 }
 
 query resolve_dar_address($filter: AddressFilter) {
-  addresses(filter: $filter) {
-    objects {
-      uuid
-      current {
-        resolve {
-          ... on DARAddress {
-            zip_code
-            zip_code_name
-            floor
-            door
-            road_name
-            house_number
-            supplementary_city
-          }
-          value
+    addresses(filter: $filter) {
+        objects {
+            uuid
+            current {
+                resolve {
+                    ... on DARAddress {
+                        zip_code
+                        zip_code_name
+                        floor
+                        door
+                        road_name
+                        house_number
+                        supplementary_city
+                    }
+                    value
+                }
+            }
         }
-      }
     }
-  }
 }

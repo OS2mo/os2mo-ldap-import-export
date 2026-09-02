@@ -22,12 +22,6 @@ class ReadCurrentAddressesFilteredWithPaginationAddressesObjects(BaseModel):
 
 class ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrent(BaseModel):
     address_type_response: "ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentAddressTypeResponse"
-    engagement_response: Optional[
-        "ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentEngagementResponse"
-    ]
-    person_response: Optional[
-        "ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentPersonResponse"
-    ]
     uuid: UUID
     user_key: str
     value: str
@@ -48,37 +42,6 @@ class ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentAddressTy
 
 
 class ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentAddressTypeResponseCurrent(
-    BaseModel
-):
-    uuid: UUID
-    user_key: str
-    name: str
-
-
-class ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentEngagementResponse(
-    BaseModel
-):
-    current: Optional[
-        "ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentEngagementResponseCurrent"
-    ]
-
-
-class ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentEngagementResponseCurrent(
-    BaseModel
-):
-    uuid: UUID
-    user_key: str
-
-
-class ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentPersonResponse(
-    BaseModel
-):
-    current: Optional[
-        "ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentPersonResponseCurrent"
-    ]
-
-
-class ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentPersonResponseCurrent(
     BaseModel
 ):
     uuid: UUID
@@ -123,6 +86,25 @@ class ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentItuserRes
 ):
     uuid: UUID
     user_key: str
+    external_id: str | None
+    engagements: list[
+        "ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentItuserResponseCurrentEngagements"
+    ]
+
+
+class ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentItuserResponseCurrentEngagements(
+    BaseModel
+):
+    current: Optional[
+        "ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentItuserResponseCurrentEngagementsCurrent"
+    ]
+
+
+class ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentItuserResponseCurrentEngagementsCurrent(
+    BaseModel
+):
+    uuid: UUID
+    user_key: str
 
 
 class ReadCurrentAddressesFilteredWithPaginationAddressesPageInfo(BaseModel):
@@ -135,13 +117,11 @@ ReadCurrentAddressesFilteredWithPaginationAddressesObjects.update_forward_refs()
 ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrent.update_forward_refs()
 ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentAddressTypeResponse.update_forward_refs()
 ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentAddressTypeResponseCurrent.update_forward_refs()
-ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentEngagementResponse.update_forward_refs()
-ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentEngagementResponseCurrent.update_forward_refs()
-ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentPersonResponse.update_forward_refs()
-ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentPersonResponseCurrent.update_forward_refs()
 ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentVisibilityResponse.update_forward_refs()
 ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentVisibilityResponseCurrent.update_forward_refs()
 ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentVisibilityResponseCurrentFacetResponse.update_forward_refs()
 ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentItuserResponse.update_forward_refs()
 ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentItuserResponseCurrent.update_forward_refs()
+ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentItuserResponseCurrentEngagements.update_forward_refs()
+ReadCurrentAddressesFilteredWithPaginationAddressesObjectsCurrentItuserResponseCurrentEngagementsCurrent.update_forward_refs()
 ReadCurrentAddressesFilteredWithPaginationAddressesPageInfo.update_forward_refs()
