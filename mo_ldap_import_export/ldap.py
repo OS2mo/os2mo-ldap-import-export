@@ -3,7 +3,6 @@
 """LDAP Connection handling."""
 
 import asyncio
-import signal
 from collections import ChainMap
 from contextlib import suppress
 from functools import cache
@@ -129,16 +128,6 @@ def configure_ldap_connection(settings: Settings) -> Connection:
     Returns:
         ContextManager that can be opened to establish an LDAP connection.
     """
-
-    def alarm_handler(signum, frame):
-        raise TimeoutError(
-            "Timeout while configuring LDAP connection. Try 'sudo tailscale up'?"
-        )
-
-    # Set a timeout alarm
-    signal.signal(signal.SIGALRM, alarm_handler)
-    signal.alarm(max([c.timeout for c in settings.ldap_controllers]))
-
     server_pool = construct_server_pool(settings)
     client_strategy = get_client_strategy()
 
@@ -178,8 +167,6 @@ def configure_ldap_connection(settings: Settings) -> Connection:
                 }
             )
         case _:
-            # Turn off the alarm
-            signal.alarm(0)
             raise ValueError("Unknown authentication backend")
 
     try:
@@ -187,9 +174,6 @@ def configure_ldap_connection(settings: Settings) -> Connection:
     except ldap3.core.exceptions.LDAPBindError as exc:
         logger.exception("Exception during LDAP auth")
         raise exc
-    finally:
-        # Turn off the alarm
-        signal.alarm(0)
 
     return connection
 
