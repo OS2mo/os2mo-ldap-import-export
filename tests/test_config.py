@@ -238,6 +238,58 @@ def test_dirsync_require_deleted_objects_access(
 
 
 @pytest.mark.usefixtures("minimal_valid_environmental_variables")
+@pytest.mark.envvar({"LDAP_DIALECT": "AD", "LDAP_CPR_ATTRIBUTE": "employeeNumber"})
+def test_relevant_ldap_attributes(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The attribute set is the union of every source of LDAP attributes."""
+    mapping = {
+        "ldap_to_mo": {
+            "Employee": {
+                "objectClass": "Employee",
+                "_import_to_mo_": "true",
+                "_ldap_attributes_": ["employeeNumber", "givenName", "sn"],
+                "uuid": "{{ employee_uuid }}",
+                "cpr_number": "{{ ldap.employeeNumber }}",
+                "given_name": "{{ ldap.givenName }}",
+                "surname": "{{ ldap.sn }}",
+            }
+        },
+        "ldap_to_mo_any": {
+            "user": [
+                {
+                    "objectClass": "ITUser",
+                    "_import_to_mo_": "true",
+                    "_ldap_attributes_": ["sAMAccountName", "employeeNumber"],
+                    "uuid": "{{ get_ituser_uuid({'external_ids': [ldap.sAMAccountName]}) }}",
+                    "user_key": "{{ ldap.sAMAccountName }}",
+                    "external_id": "{{ ldap.sAMAccountName }}",
+                    "itsystem": "{{ get_it_system_uuid('AD') }}",
+                    "person": "{{ get_person_uuid({'cpr_numbers': [ldap.employeeNumber]}) }}",
+                    "binding_type": "implicit",
+                }
+            ]
+        },
+    }
+    monkeypatch.setenv("CONVERSION_MAPPING", json.dumps(mapping))
+    settings = Settings()
+    assert settings.relevant_ldap_attributes == {
+        "objectClass",
+        "objectGUID",
+        "employeeNumber",
+        "givenName",
+        "sn",
+        "sAMAccountName",
+    }
+
+
+@pytest.mark.usefixtures("minimal_valid_environmental_variables")
+@pytest.mark.envvar({"LDAP_DIALECT": "AD", "LDAP_CPR_ATTRIBUTE": ""})
+def test_relevant_ldap_attributes_minimal() -> None:
+    """Without mappings or a CPR attribute only the identity attributes remain."""
+    settings = Settings()
+    assert settings.relevant_ldap_attributes == {"objectClass", "objectGUID"}
+
+
+@pytest.mark.usefixtures("minimal_valid_environmental_variables")
 @pytest.mark.envvar(
     {"LDAP_DIALECT": "Standard", "LDAP_EVENT_GENERATOR_TYPE": "modifytimestamp"}
 )

@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: MPL-2.0
 """Integration tests for the DirSync-based LDAP event generator against Samba AD."""
 
+import asyncio
+
 import ldap3
 import pytest
 from fastramqpi.context import Context
@@ -202,9 +204,9 @@ async def test_poll_attribute_filtering(
             user_dn, {"givenName": [(ldap3.MODIFY_REPLACE, ["NewGiven"])]}
         )
         changed, cookie = await event_generator.poll(cookie)
-        assert changed == {
-            user_uuid
-        }, "Mapped attribute 'givenName' must trigger an event"
+        assert changed == {user_uuid}, (
+            "Mapped attribute 'givenName' must trigger an event"
+        )
 
         # -- Unmapped attributes: changes must NOT produce events ------------
 
@@ -213,18 +215,18 @@ async def test_poll_attribute_filtering(
             user_dn, {"description": [(ldap3.MODIFY_REPLACE, ["Some note"])]}
         )
         changed, cookie = await event_generator.poll(cookie)
-        assert (
-            changed == set()
-        ), "Unmapped attribute 'description' must not trigger an event"
+        assert changed == set(), (
+            "Unmapped attribute 'description' must not trigger an event"
+        )
 
         # 'department' is a common AD attribute that we don't map
         await ldap_connection.ldap_modify(
             user_dn, {"department": [(ldap3.MODIFY_REPLACE, ["Engineering"])]}
         )
         changed, cookie = await event_generator.poll(cookie)
-        assert (
-            changed == set()
-        ), "Unmapped attribute 'department' must not trigger an event"
+        assert changed == set(), (
+            "Unmapped attribute 'department' must not trigger an event"
+        )
 
         # 'physicalDeliveryOfficeName' (office location) is likewise unmapped
         await ldap_connection.ldap_modify(
@@ -232,18 +234,18 @@ async def test_poll_attribute_filtering(
             {"physicalDeliveryOfficeName": [(ldap3.MODIFY_REPLACE, ["Room 101"])]},
         )
         changed, cookie = await event_generator.poll(cookie)
-        assert (
-            changed == set()
-        ), "Unmapped attribute 'physicalDeliveryOfficeName' must not trigger an event"
+        assert changed == set(), (
+            "Unmapped attribute 'physicalDeliveryOfficeName' must not trigger an event"
+        )
 
         # -- Sanity: a mapped attribute still works after the unmapped ones --
         await ldap_connection.ldap_modify(
             user_dn, {"sn": [(ldap3.MODIFY_REPLACE, ["FinalSurname"])]}
         )
         changed, cookie = await event_generator.poll(cookie)
-        assert changed == {
-            user_uuid
-        }, "Mapped attribute must still trigger after unmapped changes"
+        assert changed == {user_uuid}, (
+            "Mapped attribute must still trigger after unmapped changes"
+        )
     finally:
         event_generator.dirsync_connection.unbind()
 
@@ -378,5 +380,177 @@ async def test_generate_events(
 
         no_events = await drain_events()
         assert no_events == set()
+    finally:
+        event_generator.dirsync_connection.unbind()
+
+
+@pytest.mark.integration_test
+@pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
+        "LDAP_OBJECT_CLASS": "user",
+    }
+)
+@pytest.mark.usefixtures("test_client")
+async def test_poll_ignores_objects_outside_search_ous(
+    context: Context,
+    ldap_org_unit: list[str],
+    ldap_suffix: list[str],
+) -> None:
+    """DirSync spans the naming context; events must still honour the OU scope.
+
+    A user created in an OU outside ``ldap_ous_to_search_in`` must not be
+    reported, while a user created inside it must.
+    """
+    settings = Settings(ldap_event_generator_type="dirsync")
+    assert settings.ldap_ous_to_search_in == ["CN=Users"]
+    ldap_connection = context["user_context"]["dataloader"].ldapapi.ldap_connection
+
+    event_generator = DirSyncEventGenerator(
+        sessionmaker=context["sessionmaker"],
+        settings=settings,
+        graphql_client=context["graphql_client"],
+    )
+
+    try:
+        _, cookie = await event_generator.poll(None)
+
+        outside_ou = ["OU=Outside"] + ldap_suffix
+        await ldap_connection.ldap_add(
+            combine_dn_strings(outside_ou),
+            object_class=["top", "organizationalUnit"],
+            attributes={"objectClass": ["top", "organizationalUnit"], "ou": "Outside"},
+        )
+        await add_samba_user(ldap_connection, outside_ou, "Outside User", "outside")
+        await add_samba_user(ldap_connection, ldap_org_unit, "Inside User", "inside")
+        inside_uuid = await lookup_uuid(
+            ldap_connection, ldap_org_unit, "inside", settings.ldap_unique_id_field
+        )
+
+        changed, cookie = await event_generator.poll(cookie)
+        assert changed == {inside_uuid}
+
+        # Modifying the outside user afterwards must not leak through either
+        outside_dn = combine_dn_strings(["CN=Outside User"] + outside_ou)
+        await ldap_connection.ldap_modify(
+            outside_dn, {"sn": [(ldap3.MODIFY_REPLACE, ["Changed"])]}
+        )
+        changed, cookie = await event_generator.poll(cookie)
+        assert changed == set()
+    finally:
+        event_generator.dirsync_connection.unbind()
+
+
+@pytest.mark.integration_test
+@pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
+        "LDAP_OBJECT_CLASS": "user",
+    }
+)
+@pytest.mark.usefixtures("test_client")
+async def test_poll_reports_deletions(
+    context: Context,
+    ldap_org_unit: list[str],
+) -> None:
+    """Deleting an in-scope user is reported via its tombstone.
+
+    Tombstones live under ``CN=Deleted Objects``, so this also exercises the
+    ``lastKnownParent`` based scoping.
+    """
+    settings = Settings(ldap_event_generator_type="dirsync")
+    ldap_connection = context["user_context"]["dataloader"].ldapapi.ldap_connection
+
+    event_generator = DirSyncEventGenerator(
+        sessionmaker=context["sessionmaker"],
+        settings=settings,
+        graphql_client=context["graphql_client"],
+    )
+
+    try:
+        _, cookie = await event_generator.poll(None)
+
+        dn_parts = await add_samba_user(
+            ldap_connection, ldap_org_unit, "Delete Test", "delete_test"
+        )
+        user_uuid = await lookup_uuid(
+            ldap_connection, ldap_org_unit, "delete_test", settings.ldap_unique_id_field
+        )
+        changed, cookie = await event_generator.poll(cookie)
+        assert changed == {user_uuid}
+
+        await ldap_connection.ldap_delete(combine_dn_strings(dn_parts))
+
+        changed, cookie = await event_generator.poll(cookie)
+        assert changed == {user_uuid}
+
+        # And nothing further once the deletion has been consumed
+        changed, cookie = await event_generator.poll(cookie)
+        assert changed == set()
+    finally:
+        event_generator.dirsync_connection.unbind()
+
+
+@pytest.mark.integration_test
+@pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
+        "LDAP_OBJECT_CLASS": "user",
+    }
+)
+@pytest.mark.usefixtures("test_client")
+async def test_deleted_objects_probe_passes_for_admin(context: Context) -> None:
+    """The Administrator account can read Deleted Objects, so the probe passes."""
+    settings = Settings(
+        ldap_event_generator_type="dirsync",
+        ldap_dirsync_require_deleted_objects_access=True,
+    )
+    event_generator = DirSyncEventGenerator(
+        sessionmaker=context["sessionmaker"],
+        settings=settings,
+        graphql_client=context["graphql_client"],
+    )
+    try:
+        await asyncio.to_thread(event_generator._check_deleted_objects_readable)
+    finally:
+        event_generator.dirsync_connection.unbind()
+
+
+@pytest.mark.integration_test
+@pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
+        "LDAP_OBJECT_CLASS": "user",
+        # Point the search base at a container without a Deleted Objects
+        # child, so the probe sees exactly what an account without access
+        # sees: the container does not exist.
+        "LDAP_SEARCH_BASE": "CN=Users,DC=magenta,DC=dk",
+    }
+)
+@pytest.mark.usefixtures("test_client")
+@pytest.mark.parametrize("required", [True, False])
+async def test_deleted_objects_probe_unreadable(
+    context: Context,
+    required: bool,
+) -> None:
+    """An unreadable Deleted Objects container is fatal only when required."""
+    settings = Settings(
+        ldap_event_generator_type="dirsync",
+        ldap_dirsync_require_deleted_objects_access=required,
+    )
+    event_generator = DirSyncEventGenerator(
+        sessionmaker=context["sessionmaker"],
+        settings=settings,
+        graphql_client=context["graphql_client"],
+    )
+    try:
+        if required:
+            with pytest.raises(RuntimeError) as exc_info:
+                await asyncio.to_thread(event_generator._check_deleted_objects_readable)
+            message = str(exc_info.value)
+            assert "CN=Deleted Objects,CN=Users,DC=magenta,DC=dk" in message
+            assert "dsacls" in message
+        else:
+            await asyncio.to_thread(event_generator._check_deleted_objects_readable)
     finally:
         event_generator.dirsync_connection.unbind()
