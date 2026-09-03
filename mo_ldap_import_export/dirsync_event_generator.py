@@ -357,10 +357,26 @@ class DirSyncEventGenerator(AbstractAsyncContextManager):
         return uuids, new_cookie
 
     async def _poller(self) -> None:
-        """Poll the LDAP server continuously every ``settings.poll_time`` seconds."""
+        """Poll the LDAP server continuously every ``settings.poll_time`` seconds.
+
+        Any failure to complete a poll is fatal. The two expected causes are
+        the server rejecting the stored cookie, which Microsoft documents can
+        happen when the cookie was issued by a different Windows version, and
+        the connection strategy exhausting its reconnect attempts. In both
+        cases the poller stops, the healthcheck fails, and the error is logged
+        with the remediation, rather than silently retrying forever.
+        """
         logger.info("DirSync poller started")
         while True:
-            await asyncio.shield(self._generate_events())
+            try:
+                await asyncio.shield(self._generate_events())
+            except Exception:
+                logger.exception(
+                    "DirSync poll failed, stopping poller. If the server rejected "
+                    "the stored cookie, clear the 'dirsync_state' table to force a "
+                    "full resynchronization on the next start."
+                )
+                raise
             # Wait for a while before running again
             await asyncio.sleep(self.settings.poll_time)
 
