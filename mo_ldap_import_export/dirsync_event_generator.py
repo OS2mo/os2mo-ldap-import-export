@@ -24,9 +24,11 @@ Constraints imposed by the DirSync protocol:
 """
 
 import asyncio
+from collections.abc import Iterable
 from contextlib import AbstractAsyncContextManager
 from contextlib import suppress
 from typing import Any
+from typing import Protocol
 from typing import Self
 
 import ldap3
@@ -35,6 +37,7 @@ from fastramqpi.context import Context
 from ldap3 import BASE
 from ldap3 import NO_ATTRIBUTES
 from ldap3 import SAFE_SYNC
+from ldap3.utils.dn import safe_dn
 from more_itertools import one
 from sqlalchemy import LargeBinary
 from sqlalchemy import select
@@ -49,9 +52,97 @@ from .database import Base
 from .ldap import construct_server
 from .ldap import get_base_connection_kwargs
 from .ldap_emit import publish_uuids
+from .types import DN
 from .types import LDAPUUID
+from .utils import combine_dn_strings
 
 logger = structlog.stdlib.get_logger()
+
+# Tombstone attributes requested in addition to the mapped attributes so that
+# deletions are reported (per Microsoft's DirSync guidance) and can be scoped
+# to the OU the object lived in before it was moved to CN=Deleted Objects.
+TOMBSTONE_ATTRIBUTES = {"isDeleted", "lastKnownParent"}
+
+
+class DirSyncPages(Protocol):
+    """The subset of ``ldap3.extend.microsoft.dirSync.DirSync`` we rely on."""
+
+    more_results: bool
+    cookie: bytes
+
+    def loop(self) -> list[dict[str, Any]]: ...
+
+
+def collect_dirsync_entries(ds: DirSyncPages) -> tuple[list[dict[str, Any]], bytes]:
+    """Drain every DirSync page and return the entries and the final cookie.
+
+    A single ``loop()`` call fetches one page. The server sets ``more_results``
+    while further pages remain, so keep going until it clears and only then
+    hand back the cookie, which then represents the complete change set.
+    """
+    entries: list[dict[str, Any]] = []
+    while ds.more_results:
+        response = ds.loop()
+        entries.extend(e for e in response if e["type"] == "searchResEntry")
+    return entries, ds.cookie
+
+
+def strip_extended_dn(dn: DN) -> DN:
+    """Remove the ``<GUID=...>;<SID=...>;`` prefixes of an extended DN.
+
+    DirSync responses carry the LDAP_SERVER_EXTENDED_DN_OID control, which
+    prefixes DNs with one or more angle-bracketed components.
+    """
+    while dn.startswith("<"):
+        _, _, dn = dn.partition(";")
+    return dn
+
+
+def dn_in_search_bases(dn: DN, search_bases: Iterable[DN]) -> bool:
+    """Whether ``dn`` is at or below any of ``search_bases``.
+
+    Comparison is done on normalised DNs and is case-insensitive, as Active
+    Directory does not preserve the case of configured RDNs.
+    """
+    normalised = safe_dn(strip_extended_dn(dn)).lower()
+    for base in search_bases:
+        normalised_base = safe_dn(base).lower()
+        if normalised == normalised_base or normalised.endswith("," + normalised_base):
+            return True
+    return False
+
+
+def dirsync_entries_to_uuids(
+    entries: Iterable[dict[str, Any]],
+    unique_id_field: str,
+    search_bases: Iterable[DN],
+) -> set[LDAPUUID]:
+    """Map DirSync entries to the UUIDs of objects within the configured OUs.
+
+    Deleted objects are reported from ``CN=Deleted Objects``, so they are
+    scoped by ``lastKnownParent`` rather than by their current DN.
+    """
+    search_bases = list(search_bases)
+    uuids: set[LDAPUUID] = set()
+    for entry in entries:
+        attributes = entry["attributes"]
+        dn = entry["dn"]
+
+        is_deleted = attributes.get("isDeleted") in (True, "TRUE")
+        scope_dn = attributes.get("lastKnownParent") if is_deleted else dn
+        if scope_dn is None:  # pragma: no cover
+            logger.warning("Got deleted DirSync entry without lastKnownParent", dn=dn)
+            continue
+        if not dn_in_search_bases(scope_dn, search_bases):
+            logger.debug("Ignoring DirSync entry outside configured OUs", dn=dn)
+            continue
+
+        uuid = attributes.get(unique_id_field)
+        if uuid is None:  # pragma: no cover
+            logger.warning("Got DirSync entry without uuid", dn=dn)
+            continue
+        uuids.add(LDAPUUID(uuid))
+    return uuids
 
 
 class DirSyncState(Base):
@@ -230,15 +321,17 @@ class DirSyncEventGenerator(AbstractAsyncContextManager):
         )
         sync_filter = f"(|{object_class_filter})"
 
-        unique_id_field = self.settings.ldap_unique_id_field
         conn = self.dirsync_connection
 
         # DirSync only reports objects where a *requested* attribute changed
         # (per MS-ADTS).  Mirror the attribute set from ldap_amqp.py so we
-        # detect exactly the changes we care about.
-        attributes = list(self.settings.relevant_ldap_attributes - {"dn"})
+        # detect exactly the changes we care about, plus the tombstone
+        # attributes needed to report and scope deletions.
+        attributes = list(
+            (self.settings.relevant_ldap_attributes | TOMBSTONE_ATTRIBUTES) - {"dn"}
+        )
 
-        def _run_dirsync() -> tuple[list[dict], bytes]:
+        def _run_dirsync() -> tuple[list[dict[str, Any]], bytes]:
             ds = conn.extend.microsoft.dir_sync(
                 sync_base=search_base,
                 sync_filter=sync_filter,
@@ -246,25 +339,19 @@ class DirSyncEventGenerator(AbstractAsyncContextManager):
                 cookie=cookie,
                 object_security=True,
             )
-            # A single loop() call fetches one page. The server sets
-            # more_results while further pages remain, so keep going until it
-            # clears and only then hand back the final cookie.
-            entries: list[dict] = []
-            while ds.more_results:
-                response = ds.loop()
-                entries.extend(e for e in response if e["type"] == "searchResEntry")
-            return entries, ds.cookie
+            return collect_dirsync_entries(ds)
 
         entries, new_cookie = await asyncio.to_thread(_run_dirsync)
 
-        uuids: set[LDAPUUID] = set()
-        for entry in entries:
-            uuid = entry["attributes"].get(unique_id_field)
-            if uuid is None:  # pragma: no cover
-                logger.warning("Got DirSync entry without uuid", dn=entry.get("dn"))
-                continue
-            uuids.add(LDAPUUID(uuid))
-
+        # DirSync cannot be scoped below the naming context, so restrict the
+        # events client-side to the OUs the rest of the integration operates on.
+        search_bases = {
+            combine_dn_strings([ou, search_base])
+            for ou in self.settings.ldap_ous_to_search_in
+        }
+        uuids = dirsync_entries_to_uuids(
+            entries, self.settings.ldap_unique_id_field, search_bases
+        )
         return uuids, new_cookie
 
     async def _poller(self) -> None:
