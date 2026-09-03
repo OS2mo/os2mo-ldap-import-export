@@ -224,8 +224,13 @@ class DirSyncEventGenerator(AbstractAsyncContextManager):
                 cookie=cookie,
                 object_security=True,
             )
-            response = ds.loop()
-            entries = [e for e in response if e["type"] == "searchResEntry"]
+            # A single loop() call fetches one page. The server sets
+            # more_results while further pages remain, so keep going until it
+            # clears and only then hand back the final cookie.
+            entries: list[dict] = []
+            while ds.more_results:
+                response = ds.loop()
+                entries.extend(e for e in response if e["type"] == "searchResEntry")
             return entries, ds.cookie
 
         entries, new_cookie = await asyncio.to_thread(_run_dirsync)
