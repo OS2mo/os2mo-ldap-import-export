@@ -36,7 +36,6 @@ import structlog
 from fastramqpi.context import Context
 from ldap3 import BASE
 from ldap3 import NO_ATTRIBUTES
-from ldap3 import SAFE_SYNC
 from ldap3.utils.dn import safe_dn
 from more_itertools import one
 from sqlalchemy import LargeBinary
@@ -51,6 +50,7 @@ from .config import Settings
 from .database import Base
 from .ldap import construct_server
 from .ldap import get_base_connection_kwargs
+from .ldap import get_client_strategy
 from .ldap_emit import publish_uuids
 from .types import DN
 from .types import LDAPUUID
@@ -161,24 +161,26 @@ class DirSyncState(Base):
 
 
 def configure_dirsync_connection(settings: Settings) -> ldap3.Connection:
-    """Configure an LDAP connection suitable for DirSync operations.
+    """Configure a dedicated LDAP connection for DirSync operations.
 
-    DirSync requires a synchronous connection that does not transparently
-    reconnect, as ldap3 stashes per-poll DirSync state on the connection
-    object which a mid-poll reconnect would discard. ``SAFE_RESTARTABLE``
-    is therefore incompatible, and plain ``SYNC`` is not thread-safe.
+    The connection uses the same thread-safe restartable strategy as the main
+    connection. ldap3's DirSync extension keeps the cookie on the DirSync
+    object and reads results from the value returned by ``search`` for any
+    thread-safe strategy, so transparent reconnects are safe: the cookie is
+    part of the request, which makes a retried page idempotent.
 
-    ``SAFE_SYNC`` threads the needle: it is thread-safe (acquiring an
-    internal lock per operation) but does not reconnect. The DirSync
-    extension explicitly supports it, reading results from the return tuple
-    rather than connection state when ``strategy.thread_safe`` is set.
+    ``receive_timeout`` bounds how long a single page may take, so a hung
+    domain controller cannot block the poller indefinitely. If the strategy
+    exhausts its reconnect attempts, ldap3 raises ``LDAPMaximumRetriesError``,
+    which propagates out of the poller and fails the healthcheck.
     """
     server_config = one(settings.ldap_controllers)
     server = construct_server(server_config)
 
     connection_kwargs: dict[str, Any] = {
         "server": server,
-        "client_strategy": SAFE_SYNC,
+        "client_strategy": get_client_strategy(),
+        "receive_timeout": settings.ldap_receive_timeout,
         "read_only": True,
         **get_base_connection_kwargs(settings),
     }
@@ -248,7 +250,7 @@ class DirSyncEventGenerator(AbstractAsyncContextManager):
         )
 
         def _probe() -> bool:
-            # SAFE_SYNC is a thread-safe strategy, so ldap3 returns a
+            # Thread-safe strategies make ldap3 return a
             # (status, result, response, request) tuple instead of a bool.
             status, _, _, _ = conn.search(
                 search_base=deleted_objects_dn,
