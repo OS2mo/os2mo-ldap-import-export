@@ -138,12 +138,15 @@ class DirSyncEventGenerator(AbstractAsyncContextManager):
         conn = self.dirsync_connection
 
         def _probe() -> bool:
-            return conn.search(
+            # SAFE_SYNC is a thread-safe strategy, so ldap3 returns a
+            # (status, result, response, request) tuple instead of a bool.
+            status, _, _, _ = conn.search(
                 search_base=deleted_objects_dn,
                 search_filter="(objectClass=*)",
                 search_scope=BASE,
                 attributes=NO_ATTRIBUTES,
             )
+            return status
 
         try:
             readable = _probe()
