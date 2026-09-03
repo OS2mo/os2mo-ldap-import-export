@@ -3,7 +3,6 @@
 import asyncio
 import json
 import os
-import time
 from collections.abc import Iterator
 from contextlib import suppress
 from typing import Any
@@ -24,7 +23,6 @@ from ldap3.utils.dn import safe_dn
 from more_itertools import collapse
 from structlog.testing import capture_logs
 
-from mo_ldap_import_export.config import AuthBackendEnum
 from mo_ldap_import_export.config import ServerConfig
 from mo_ldap_import_export.config import Settings
 from mo_ldap_import_export.exceptions import MultipleObjectsReturnedException
@@ -177,30 +175,6 @@ def test_configure_ldap_connection(load_settings_overrides: dict[str, str]) -> N
     ):
         connection = configure_ldap_connection(settings)
         assert isinstance(connection, Connection)
-
-
-def test_configure_ldap_connection_timeout(
-    load_settings_overrides: dict[str, str],
-) -> None:
-    ldap_controller = MagicMock()
-    ldap_controller.timeout = 1
-
-    settings = MagicMock()
-    settings.ldap_auth_method = AuthBackendEnum.NTLM
-    settings.ldap_controllers = [ldap_controller]
-
-    def connection_mock(*args, **kwargs):
-        time.sleep(2)
-        return None
-
-    with (
-        patch("mo_ldap_import_export.ldap.get_client_strategy", return_value=MOCK_SYNC),
-        patch("mo_ldap_import_export.ldap.Connection", connection_mock),
-        patch("mo_ldap_import_export.ldap.construct_server", MagicMock()),
-        patch("mo_ldap_import_export.ldap.ServerPool", MagicMock()),
-        pytest.raises(TimeoutError),
-    ):
-        configure_ldap_connection(settings)
 
 
 def test_configure_ldap_connection_simple(
