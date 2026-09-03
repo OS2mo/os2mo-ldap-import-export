@@ -392,6 +392,16 @@ class Settings(BaseSettings):
         description="Strategy for detecting LDAP changes",
     )
 
+    ldap_dirsync_require_deleted_objects_access: bool = Field(
+        False,
+        description=(
+            "Whether the DirSync event generator refuses to start when the bind "
+            "account cannot read the 'CN=Deleted Objects' container. When False "
+            "a missing grant is only logged as a warning, and deletion events "
+            "are not detected."
+        ),
+    )
+
     mo_uuids_to_ignore: list[UUID] = Field(
         default_factory=list,
         description="Set of MO UUIDs to ignore changes to",

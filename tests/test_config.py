@@ -219,6 +219,25 @@ def test_dirsync_fails_with_standard_dialect() -> None:
 
 
 @pytest.mark.usefixtures("minimal_valid_environmental_variables")
+@pytest.mark.envvar({"LDAP_DIALECT": "AD", "LDAP_EVENT_GENERATOR_TYPE": "dirsync"})
+@pytest.mark.parametrize(
+    "envvar,expected",
+    [
+        (None, False),
+        ("true", True),
+        ("false", False),
+    ],
+)
+def test_dirsync_require_deleted_objects_access(
+    monkeypatch: pytest.MonkeyPatch, envvar: str | None, expected: bool
+) -> None:
+    if envvar is not None:
+        monkeypatch.setenv("LDAP_DIRSYNC_REQUIRE_DELETED_OBJECTS_ACCESS", envvar)
+    settings = Settings()
+    assert settings.ldap_dirsync_require_deleted_objects_access is expected
+
+
+@pytest.mark.usefixtures("minimal_valid_environmental_variables")
 @pytest.mark.envvar(
     {"LDAP_DIALECT": "Standard", "LDAP_EVENT_GENERATOR_TYPE": "modifytimestamp"}
 )

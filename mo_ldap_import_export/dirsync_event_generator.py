@@ -127,15 +127,26 @@ class DirSyncEventGenerator(AbstractAsyncContextManager):
         Under DirSync OBJECT_SECURITY mode, deletion events are only reported
         for objects the account could read before deletion, and only if the
         account can read the tombstone in ``CN=Deleted Objects``.  This probe
-        surfaces a missing grant at startup / healthcheck time rather than
-        silently dropping deletion events.
+        surfaces a missing grant at startup rather than silently dropping
+        deletion events.
+
+        Whether a missing grant is fatal is controlled by
+        ``settings.ldap_dirsync_require_deleted_objects_access``. When it is
+        False the problem is only logged as a warning, with the exact
+        ``dsacls`` command needed to grant access.
 
         Raises:
-            RuntimeError: If the container is not readable, with the exact
-                ``dsacls`` command needed to grant access.
+            RuntimeError: If the container is not readable and access is
+                required by settings.
         """
         deleted_objects_dn = f"CN=Deleted Objects,{self.settings.ldap_search_base}"
         conn = self.dirsync_connection
+        message = (
+            f"Unable to read {deleted_objects_dn}. "
+            f"Deletion detection requires read access to the Deleted Objects "
+            f"container. Grant it with: "
+            f'dsacls "{deleted_objects_dn}" /G "<domain>\\<service-account>:RP;LC"'
+        )
 
         def _probe() -> bool:
             # SAFE_SYNC is a thread-safe strategy, so ldap3 returns a
@@ -148,23 +159,26 @@ class DirSyncEventGenerator(AbstractAsyncContextManager):
             )
             return status
 
+        error: Exception | None = None
         try:
             readable = _probe()
         except Exception as exc:
-            raise RuntimeError(
-                f"Unable to read {deleted_objects_dn}. "
-                f"Deletion detection requires read access to the Deleted Objects "
-                f"container. Grant it with: "
-                f'dsacls "{deleted_objects_dn}" /G "<domain>\\<service-account>:RP;LC"'
-            ) from exc
+            readable = False
+            error = exc
 
-        if not readable:
-            raise RuntimeError(
-                f"Unable to read {deleted_objects_dn}. "
-                f"Deletion detection requires read access to the Deleted Objects "
-                f"container. Grant it with: "
-                f'dsacls "{deleted_objects_dn}" /G "<domain>\\<service-account>:RP;LC"'
-            )
+        if readable:
+            return
+
+        if self.settings.ldap_dirsync_require_deleted_objects_access:
+            raise RuntimeError(message) from error
+
+        logger.warning(
+            "Deleted Objects container is not readable, deletion events will "
+            "not be detected",
+            dn=deleted_objects_dn,
+            hint=message,
+            error=repr(error) if error else None,
+        )
 
     def setup_poller(self) -> asyncio.Task:
         def done_callback(future):
