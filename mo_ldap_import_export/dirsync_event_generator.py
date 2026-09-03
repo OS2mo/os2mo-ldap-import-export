@@ -5,11 +5,19 @@
 DirSync (LDAP_SERVER_DIRSYNC_OID 1.2.840.113556.1.4.841) is an Active
 Directory specific control for incremental synchronization.  Unlike the
 modifyTimestamp-based approach in ``LDAPEventGenerator``, DirSync uses an
-opaque server-side cookie that guarantees reliable change detection even across
-domain-controller failovers and replication delays.
+opaque server-side cookie that tracks the replication state of the polled
+domain controller, so changes are never missed because of replication delays
+or timestamp precision, and only objects whose requested attributes changed
+are reported.
+
+The integration is deliberately limited to a single domain controller (see
+``Settings.check_at_most_one_controller``), so failover between controllers
+is out of scope.  A cookie from one controller can be presented to another,
+but the reply may then be a full resynchronization.
 
 Constraints imposed by the DirSync protocol:
 * The search base MUST be a naming context (root DN), not an arbitrary subtree.
+  Events are therefore filtered client-side to ``ldap_ous_to_search_in``.
 * The caller MUST have read access to in-scope objects and attributes.  For
   deletion detection, the caller MUST also have read access to the
   ``CN=Deleted Objects`` container.
