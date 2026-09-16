@@ -10,6 +10,7 @@ from collections.abc import Callable
 from contextlib import suppress
 from datetime import datetime
 from datetime import time
+from datetime import timedelta
 from functools import partial
 from itertools import count
 from typing import Annotated
@@ -725,10 +726,13 @@ def construct_router(settings: Settings) -> APIRouter:
         settings: depends.Settings,
         ldap_connection: depends.Connection,
         dataloader: depends.DataLoader,
-        at: datetime,
+        at: datetime | None = None,
         dry_run: bool = True,
         itsystem_user_key: str | None = None,
     ) -> set[ITUserUUID]:  # pragma: no cover
+        if at is None:
+            # Default termination date is yesterday midnight
+            at = mo_today() - timedelta(days=1)
         assert_mo_midnight(at)
         bad_itusers = await get_non_existing_external_ids(
             settings, ldap_connection, dataloader, itsystem_user_key=itsystem_user_key
