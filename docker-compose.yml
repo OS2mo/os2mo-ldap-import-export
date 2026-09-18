@@ -131,14 +131,14 @@ services:
       - "127.0.0.1:8000:8000"
       - "127.0.0.1:5678:5678"
 
-  db:
-    image: postgres:16
-    environment:
-      POSTGRES_USER: "fastramqpi"
-      POSTGRES_PASSWORD: "fastramqpi"
-      POSTGRES_DB: "fastramqpi"
-    networks:
-      - default
+  # db:
+  #   image: postgres:16
+  #   environment:
+  #     POSTGRES_USER: "fastramqpi"
+  #     POSTGRES_PASSWORD: "fastramqpi"
+  #     POSTGRES_DB: "fastramqpi"
+  #   networks:
+  #     - default
 
 networks:
   os2mo_default:

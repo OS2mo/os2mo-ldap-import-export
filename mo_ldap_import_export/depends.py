@@ -31,9 +31,9 @@ DataLoader = Annotated[_DataLoader, Depends(from_user_context("dataloader"))]
 Settings = Annotated[_Settings, Depends(from_user_context("settings"))]
 LdapConverter = Annotated[_LdapConverter, Depends(from_user_context("converter"))]
 Connection = Annotated[_Connection, Depends(from_user_context("ldap_connection"))]
-LDAPEventGenerator = Annotated[
-    _LDAPEventGenerator, Depends(from_user_context("ldap_event_generator"))
-]
+# LDAPEventGenerator = Annotated[
+#     _LDAPEventGenerator, Depends(from_user_context("ldap_event_generator"))
+# ]
 
 
 async def logger_bound_message_id(message: Message) -> AsyncIterable[None]:

@@ -609,88 +609,88 @@ def construct_router(settings: Settings) -> APIRouter:
             await sync_tool.listen_to_changes_in_employees(uuid, dry_run=True)
         )
 
-    @router.get("/Inspect/ldap2mo/all", status_code=200, tags=["MO"])
-    async def ldap2mo_templating_all(
-        ldap_event_generator: depends.LDAPEventGenerator,
-        settings: depends.Settings,
-        sync_tool: depends.SyncTool,
-        start_at: UUID | None = None,
-    ) -> Any:
-        search_bases = {
-            combine_dn_strings([ldap_ou_to_scan_for_changes, settings.ldap_search_base])
-            for ldap_ou_to_scan_for_changes in settings.ldap_ous_to_search_in
-        }
-        uuids_set = set()
-        for search_base in search_bases:
-            poll_uuids, _ = await ldap_event_generator.poll(
-                search_base, MICROSOFT_EPOCH
-            )
-            uuids_set.update(poll_uuids)
+    # @router.get("/Inspect/ldap2mo/all", status_code=200, tags=["MO"])
+    # async def ldap2mo_templating_all(
+    #     ldap_event_generator: depends.LDAPEventGenerator,
+    #     settings: depends.Settings,
+    #     sync_tool: depends.SyncTool,
+    #     start_at: UUID | None = None,
+    # ) -> Any:
+    #     search_bases = {
+    #         combine_dn_strings([ldap_ou_to_scan_for_changes, settings.ldap_search_base])
+    #         for ldap_ou_to_scan_for_changes in settings.ldap_ous_to_search_in
+    #     }
+    #     uuids_set = set()
+    #     for search_base in search_bases:
+    #         poll_uuids, _ = await ldap_event_generator.poll(
+    #             search_base, MICROSOFT_EPOCH
+    #         )
+    #         uuids_set.update(poll_uuids)
 
-        uuids = sorted(uuids_set)
-        if start_at:
-            uuids = [uuid for uuid in uuids if uuid > start_at]
+    #     uuids = sorted(uuids_set)
+    #     if start_at:
+    #         uuids = [uuid for uuid in uuids if uuid > start_at]
 
-        attributes_to_fetch = {"objectClass", settings.ldap_unique_id_field}
-        if settings.ldap_cpr_attribute:
-            attributes_to_fetch.add(settings.ldap_cpr_attribute)
+    #     attributes_to_fetch = {"objectClass", settings.ldap_unique_id_field}
+    #     if settings.ldap_cpr_attribute:
+    #         attributes_to_fetch.add(settings.ldap_cpr_attribute)
 
-        if settings.conversion_mapping.ldap_to_mo:
-            attributes_to_fetch |= {
-                attr
-                for mapping in settings.conversion_mapping.ldap_to_mo.values()
-                for attr in mapping.ldap_attributes
-            }
+    #     if settings.conversion_mapping.ldap_to_mo:
+    #         attributes_to_fetch |= {
+    #             attr
+    #             for mapping in settings.conversion_mapping.ldap_to_mo.values()
+    #             for attr in mapping.ldap_attributes
+    #         }
 
-        if settings.discriminator_fields:  # pragma: no cover
-            attributes_to_fetch.update(settings.discriminator_fields)
+    #     if settings.discriminator_fields:  # pragma: no cover
+    #         attributes_to_fetch.update(settings.discriminator_fields)
 
-        async def process_uuid(uuid: LDAPUUID) -> dict[str, Any]:
-            try:
-                dn = await sync_tool.dataloader.ldapapi.get_ldap_dn(uuid)
-                if dn is None:  # pragma: no cover
-                    return {
-                        "__ldap_uuid": uuid,
-                        "message": "No matching DN",
-                    }
-                ldap_object = await sync_tool.dataloader.ldapapi.get_object_by_dn(
-                    dn, attributes=attributes_to_fetch
-                )
-                # Ignore changes to non-employee objects
-                assert hasattr(ldap_object, "objectClass")
-                ldap_object_classes = ldap_object.objectClass
+    #     async def process_uuid(uuid: LDAPUUID) -> dict[str, Any]:
+    #         try:
+    #             dn = await sync_tool.dataloader.ldapapi.get_ldap_dn(uuid)
+    #             if dn is None:  # pragma: no cover
+    #                 return {
+    #                     "__ldap_uuid": uuid,
+    #                     "message": "No matching DN",
+    #                 }
+    #             ldap_object = await sync_tool.dataloader.ldapapi.get_object_by_dn(
+    #                 dn, attributes=attributes_to_fetch
+    #             )
+    #             # Ignore changes to non-employee objects
+    #             assert hasattr(ldap_object, "objectClass")
+    #             ldap_object_classes = ldap_object.objectClass
 
-                employee_object_class = settings.ldap_object_class
-                if employee_object_class not in ldap_object_classes:  # pragma: no cover
-                    return {
-                        "__ldap_uuid": uuid,
-                        "message": "Skipping non-employee",
-                    }
-                await sync_tool.import_single_user(ldap_object, dry_run=True)
-                return {
-                    "__ldap_uuid": uuid,
-                    "message": "No changes",
-                }
-            except DryRunException as exc:
-                assert isinstance(exc.detail, dict)
-                return {
-                    "__ldap_uuid": uuid,
-                    **exc.detail,
-                }
-            except Exception:  # pragma: no cover
-                logger.exception("Exception during Inspect/ldap2mo/all")
-                return {
-                    "__ldap_uuid": uuid,
-                    "message": "Exception during processing",
-                }
+    #             employee_object_class = settings.ldap_object_class
+    #             if employee_object_class not in ldap_object_classes:  # pragma: no cover
+    #                 return {
+    #                     "__ldap_uuid": uuid,
+    #                     "message": "Skipping non-employee",
+    #                 }
+    #             await sync_tool.import_single_user(ldap_object, dry_run=True)
+    #             return {
+    #                 "__ldap_uuid": uuid,
+    #                 "message": "No changes",
+    #             }
+    #         except DryRunException as exc:
+    #             assert isinstance(exc.detail, dict)
+    #             return {
+    #                 "__ldap_uuid": uuid,
+    #                 **exc.detail,
+    #             }
+    #         except Exception:  # pragma: no cover
+    #             logger.exception("Exception during Inspect/ldap2mo/all")
+    #             return {
+    #                 "__ldap_uuid": uuid,
+    #                 "message": "Exception during processing",
+    #             }
 
-        with open("/tmp/ldap2mo.jsonl", "w") as fout:
-            for uuid in uuids:
-                context = await process_uuid(uuid)
-                fout.write(json.dumps(encode_result(context)) + "\n")
-                fout.flush()
+    #     with open("/tmp/ldap2mo.jsonl", "w") as fout:
+    #         for uuid in uuids:
+    #             context = await process_uuid(uuid)
+    #             fout.write(json.dumps(encode_result(context)) + "\n")
+    #             fout.flush()
 
-        return "OK"
+    #     return "OK"
 
     @router.get("/Inspect/ldap2mo/{uuid}", status_code=200, tags=["MO"])
     async def ldap2mo_templating(sync_tool: depends.SyncTool, uuid: LDAPUUID) -> None:
@@ -879,7 +879,7 @@ def construct_router(settings: Settings) -> APIRouter:
                 )
         print(f"kwp: post terminate")
 
-        return jsonable_encoder([validation.dict) for validation in addresses_to_delete])
+        return jsonable_encoder([validation.dict() for validation in addresses_to_delete])
 
     @router.get("/Inspect/duplicate_cpr_numbers", status_code=202, tags=["LDAP"])
     async def get_duplicate_cpr_numbers_from_LDAP(
@@ -1208,34 +1208,34 @@ def construct_router(settings: Settings) -> APIRouter:
 ldap_event_router = APIRouter(prefix="/ldap_event_generator")
 
 
-@ldap_event_router.get("/since")
-async def fetch_changes_since(
-    ldap_event_generator: depends.LDAPEventGenerator,
-    settings: depends.Settings,
-    graphql_client: depends.GraphQLClient,
-    search_base: Annotated[str, Body()],
-    since: datetime = MICROSOFT_EPOCH,
-    dry_run: bool = True,
-) -> set[LDAPUUID]:
-    """Find and queue every object in a subtree changed since a given time.
+# @ldap_event_router.get("/since")
+# async def fetch_changes_since(
+#     ldap_event_generator: depends.LDAPEventGenerator,
+#     settings: depends.Settings,
+#     graphql_client: depends.GraphQLClient,
+#     search_base: Annotated[str, Body()],
+#     since: datetime = MICROSOFT_EPOCH,
+#     dry_run: bool = True,
+# ) -> set[LDAPUUID]:
+#     """Find and queue every object in a subtree changed since a given time.
 
-    Only objects with an object class the integration synchronises are matched,
-    mirroring the periodic poller.
+#     Only objects with an object class the integration synchronises are matched,
+#     mirroring the periodic poller.
 
-    Args:
-        search_base: LDAP DN to search beneath, inclusive.
-        since: Only consider objects modified at or after this time; defaults
-            to the Microsoft epoch, i.e. the whole subtree.
-        dry_run: When dry-running (the default) nothing is emitted; only the UUIDs
-            that would be queued are returned.
+#     Args:
+#         search_base: LDAP DN to search beneath, inclusive.
+#         since: Only consider objects modified at or after this time; defaults
+#             to the Microsoft epoch, i.e. the whole subtree.
+#         dry_run: When dry-running (the default) nothing is emitted; only the UUIDs
+#             that would be queued are returned.
 
-    Returns:
-        The LDAP UUIDs of the matching objects.
-    """
-    uuids, _ = await ldap_event_generator.poll(search_base, since)
-    if not dry_run:
-        await publish_uuids(settings, graphql_client, list(uuids))
-    return uuids
+#     Returns:
+#         The LDAP UUIDs of the matching objects.
+#     """
+#     uuids, _ = await ldap_event_generator.poll(search_base, since)
+#     if not dry_run:
+#         await publish_uuids(settings, graphql_client, list(uuids))
+#     return uuids
 
 
 @ldap_event_router.post("/emit/{uuid}")
