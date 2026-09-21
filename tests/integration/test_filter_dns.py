@@ -232,3 +232,101 @@ async def test_to_ldap_discriminated_account(
             ["cn=" + " ".join([given_name, surname]) + "_2"] + ldap_org_unit
         ),
     }
+
+
+@pytest.mark.integration_test
+@pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
+        # The account search now spans both the normal OU and a second OU
+        # holding a pre-existing account for the same person.
+        "LDAP_OUS_TO_SEARCH_IN": json.dumps(
+            ["ou=os2mo,o=magenta", "ou=filtered,o=magenta"]
+        ),
+        "CONVERSION_MAPPING": json.dumps(
+            {
+                "mo2ldap": """
+                    {% set mo_employee = load_mo_employee(uuid, current_objects_only=False) %}
+                    {{
+                        {
+                            "employeeNumber": mo_employee.cpr_number,
+                            "givenName": mo_employee.given_name,
+                            "sn": mo_employee.surname,
+                        }|tojson
+                    }}
+                """,
+            }
+        ),
+    }
+)
+@pytest.mark.usefixtures("test_client")
+async def test_to_ldap_reuses_unrelated_account_without_discriminator(
+    graphql_client: GraphQLClient,
+    trigger_sync: Callable[[EmployeeUUID], Awaitable[None]],
+    ldap_api: LDAPAPI,
+    ldap_org: list[str],
+    ldap_org_unit: list[str],
+) -> None:
+    """Reproduces a bug where an existing account, living in a second OU that
+    is in scope for LDAP_OUS_TO_SEARCH_IN, is not found via CPR-number lookup,
+    so the integration creates a brand new, duplicate account instead of
+    reusing/linking the existing one.
+
+    Expected (bug-free) behavior: `cpr2dns` finds the pre-existing account, so
+    with no discriminator configured `apply_discriminator` treats it as "the"
+    account (mo_ldap_import_export/ldap.py:522-523) and no new account is
+    created -- only the pre-existing DN should exist afterwards.
+
+    Actual behavior: `object_search` (mo_ldap_import_export/ldap.py:690-699)
+    builds `ChainMap(searchParameters, {"search_base": search_base})` per
+    configured OU, but `searchParameters` (the first/priority mapping in the
+    ChainMap) still has its own `search_base` key set to the *entire list* of
+    OUs, so the per-iteration override never takes effect. The CPR lookup
+    therefore fails to find the pre-existing account, and a second, duplicate
+    account gets created for the same person.
+    """
+    cpr_number = "2108613133"
+    given_name = "Alice"
+    surname = "Allman"
+
+    # Second OU that is in scope for LDAP_OUS_TO_SEARCH_IN
+    filtered_ou = ["ou=filtered"] + ldap_org
+    await ldap_api.ldap_connection.ldap_add(
+        combine_dn_strings(filtered_ou),
+        object_class=["top", "organizationalUnit"],
+        attributes={"objectClass": ["top", "organizationalUnit"], "ou": "filtered"},
+    )
+
+    # Pre-existing account living in the second OU, matching on CPR number
+    unrelated_dn = ["cn=" + " ".join([given_name, surname])] + filtered_ou
+    await ldap_api.ldap_connection.ldap_add(
+        combine_dn_strings(unrelated_dn),
+        object_class=["top", "person", "organizationalPerson", "inetOrgPerson"],
+        attributes={
+            "objectClass": ["top", "person", "organizationalPerson", "inetOrgPerson"],
+            "employeeNumber": cpr_number,
+            "givenName": given_name,
+            "sn": surname,
+        },
+    )
+
+    # Create MO employee
+    mo_employee = await graphql_client.person_create(
+        input=EmployeeCreateInput(
+            cpr_number=cpr_number, given_name=given_name, surname=surname
+        )
+    )
+
+    # Trigger synchronization
+    await trigger_sync(EmployeeUUID(mo_employee.uuid))
+
+    # We expect the pre-existing account to be found and reused, so no new
+    # account should be created.
+    response, _ = await ldap_api.ldap_connection.ldap_search(
+        search_base=combine_dn_strings(ldap_org),
+        search_filter=f"(employeeNumber={cpr_number})",
+        attributes=["*"],
+    )
+    dns = {result["dn"] for result in response}
+    assert dns == {combine_dn_strings(unrelated_dn)}
