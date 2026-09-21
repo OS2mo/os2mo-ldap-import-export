@@ -694,7 +694,7 @@ async def object_search(
     for search_base in search_bases:
         response, _ = await LDAPConnection(
             ldap_connection, read_only=True, add_objects_to_ldap=False
-        ).ldap_search(**ChainMap(searchParameters, {"search_base": search_base}))
+        ).ldap_search(**ChainMap({"search_base": search_base}, searchParameters))
         if response:
             responses.extend(response)
     search_entries = ldapresponse2entries(responses)
