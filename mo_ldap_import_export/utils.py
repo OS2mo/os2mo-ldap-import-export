@@ -98,6 +98,32 @@ def extract_part_from_dn(dn: DN, index_string: str) -> str:
 extract_ou_from_dn = partial(extract_part_from_dn, index_string="OU")
 
 
+def dn_in_subtree(dn: DN, subtree: DN) -> bool:
+    """Determine whether a DN is located within a subtree.
+
+    Examples:
+        >>> dn_in_subtree("CN=Tobias,OU=mucki,DC=k", "OU=mucki,DC=k")
+        True
+        >>> dn_in_subtree("CN=Tobias,OU=mucki,DC=k", "OU=bar,DC=k")
+        False
+
+    Args:
+        dn: The DN to check the placement of.
+        subtree: The DN of the subtree to check for membership of.
+
+    Returns:
+        Whether the DN is the subtree itself or found below it.
+    """
+    # An empty subtree is the entire directory
+    if not subtree:
+        return True
+
+    def normalize(dn: DN) -> DN:
+        return cast(DN, safe_dn(dn).casefold())
+
+    return normalize(dn).endswith(normalize(subtree))
+
+
 def is_list(x: Any | list[Any]) -> bool:
     """Decide whether the provided argument is a list.
 

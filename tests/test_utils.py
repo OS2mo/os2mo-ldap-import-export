@@ -8,6 +8,7 @@ from ldap3.core.exceptions import LDAPInvalidDnError
 from mo_ldap_import_export.types import DN
 from mo_ldap_import_export.types import RDN
 from mo_ldap_import_export.utils import combine_dn_strings
+from mo_ldap_import_export.utils import dn_in_subtree
 from mo_ldap_import_export.utils import extract_ou_from_dn
 from mo_ldap_import_export.utils import import_class
 from mo_ldap_import_export.utils import remove_vowels
@@ -43,6 +44,28 @@ def test_combine_dn_strings(parts: list[RDN], dn: DN) -> None:
 
 def test_remove_vowels() -> None:
     assert remove_vowels("food") == "fd"
+
+
+@pytest.mark.parametrize(
+    "dn,subtree,expected",
+    [
+        # The subtree itself is considered to be within the subtree
+        ("DC=magenta,DC=dk", "DC=magenta,DC=dk", True),
+        ("UID=abk,OU=os2mo,DC=magenta,DC=dk", "DC=magenta,DC=dk", True),
+        ("UID=abk,OU=os2mo,DC=magenta,DC=dk", "OU=os2mo,DC=magenta,DC=dk", True),
+        ("UID=abk,OU=unmanaged,DC=magenta,DC=dk", "OU=os2mo,DC=magenta,DC=dk", False),
+        # Only entire RDNs count, not string prefixes thereof
+        ("UID=abk,OU=os2mo_extra,DC=magenta,DC=dk", "OU=os2mo,DC=magenta,DC=dk", False),
+        # The subtree cannot be deeper than the DN itself
+        ("DC=magenta,DC=dk", "OU=os2mo,DC=magenta,DC=dk", False),
+        # Matching is case-insensitive, both on attribute-types and -values
+        ("uid=abk,ou=OS2MO,dc=Magenta,dc=DK", "OU=os2mo,DC=magenta,DC=dk", True),
+        # An empty subtree is the entire directory
+        ("UID=abk,DC=magenta,DC=dk", "", True),
+    ],
+)
+def test_dn_in_subtree(dn: DN, subtree: DN, expected: bool) -> None:
+    assert dn_in_subtree(dn, subtree) is expected
 
 
 def test_extract_ou_from_dn() -> None:
