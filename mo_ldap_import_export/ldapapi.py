@@ -33,6 +33,7 @@ from .types import DN
 from .types import LDAPUUID
 from .types import CPRNumber
 from .utils import combine_dn_strings
+from .utils import dn_in_subtree
 from .utils import ensure_list
 from .utils import extract_ou_from_dn
 
@@ -107,7 +108,18 @@ class LDAPAPI:
             search_result = await single_object_search(
                 searchParameters, self.connection
             )
-            return LdapObject(dn=search_result["dn"], **search_result["attributes"])
+            dn = search_result["dn"]
+            # Active Directory uses non-standard lookup syntax for GUIDs, which
+            # does not respect the search-base nor the standard whatsoever.
+            # This check implements search-base checking since Microsoft would not.
+            if not dn_in_subtree(dn, self.settings.ldap_search_base):
+                logger.info(
+                    "LDAP object found outside search base",
+                    dn=dn,
+                    search_base=self.settings.ldap_search_base,
+                )
+                return None
+            return LdapObject(dn=dn, **search_result["attributes"])
         return None
 
     async def get_ldap_dn(self, unique_ldap_uuid: LDAPUUID) -> DN | None:

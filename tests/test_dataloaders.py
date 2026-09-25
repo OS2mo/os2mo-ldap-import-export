@@ -782,11 +782,12 @@ async def test_convert_ldap_uuids_to_dns_exception(dataloader: DataLoader) -> No
 
 
 async def test_get_ldap_dn(dataloader: DataLoader):
+    dn = "CN=foo,DC=ad,DC=addev"
     with patch(
         "mo_ldap_import_export.ldapapi.single_object_search",
-        return_value={"type": "searchResEntry", "dn": "CN=foo", "attributes": {}},
+        return_value={"type": "searchResEntry", "dn": dn, "attributes": {}},
     ):
-        assert await dataloader.ldapapi.get_ldap_dn(cast(LDAPUUID, uuid4())) == "CN=foo"
+        assert await dataloader.ldapapi.get_ldap_dn(cast(LDAPUUID, uuid4())) == dn
 
 
 async def test_get_ldap_unique_ldap_uuid(dataloader: DataLoader) -> None:

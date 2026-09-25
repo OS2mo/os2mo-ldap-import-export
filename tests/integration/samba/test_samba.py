@@ -17,6 +17,7 @@ from mo_ldap_import_export.ldap import ldapresponse2entries
 from mo_ldap_import_export.ldapapi import LDAPAPI
 from mo_ldap_import_export.types import DN
 from mo_ldap_import_export.utils import combine_dn_strings
+from mo_ldap_import_export.utils import dn_in_subtree
 from tests.integration.conftest import DN2UUID
 
 from .conftest import SAMBA_BASELINE_USER_DNS
@@ -278,3 +279,44 @@ async def test_dirsync_detects_changes(
     # AD moves deleted objects to CN=Deleted Objects with the objectGUID in the DN
     tombstone_dn = f"CN=Eve\\0ADEL:{eve_uuid},CN=Deleted Objects,DC=magenta,DC=dk"
     assert changed == {tombstone_dn}
+
+
+@pytest.mark.integration_test
+@pytest.mark.envvar(
+    {
+        "LDAP_SEARCH_BASE": "CN=Users,DC=magenta,DC=dk",
+        "LDAP_OUS_TO_SEARCH_IN": '[""]',
+        "LDAP_OU_FOR_NEW_USERS": "",
+    }
+)
+async def test_uuid_lookup_respects_search_base(
+    ldap_api: LDAPAPI,
+    dn2uuid: DN2UUID,
+    ldap_suffix: list[str],
+) -> None:
+    """Objects outside the search base are reported as missing on AD."""
+    ou_dn = combine_dn_strings(["OU=unmanaged"] + ldap_suffix)
+    await ldap_api.add_ldap_object(
+        ou_dn, object_class="organizationalUnit", attributes={}
+    )
+    person_dn = combine_dn_strings(["CN=Outsider", "OU=unmanaged"] + ldap_suffix)
+    await ldap_api.add_ldap_object(
+        person_dn,
+        object_class="user",
+        attributes={
+            "sn": ["Outsider"],
+            "sAMAccountName": ["outsider"],
+            "userPrincipalName": ["outsider@magenta.dk"],
+        },
+    )
+    person_uuid = await dn2uuid(person_dn)
+
+    # The object is resolvable by DN, as AD looks it up by its GUID
+    assert (await ldap_api.get_object_by_dn(person_dn, {"sn"})).dn == person_dn
+
+    # ... but lives outside the configured search base
+    assert ldap_api.settings.ldap_search_base == "CN=Users,DC=magenta,DC=dk"
+    assert not dn_in_subtree(person_dn, ldap_api.settings.ldap_search_base)
+
+    # ... and is therefore reported as missing
+    assert await ldap_api.get_object_by_uuid(person_uuid, {"sn"}) is None
