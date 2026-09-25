@@ -280,9 +280,15 @@ class LDAPConnection:
                 requested_state=attributes or {},
             )
 
-        status, result, response, request = await asyncio.to_thread(
-            self.connection.add, dn, object_class, attributes
-        )
+        try:
+            status, result, response, request = await asyncio.to_thread(
+                self.connection.add, dn, object_class, attributes
+            )
+        except Exception as exc:
+            exc.add_note("operation=add")
+            exc.add_note(f"dn={dn}")
+            exc.add_note(f"attributes={sorted(attributes or {})}")
+            raise
         return response, result
 
     async def ldap_modify(
@@ -293,9 +299,15 @@ class LDAPConnection:
     ) -> tuple[dict, dict]:
         self.check_readonly(dn, changes or {})
 
-        status, result, response, request = await asyncio.to_thread(
-            self.connection.modify, dn, changes, controls
-        )
+        try:
+            status, result, response, request = await asyncio.to_thread(
+                self.connection.modify, dn, changes, controls
+            )
+        except Exception as exc:
+            exc.add_note("operation=modify")
+            exc.add_note(f"dn={dn}")
+            exc.add_note(f"attributes={sorted(changes or {})}")
+            raise
         return response, result
 
     async def ldap_modify_dn(
@@ -306,17 +318,27 @@ class LDAPConnection:
     ) -> tuple[dict, dict]:
         self.check_readonly(dn, {})
 
-        status, result, response, request = await asyncio.to_thread(
-            self.connection.modify_dn, dn, relative_dn, new_superior=new_superior
-        )
+        try:
+            status, result, response, request = await asyncio.to_thread(
+                self.connection.modify_dn, dn, relative_dn, new_superior=new_superior
+            )
+        except Exception as exc:
+            exc.add_note("operation=modify_dn")
+            exc.add_note(f"dn={dn}")
+            raise
         return response, result
 
     async def ldap_delete(self: Self, dn: DN) -> tuple[dict, dict]:
         self.check_readonly(dn, {})
 
-        status, result, response, request = await asyncio.to_thread(
-            self.connection.delete, dn
-        )
+        try:
+            status, result, response, request = await asyncio.to_thread(
+                self.connection.delete, dn
+            )
+        except Exception as exc:
+            exc.add_note("operation=delete")
+            exc.add_note(f"dn={dn}")
+            raise
         return response, result
 
     async def ldap_search(self: Self, **kwargs) -> tuple[list[dict[str, Any]], dict]:

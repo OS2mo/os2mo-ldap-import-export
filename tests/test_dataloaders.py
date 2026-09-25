@@ -20,6 +20,7 @@ from uuid import uuid4
 import pytest
 from fastapi.encoders import jsonable_encoder
 from httpx import Response
+from ldap3.core.exceptions import LDAPInsufficientAccessRightsResult
 from ldap3.core.exceptions import LDAPInvalidValueError
 from more_itertools import one
 from pydantic import BaseModel
@@ -194,6 +195,44 @@ async def test_upload_ldap_object_invalid_value(
     with pytest.raises(LDAPInvalidValueError) as exc_info:
         await dataloader.ldapapi.modify_ldap_object(dn, {"a": ["b"]})
     assert "Invalid value" in str(exc_info.value)
+
+
+async def test_upload_ldap_object_insufficient_access_rights(
+    ldap_connection: MagicMock,
+    dataloader: DataLoader,
+) -> None:
+    """Operation errors must tell us what we attempted to write."""
+    dataloader.ldapapi.connection.search.return_value = (  # type: ignore
+        None,
+        {"type": "test", "description": "compareFalse"},
+        [],
+        None,
+    )
+
+    dn = "CN=Nick Janssen,OU=Users,OU=Magenta,DC=ad,DC=addev"
+
+    ldap_connection.modify.side_effect = LDAPInsufficientAccessRightsResult(
+        result=50,
+        description="insufficientAccessRights",
+        # Active Directory does not tell us which DN nor attribute it rejected
+        dn=None,
+        message="00002098: SecErr: DSID-031514A2, problem 4003",
+        response_type="modifyResponse",
+    )
+
+    with pytest.raises(LDAPInsufficientAccessRightsResult) as exc_info:
+        await dataloader.ldapapi.modify_ldap_object(
+            dn, {"title": ["Nisse"], "employeeNumber": ["42"]}
+        )
+    assert "00002098: SecErr: DSID-031514A2, problem 4003" in str(exc_info.value)
+    notes = exc_info.value.__notes__
+    assert notes == [
+        "operation=modify",
+        f"dn={dn}",
+        "attributes=['employeenumber', 'title']",
+    ]
+    # The attribute values must not leak into the error
+    assert "Nisse" not in "".join(notes)
 
 
 @pytest.mark.usefixtures("minimal_valid_environmental_variables")
