@@ -654,7 +654,6 @@ async def paged_search(
     Execute a search on the LDAP server.
 
     Args:
-        context: The FastRAMQPI context.
         searchParameters:
             Dict with the following keys:
                 * search_filter
@@ -662,7 +661,6 @@ async def paged_search(
         search_base:
             Search base to search in.
             If empty, uses settings.search_base combined with settings.ous_to_search_in.
-        mute: Whether to log process information
 
     Returns:
         A list of search results.
