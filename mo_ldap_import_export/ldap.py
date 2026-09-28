@@ -670,22 +670,16 @@ async def paged_search(
     # TODO: Consider moving this to its own module separate from business logic
     # TODO: Make a class for the searchParameters if it has a fixed format?
 
-    if search_base:
-        # If the search base is explicitly defined: Don't try anything fancy.
-        results = await _paged_search(ldap_connection, searchParameters, search_base)
-        return results
-
-    # Otherwise, loop over all OUs to search in
+    # Search in all OUs to search in, unless a search base is explicitly defined
     search_bases = [
         combine_dn_strings([ou, settings.ldap_search_base])
         for ou in settings.ldap_ous_to_search_in
     ]
+    if search_base:
+        search_bases = [search_base]
     results = []
-    for search_base in search_bases:
-        results.extend(
-            await _paged_search(ldap_connection, searchParameters, search_base)
-        )
-
+    for base in search_bases:
+        results.extend(await _paged_search(ldap_connection, searchParameters, base))
     return results
 
 
