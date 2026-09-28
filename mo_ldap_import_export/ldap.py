@@ -48,7 +48,6 @@ from .moapi import MOAPI
 from .types import DN
 from .types import RDN
 from .types import EmployeeUUID
-from .utils import combine_dn_strings
 from .utils import ensure_list
 
 logger = structlog.stdlib.get_logger()
@@ -586,8 +585,12 @@ async def _paged_search(
 ) -> list[dict[str, Any]]:
     # TODO: Consider using upstream paged_search_generator instead of this?
     # TODO: Find max. paged_size number from LDAP rather than hard-code it?
-    searchParameters["paged_size"] = 500
-    searchParameters["search_base"] = search_base
+    # Copy the search parameters, as we must not leak our paging state to the caller
+    searchParameters = {
+        **searchParameters,
+        "paged_size": 500,
+        "search_base": search_base,
+    }
 
     search_filter = searchParameters["search_filter"]
 
@@ -650,15 +653,13 @@ async def paged_search(
     Execute a search on the LDAP server.
 
     Args:
-        context: The FastRAMQPI context.
         searchParameters:
             Dict with the following keys:
                 * search_filter
                 * attributes
         search_base:
             Search base to search in.
-            If empty, uses settings.search_base combined with settings.ous_to_search_in.
-        mute: Whether to log process information
+            If empty, searches in each of settings.ldap_search_bases.
 
     Returns:
         A list of search results.
@@ -668,22 +669,13 @@ async def paged_search(
     # TODO: Consider moving this to its own module separate from business logic
     # TODO: Make a class for the searchParameters if it has a fixed format?
 
+    # Search in all OUs to search in, unless a search base is explicitly defined
+    search_bases = settings.ldap_search_bases
     if search_base:
-        # If the search base is explicitly defined: Don't try anything fancy.
-        results = await _paged_search(ldap_connection, searchParameters, search_base)
-        return results
-
-    # Otherwise, loop over all OUs to search in
-    search_bases = [
-        combine_dn_strings([ou, settings.ldap_search_base])
-        for ou in settings.ldap_ous_to_search_in
-    ]
+        search_bases = [search_base]
     results = []
-    for search_base in search_bases:
-        results.extend(
-            await _paged_search(ldap_connection, searchParameters.copy(), search_base)
-        )
-
+    for base in search_bases:
+        results.extend(await _paged_search(ldap_connection, searchParameters, base))
     return results
 
 

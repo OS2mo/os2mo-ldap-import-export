@@ -364,6 +364,11 @@ async def test_paged_search(
         settings, ldap_connection, searchParameters, search_base="foo"
     )
     assert output == expected_results * len(cookies)
+    # The paging state must not leak into the caller's search parameters
+    assert searchParameters == {
+        "search_filter": "(objectclass=organizationalPerson)",
+        "attributes": ["foo", "bar"],
+    }
 
 
 async def test_paged_search_no_results(

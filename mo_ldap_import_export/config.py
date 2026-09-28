@@ -28,7 +28,9 @@ from pydantic import validator
 
 from .models import Employee
 from .models import MOBase
+from .types import DN
 from .types import LDAPUUID
+from .utils import combine_dn_strings
 from .utils import import_class
 
 logger = structlog.stdlib.get_logger()
@@ -461,6 +463,18 @@ class Settings(BaseSettings):
             "Searches in all OUs in the search base"
         ),
     )
+
+    @property
+    def ldap_search_bases(self) -> list[DN]:
+        """The search bases to search in, i.e. each OU to search in below the base.
+
+        These are the search bases watched by the LDAP event generator.
+        """
+        return [
+            combine_dn_strings([ou, self.ldap_search_base])
+            for ou in self.ldap_ous_to_search_in
+        ]
+
     ldap_ous_to_write_to: list[str] = Field(
         [""],
         description=(

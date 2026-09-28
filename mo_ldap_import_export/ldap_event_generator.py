@@ -32,7 +32,6 @@ from .ldap import _paged_search
 from .ldap import ldapresponse2entries
 from .ldap_emit import publish_uuids
 from .types import LDAPUUID
-from .utils import combine_dn_strings
 
 logger = structlog.stdlib.get_logger()
 
@@ -113,12 +112,7 @@ class LDAPEventGenerator(AbstractAsyncContextManager):
         async with self.sessionmaker() as session, session.begin():
             await session.execute(text("DROP TABLE IF EXISTS last_run_with_uuids;"))
 
-        search_bases = {
-            combine_dn_strings(
-                [ldap_ou_to_scan_for_changes, self.settings.ldap_search_base]
-            )
-            for ldap_ou_to_scan_for_changes in self.settings.ldap_ous_to_search_in
-        }
+        search_bases = set(self.settings.ldap_search_bases)
 
         self._pollers = {self.setup_poller(search_base) for search_base in search_bases}
         return self
