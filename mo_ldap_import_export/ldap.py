@@ -48,7 +48,6 @@ from .moapi import MOAPI
 from .types import DN
 from .types import RDN
 from .types import EmployeeUUID
-from .utils import combine_dn_strings
 from .utils import ensure_list
 
 logger = structlog.stdlib.get_logger()
@@ -660,7 +659,7 @@ async def paged_search(
                 * attributes
         search_base:
             Search base to search in.
-            If empty, uses settings.search_base combined with settings.ous_to_search_in.
+            If empty, searches in each of settings.ldap_search_bases.
 
     Returns:
         A list of search results.
@@ -671,10 +670,7 @@ async def paged_search(
     # TODO: Make a class for the searchParameters if it has a fixed format?
 
     # Search in all OUs to search in, unless a search base is explicitly defined
-    search_bases = [
-        combine_dn_strings([ou, settings.ldap_search_base])
-        for ou in settings.ldap_ous_to_search_in
-    ]
+    search_bases = settings.ldap_search_bases
     if search_base:
         search_bases = [search_base]
     results = []

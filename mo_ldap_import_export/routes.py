@@ -61,7 +61,6 @@ from .types import CPRNumber
 from .types import EmployeeUUID
 from .types import ITUserUUID
 from .utils import MO_TZ
-from .utils import combine_dn_strings
 from .utils import ensure_list
 from .utils import extract_ou_from_dn
 from .utils import mo_today
@@ -561,10 +560,7 @@ def construct_router(settings: Settings) -> APIRouter:
         sync_tool: depends.SyncTool,
         start_at: UUID | None = None,
     ) -> Any:
-        search_bases = {
-            combine_dn_strings([ldap_ou_to_scan_for_changes, settings.ldap_search_base])
-            for ldap_ou_to_scan_for_changes in settings.ldap_ous_to_search_in
-        }
+        search_bases = set(settings.ldap_search_bases)
         uuids_set = set()
         for search_base in search_bases:
             poll_uuids, _ = await ldap_event_generator.poll(

@@ -32,7 +32,6 @@ from .ldap_classes import LdapObject
 from .types import DN
 from .types import LDAPUUID
 from .types import CPRNumber
-from .utils import combine_dn_strings
 from .utils import dn_in_subtree
 from .utils import ensure_list
 from .utils import extract_ou_from_dn
@@ -337,18 +336,12 @@ class LDAPAPI:
         if not self.settings.ldap_cpr_attribute:
             raise NoObjectsReturnedException("cpr_field is not configured")
 
-        search_base = self.settings.ldap_search_base
-        ous_to_search_in = self.settings.ldap_ous_to_search_in
-        search_bases = [
-            combine_dn_strings([ou, search_base]) for ou in ous_to_search_in
-        ]
-
         object_class = self.settings.ldap_object_class
         object_class_filter = f"objectclass={object_class}"
         cpr_filter = f"{self.settings.ldap_cpr_attribute}={cpr_number}"
 
         searchParameters = {
-            "search_base": search_bases,
+            "search_base": self.settings.ldap_search_bases,
             "search_filter": f"(&({object_class_filter})({cpr_filter}))",
             "attributes": list(attributes),
         }
