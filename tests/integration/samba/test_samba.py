@@ -306,9 +306,6 @@ async def test_dirsync_detects_changes(
                         "LDAP_OU_FOR_NEW_USERS": "CN=Users",
                     }
                 ),
-                pytest.mark.xfail(
-                    reason="UUID lookups ignore LDAP_OUS_TO_SEARCH_IN", strict=True
-                ),
             ],
         ),
     ],

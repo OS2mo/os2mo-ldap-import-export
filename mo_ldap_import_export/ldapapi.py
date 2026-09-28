@@ -111,11 +111,12 @@ class LDAPAPI:
             # Active Directory uses non-standard lookup syntax for GUIDs, which
             # does not respect the search-base nor the standard whatsoever.
             # This check implements search-base checking since Microsoft would not.
-            if not dn_in_subtree(dn, self.settings.ldap_search_base):
+            search_bases = self.settings.ldap_search_bases
+            if not any(dn_in_subtree(dn, search_base) for search_base in search_bases):
                 logger.info(
-                    "LDAP object found outside search base",
+                    "LDAP object found outside search bases",
                     dn=dn,
-                    search_base=self.settings.ldap_search_base,
+                    search_bases=search_bases,
                 )
                 return None
             return LdapObject(dn=dn, **search_result["attributes"])
