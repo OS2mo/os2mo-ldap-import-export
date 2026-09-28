@@ -282,19 +282,43 @@ async def test_dirsync_detects_changes(
 
 
 @pytest.mark.integration_test
-@pytest.mark.envvar(
-    {
-        "LDAP_SEARCH_BASE": "CN=Users,DC=magenta,DC=dk",
-        "LDAP_OUS_TO_SEARCH_IN": '[""]',
-        "LDAP_OU_FOR_NEW_USERS": "",
-    }
+@pytest.mark.parametrize(
+    "",
+    [
+        pytest.param(
+            id="search_base",
+            marks=pytest.mark.envvar(
+                {
+                    "LDAP_SEARCH_BASE": "CN=Users,DC=magenta,DC=dk",
+                    "LDAP_OUS_TO_SEARCH_IN": '[""]',
+                    "LDAP_OU_FOR_NEW_USERS": "",
+                }
+            ),
+        ),
+        # Same search bases, but configured like the event generator watches them
+        pytest.param(
+            id="ous_to_search_in",
+            marks=[
+                pytest.mark.envvar(
+                    {
+                        "LDAP_SEARCH_BASE": "DC=magenta,DC=dk",
+                        "LDAP_OUS_TO_SEARCH_IN": '["CN=Users"]',
+                        "LDAP_OU_FOR_NEW_USERS": "CN=Users",
+                    }
+                ),
+                pytest.mark.xfail(
+                    reason="UUID lookups ignore LDAP_OUS_TO_SEARCH_IN", strict=True
+                ),
+            ],
+        ),
+    ],
 )
 async def test_uuid_lookup_respects_search_base(
     ldap_api: LDAPAPI,
     dn2uuid: DN2UUID,
     ldap_suffix: list[str],
 ) -> None:
-    """Objects outside the search base are reported as missing on AD."""
+    """Objects outside the search bases are reported as missing on AD."""
     ou_dn = combine_dn_strings(["OU=unmanaged"] + ldap_suffix)
     await ldap_api.add_ldap_object(
         ou_dn, object_class="organizationalUnit", attributes={}
@@ -314,9 +338,9 @@ async def test_uuid_lookup_respects_search_base(
     # The object is resolvable by DN, as AD looks it up by its GUID
     assert (await ldap_api.get_object_by_dn(person_dn, {"sn"})).dn == person_dn
 
-    # ... but lives outside the configured search base
-    assert ldap_api.settings.ldap_search_base == "CN=Users,DC=magenta,DC=dk"
-    assert not dn_in_subtree(person_dn, ldap_api.settings.ldap_search_base)
+    # ... but lives outside the configured search bases
+    assert ldap_api.settings.ldap_search_bases == ["CN=Users,DC=magenta,DC=dk"]
+    assert not dn_in_subtree(person_dn, one(ldap_api.settings.ldap_search_bases))
 
     # ... and is therefore reported as missing
     assert await ldap_api.get_object_by_uuid(person_uuid, {"sn"}) is None
