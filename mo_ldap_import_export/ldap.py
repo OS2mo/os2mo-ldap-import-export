@@ -586,8 +586,12 @@ async def _paged_search(
 ) -> list[dict[str, Any]]:
     # TODO: Consider using upstream paged_search_generator instead of this?
     # TODO: Find max. paged_size number from LDAP rather than hard-code it?
-    searchParameters["paged_size"] = 500
-    searchParameters["search_base"] = search_base
+    # Copy the search parameters, as we must not leak our paging state to the caller
+    searchParameters = {
+        **searchParameters,
+        "paged_size": 500,
+        "search_base": search_base,
+    }
 
     search_filter = searchParameters["search_filter"]
 
@@ -681,7 +685,7 @@ async def paged_search(
     results = []
     for search_base in search_bases:
         results.extend(
-            await _paged_search(ldap_connection, searchParameters.copy(), search_base)
+            await _paged_search(ldap_connection, searchParameters, search_base)
         )
 
     return results
