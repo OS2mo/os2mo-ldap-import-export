@@ -107,7 +107,16 @@ Integration-test:
         INSECURE_PASSWORDSETTINGS: "true"
     - name: osixia/openldap:1.5.0
       alias: ldap
-      command: ["--copy-service", "--loglevel", "debug"]
+      # Certificates are written rather than mounted, as CI services cannot mount volumes
+      entrypoint: ["sh", "-c"]
+      command:
+        - |
+          set -e
+          certs=/container/service/slapd/assets/certs
+          mkdir -p "$certs"
+          printf '%s' "$TLS_CERT" > "$certs/cert.pem"
+          printf '%s' "$TLS_KEY" > "$certs/key.pem"
+          exec /container/tool/run --copy-service --loglevel debug
       variables:
         LDAP_ORGANISATION: "magenta"
         LDAP_DOMAIN: "magenta.dk"
@@ -117,6 +126,30 @@ Integration-test:
         # Use non-standard port to avoid conflict with Samba AD DC on 389
         LDAP_PORT: 2389
         LDAPS_PORT: 2636
+        TLS_CERT: |
+          -----BEGIN CERTIFICATE-----
+          MIIBszCCAVmgAwIBAgIUQweuM6DA3SfaMse1MIyeIA2EkrEwCgYIKoZIzj0EAwIw
+          HjEcMBoGA1UEAwwTb3BlbmxkYXAubWFnZW50YS5kazAgFw0yNjEwMDYxNTE3NTFa
+          GA8yMTI2MDkxMjE1MTc1MVowHjEcMBoGA1UEAwwTb3BlbmxkYXAubWFnZW50YS5k
+          azBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABGSxB2IpQ4oWcttfGcbIwulZR56d
+          TAm+KA87ayunpGw+ug75+uvphwD+zaxt+b5uPp5DTpfWfknOb+WPtNcZA0GjczBx
+          MB0GA1UdDgQWBBRfqFIYYU+QyVq1d63D8hMaGBnsRTAfBgNVHSMEGDAWgBRfqFIY
+          YU+QyVq1d63D8hMaGBnsRTAPBgNVHRMBAf8EBTADAQH/MB4GA1UdEQQXMBWCE29w
+          ZW5sZGFwLm1hZ2VudGEuZGswCgYIKoZIzj0EAwIDSAAwRQIgXIv6RhWl0yU+xShe
+          tuWNAvEUpI+GWDjbQoQP0ugrW0ICIQDYF47EH49fnrVVHi4Bx3NOH2ddRrFZcho5
+          8ay+9tGopA==
+          -----END CERTIFICATE-----
+        TLS_KEY: |
+          -----BEGIN PRIVATE KEY-----
+          MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg5sC32f9X6FYE0CXn
+          z7GFXzPBIvwyKOrQ6U50q2jksLShRANCAARksQdiKUOKFnLbXxnGyMLpWUeenUwJ
+          vigPO2srp6RsProO+frr6YcA/s2sbfm+bj6eQ06X1n5Jzm/lj7TXGQNB
+          -----END PRIVATE KEY-----
+        LDAP_TLS_CRT_FILENAME: "cert.pem"
+        LDAP_TLS_KEY_FILENAME: "key.pem"
+        LDAP_TLS_CA_CRT_FILENAME: "cert.pem"
+        # osixia defaults to demanding a client certificate, which we do not use
+        LDAP_TLS_VERIFY_CLIENT: "never"
   parallel: 8
   variables:
     FASTRAMQPI__JSON_LOGS: False
