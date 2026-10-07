@@ -87,6 +87,19 @@ class ServerConfig(BaseModel):
         None, description="The CA chain to verify SSL with"
     )
     insecure: bool = Field(False, description="Whether to verify SSL certificates")
+    valid_names: frozenset[str] = Field(
+        frozenset(),
+        description="""
+        Additional hostnames to accept.
+
+        Needed when using LDAPS with 'host' as an IP address, as the certificate
+        usually only names the server's DNS name.
+
+        Use the special value '*' to accept any name, thereby disabling the
+        hostname check, while still verifying the certificate against the CA
+        chain.
+        """,
+    )
     timeout: int = Field(5, description="Number of seconds to wait for connection")
 
 

@@ -79,3 +79,76 @@ def test_ldaps_insecure_ignores_the_certificate(ca_certs_data: str | None) -> No
     connection.open(read_server_info=False)
 
     connection.socket.close()
+
+
+@pytest.mark.integration_test
+@pytest.mark.parametrize(
+    "valid_names",
+    [
+        # The name the certificate actually carries
+        frozenset({"openldap.magenta.dk"}),
+        # Accepted as long as one of the names matches
+        frozenset({"dc01.example.com", "openldap.magenta.dk"}),
+        # Accepts any name, while still verifying against the CA
+        frozenset({"*"}),
+    ],
+)
+def test_ldaps_accepts_valid_names(valid_names: frozenset[str]) -> None:
+    """'valid_names' allows verification against a name besides 'host'."""
+    server = construct_server(
+        ServerConfig(
+            host="ldap",
+            port=PORT,
+            use_ssl=True,
+            ca_certs_data=CERTIFICATE,
+            valid_names=valid_names,
+        )
+    )
+    connection = Connection(server)
+
+    connection.open(read_server_info=False)
+
+    connection.socket.close()
+
+
+@pytest.mark.integration_test
+def test_ldaps_rejects_unlisted_valid_names() -> None:
+    """A name the certificate does not carry is no help."""
+    server = construct_server(
+        ServerConfig(
+            host="ldap",
+            port=PORT,
+            use_ssl=True,
+            ca_certs_data=CERTIFICATE,
+            valid_names=frozenset({"dc01.example.com"}),
+        )
+    )
+    connection = Connection(server)
+
+    with pytest.raises(LDAPSocketOpenError) as exc_info:
+        connection.open(read_server_info=False)
+
+    assert (
+        "'subjectAltName': (('DNS', 'openldap.magenta.dk'),)}"
+        " doesn't match any name in ['ldap', 'dc01.example.com']"
+    ) in str(exc_info.value)
+
+
+@pytest.mark.integration_test
+@pytest.mark.parametrize(
+    "valid_names",
+    [frozenset({"openldap.magenta.dk"}), frozenset({"*"})],
+)
+def test_ldaps_valid_names_does_not_bypass_the_chain(
+    valid_names: frozenset[str],
+) -> None:
+    """'valid_names' relaxes hostname verification only, not the chain of trust."""
+    server = construct_server(
+        ServerConfig(host="ldap", port=PORT, use_ssl=True, valid_names=valid_names)
+    )
+    connection = Connection(server)
+
+    with pytest.raises(LDAPSocketOpenError) as exc_info:
+        connection.open(read_server_info=False)
+
+    assert "certificate verify failed: self-signed certificate" in str(exc_info.value)

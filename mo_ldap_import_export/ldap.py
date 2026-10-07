@@ -65,6 +65,7 @@ def construct_server(server_config: ServerConfig) -> Server:
     tls_configuration = Tls(
         validate=CERT_NONE if server_config.insecure else CERT_REQUIRED,
         ca_certs_data=server_config.ca_certs_data,
+        valid_names=list(server_config.valid_names) or None,
     )
 
     host = server_config.host
