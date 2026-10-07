@@ -92,6 +92,29 @@ async def test_non_existing_account_names_no_itsystem(test_client: AsyncClient) 
     {
         "LISTEN_TO_CHANGES_IN_LDAP": "False",
         "LISTEN_TO_CHANGES_IN_MO": "False",
+    }
+)
+async def test_non_existing_account_names_no_itsystem_configured(
+    test_client: AsyncClient,
+) -> None:
+    response = await test_client.post(
+        "/fixup/delete_non_existing_account_names",
+        params={"at": datetime(2025, 1, 1).isoformat()},
+    )
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": (
+            "'itsystem_user_key' must be provided as "
+            "'existing_usernames_itsystem' is not configured"
+        )
+    }
+
+
+@pytest.mark.integration_test
+@pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
+        "LISTEN_TO_CHANGES_IN_MO": "False",
         "CONVERSION_MAPPING": json.dumps(
             {"username_generator": {"existing_usernames_itsystem": "account_name"}}
         ),

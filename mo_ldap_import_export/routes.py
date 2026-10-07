@@ -270,16 +270,29 @@ async def get_non_existing_unique_ldap_uuids(
     }
 
 
+def resolve_itsystem_user_key(settings: Settings, itsystem_user_key: str | None) -> str:
+    if itsystem_user_key is None:
+        itsystem_user_key = (
+            settings.conversion_mapping.username_generator.existing_usernames_itsystem
+        )
+    if itsystem_user_key is None:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "'itsystem_user_key' must be provided as "
+                "'existing_usernames_itsystem' is not configured"
+            ),
+        )
+    return itsystem_user_key
+
+
 async def get_non_existing_account_names(
     settings: Settings,
     ldap_connection: Connection,
     dataloader: DataLoader,
     itsystem_user_key: str | None = None,
 ) -> set[ITUserUUID]:
-    if itsystem_user_key is None:
-        itsystem_user_key = (
-            settings.conversion_mapping.username_generator.existing_usernames_itsystem
-        )
+    itsystem_user_key = resolve_itsystem_user_key(settings, itsystem_user_key)
     it_system_uuid = await dataloader.moapi.get_it_system_uuid(itsystem_user_key)
 
     account_name = "uid"
@@ -314,10 +327,7 @@ async def get_non_existing_external_ids(
     dataloader: DataLoader,
     itsystem_user_key: str | None = None,
 ) -> set[ITUserUUID]:  # pragma: no cover
-    if itsystem_user_key is None:
-        itsystem_user_key = (
-            settings.conversion_mapping.username_generator.existing_usernames_itsystem
-        )
+    itsystem_user_key = resolve_itsystem_user_key(settings, itsystem_user_key)
     it_system_uuid = await dataloader.moapi.get_it_system_uuid(itsystem_user_key)
 
     # Fetch all LDAP UUIDs in LDAP
