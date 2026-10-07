@@ -731,6 +731,12 @@ async def test_generate_common_name_third_collision(
             "Johnson",
             "Nick Gerardus Cornelis Johnson",
         ),
+        # Only the first three middle names are used.
+        (
+            "Nick Gerardus Cornelis Optimus Prime",
+            "Johnson",
+            "Nick Gerardus Cornelis Optimus Johnson",
+        ),
         # Users without a last name are supported.
         (
             "Nick",

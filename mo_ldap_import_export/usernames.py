@@ -20,7 +20,7 @@ def generate_person_name(employee: Employee) -> list[str]:
     assert employee.surname is not None
     given_name = employee.given_name
     surname = employee.surname
-    name = given_name.split(" ")[:4] + [surname]
+    name = given_name.split(" ") + [surname]
     return name
 
 
@@ -116,7 +116,9 @@ class UserNameGenerator:
     async def generate_common_name(
         self, employee: Employee, current_common_name: str | None = None
     ) -> str:
-        name = generate_person_name(employee)
+        given_name, *middle_names, surname = generate_person_name(employee)
+        # NOTE: Three middle names are kept for backwards compatibility
+        name = [given_name, *middle_names[:3], surname]
         common_name = await self._create_common_name(name, current_common_name)
         logger.info(
             "Generated CommonName based on name",

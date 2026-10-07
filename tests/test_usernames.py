@@ -26,6 +26,15 @@ from tests.graphql_mocker import GraphQLMocker
     [
         # Test with a combi using middle names
         (["Nick", "Alfa", "Beta", "Gamma", "Janssen"], "F123L", "nabgj"),
+        # Test with a combi using all nine middle names
+        (
+            ["Nick", "Alfa", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot"]
+            + ["Golf", "Hotel", "India", "Janssen"],
+            "F123456789L",
+            "nabcdefghij",
+        ),
+        # Test with a combi using only a middle name beyond the third
+        (["Nick", "Alfa", "Bravo", "Charlie", "Delta", "Janssen"], "FF4LL", "nidja"),
         # Test with a combi that starts with an 'X'
         (["Nick", "Janssen"], "XFL", "Xnj"),
         # Test with a combi that starts with multiple 'X's
@@ -59,6 +68,9 @@ from tests.graphql_mocker import GraphQLMocker
         (["Nick", "Janssen"], "FF1LL", None),
         (["Nick", "Janssen"], "FF2LL", None),
         (["Nick", "Janssen"], "FF3LL", None),
+        (["Nick", "Janssen"], "FF9LL", None),
+        # Test combi expecting more middle names than the user has
+        (["Nick", "Alfa", "Bravo", "Charlie", "Delta", "Janssen"], "FF5LL", None),
     ],
 )
 def test_create_from_combi(
@@ -70,8 +82,16 @@ def test_create_from_combi(
     assert username == expected
 
 
-def test_check_combinations_to_try():
-    config = {"combinations_to_try": ["GAK"]}
+@pytest.mark.parametrize(
+    "combination",
+    [
+        "GAK",
+        # Middle names are 1-indexed
+        "F0L",
+    ],
+)
+def test_check_combinations_to_try(combination: str) -> None:
+    config = {"combinations_to_try": [combination]}
     with pytest.raises(ValidationError, match="Incorrect combination"):
         parse_obj_as(UsernameGeneratorConfig, config)
 
