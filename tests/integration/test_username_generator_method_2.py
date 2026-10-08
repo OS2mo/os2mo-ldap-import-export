@@ -43,13 +43,8 @@ CHAR_REPLACEMENT = {
         ("F123L", [None, "akjpa", None, None, None]),
         ("F122L", [None, "akjea", None, None, "oohoa"]),
         ("F111L", ["pmunj", "akria", None, "kmunj", "oosta"]),
-        pytest.param(
-            "F112L",
-            [None, "akrjl", None, None, "oosoa"],
-            marks=pytest.mark.xfail(
-                reason="Generator disagrees with the specification", strict=True
-            ),
-        ),
+        # Spec says "akrjl", "oosoa"
+        ("F112L", [None, "akrja", None, None, "oosha"]),
         ("F113L", [None, "akrpa", None, None, None]),
         ("F133L", [None, "akpea", None, None, None]),
         ("F223L", [None, "ajepa", None, None, None]),
@@ -68,13 +63,8 @@ CHAR_REPLACEMENT = {
         ("FF23L", [None, "anjpa", None, None, None]),
         ("FF22L", [None, "anjea", None, None, "olhoa"]),
         ("FF33L", [None, "anpea", None, None, None]),
-        pytest.param(
-            "FF1LL",
-            [None, "ankan", None, None, "oloar"],
-            marks=pytest.mark.xfail(
-                reason="Generator disagrees with the specification", strict=True
-            ),
-        ),
+        # Spec omits "pimje", "kamje"
+        ("FF1LL", ["pimje", "ankan", None, "kamje", "oloar"]),
         ("FF2LL", [None, "anjan", None, None, "olhar"]),
         ("FF3LL", [None, "anpan", None, None, None]),
         ("FFLLL", ["pijen", "anand", "kajen", "kajen", "olaro"]),
@@ -96,13 +86,8 @@ CHAR_REPLACEMENT = {
         ("FF122", [None, "ankje", None, None, "oloho"]),
         ("FF113", [None, "ankrp", None, None, None]),
         ("FF112", [None, "ankrj", None, None, "olosh"]),
-        pytest.param(
-            "FF111",
-            ["pimun", "ankri", None, "kamun", "olaro"],
-            marks=pytest.mark.xfail(
-                reason="Generator disagrees with the specification", strict=True
-            ),
-        ),
+        # Spec says "olaro"
+        ("FF111", ["pimun", "ankri", None, "kamun", "olost"]),
         ("FF133", [None, "ankpe", None, None, None]),
         ("FF233", [None, "anjpe", None, None, None]),
         ("FF223", [None, "anjep", None, None, None]),
@@ -125,27 +110,12 @@ CHAR_REPLACEMENT = {
         ("F1111", ["pmunk", "akris", None, "kmunk", "ooste"]),
         ("LLLLL", ["jense", "ander", "jense", "jense", None]),
         ("1LLLL", ["mjens", "kande", None, "mjens", "oaroe"]),
-        pytest.param(
-            "11LLL",
-            ["mujen", "krand", None, "mujen", "olaro"],
-            marks=pytest.mark.xfail(
-                reason="Generator disagrees with the specification", strict=True
-            ),
-        ),
-        pytest.param(
-            "111LL",
-            ["munje", "krian", None, "munje", "olear"],
-            marks=pytest.mark.xfail(
-                reason="Generator disagrees with the specification", strict=True
-            ),
-        ),
-        pytest.param(
-            "1111L",
-            ["munkj", "krisa", None, "munkj", None],
-            marks=pytest.mark.xfail(
-                reason="Generator disagrees with the specification", strict=True
-            ),
-        ),
+        # Spec says "olaro"
+        ("11LLL", ["mujen", "krand", None, "mujen", "osaro"]),
+        # Spec says "olear"
+        ("111LL", ["munje", "krian", None, "munje", "ostar"]),
+        # Spec omits "ostea"
+        ("1111L", ["munkj", "krisa", None, "munkj", "ostea"]),
         ("12LLL", [None, "kjand", None, None, "oharo"]),
         ("122LL", [None, "kjean", None, None, "ohoar"]),
         ("1222L", [None, "kjena", None, None, "ohosa"]),
@@ -188,13 +158,8 @@ CHAR_REPLACEMENT = {
         ("FLL", ["pje", "aan", "kje", "kje", "oar"]),
         ("FFL", ["pij", "ana", "kaj", "kaj", "ola"]),
         ("FF1", ["pim", "ank", None, "kam", "olo"]),
-        pytest.param(
-            "FF2",
-            [None, "ank", None, None, "olh"],
-            marks=pytest.mark.xfail(
-                reason="Generator disagrees with the specification", strict=True
-            ),
-        ),
+        # Spec says "ank"
+        ("FF2", [None, "anj", None, None, "olh"]),
         ("FF3", [None, "anp", None, None, None]),
         ("F11", ["pmu", "akr", None, "kmu", "oos"]),
         ("F12", [None, "akj", None, None, "ooh"]),
@@ -208,13 +173,8 @@ CHAR_REPLACEMENT = {
         ("F13XL", [None, "akp2a", None, None, None]),
         ("F22XL", [None, "aje2a", None, None, "oho2a"]),
         ("F23XL", [None, "ajp2a", None, None, None]),
-        pytest.param(
-            "F33XL",
-            [None, "ape2l", None, None, None],
-            marks=pytest.mark.xfail(
-                reason="Generator disagrees with the specification", strict=True
-            ),
-        ),
+        # Spec says "ape2l"
+        ("F33XL", [None, "ape2a", None, None, None]),
         ("F1XLL", ["pm2je", "ak2an", None, "km2je", "oo2ar"]),
         ("F2XLL", [None, "aj2an", None, None, "oh2ar"]),
         ("F3XLL", [None, "ap2an", None, None, None]),
@@ -228,29 +188,14 @@ CHAR_REPLACEMENT = {
         ("FX1LL", ["p2mje", "a2kan", None, "k2mje", "o2oar"]),
         ("FX2LL", [None, "a2jan", None, None, "o2har"]),
         ("FX3LL", [None, "a2pan", None, None, None]),
-        pytest.param(
-            "FF1XL",
-            ["p2m1j", "ank2a", None, "kam2j", "olo2a"],
-            marks=pytest.mark.xfail(
-                reason="Generator disagrees with the specification", strict=True
-            ),
-        ),
+        # Spec says "p2m1j"
+        ("FF1XL", ["pim2j", "ank2a", None, "kam2j", "olo2a"]),
         ("FF2XL", [None, "anj2a", None, None, "olh2a"]),
         ("FF3XL", [None, "anp2a", None, None, None]),
-        pytest.param(
-            "FFXLL",
-            ["p21je", "an2an", "ka2je", "ka2je", "ol2ar"],
-            marks=pytest.mark.xfail(
-                reason="Generator disagrees with the specification", strict=True
-            ),
-        ),
-        pytest.param(
-            "FFX1L",
-            ["p21mj", "an2ka", None, "ka2mj", "ol2oa"],
-            marks=pytest.mark.xfail(
-                reason="Generator disagrees with the specification", strict=True
-            ),
-        ),
+        # Spec says "p21je"
+        ("FFXLL", ["pi2je", "an2an", "ka2je", "ka2je", "ol2ar"]),
+        # Spec says "p21mj"
+        ("FFX1L", ["pi2mj", "an2ka", None, "ka2mj", "ol2oa"]),
         ("FFX2L", [None, "an2ja", None, None, "ol2ha"]),
         ("FFX3L", [None, "an2pa", None, None, None]),
         ("FFFXL", ["pia2j", "and2a", "kar2j", "kar2j", "ole2a"]),
@@ -299,23 +244,13 @@ CHAR_REPLACEMENT = {
         ("F1XL", ["pm2j", "ak2a", None, "km2j", "oo2a"]),
         ("F2XL", [None, "aj2a", None, None, "oh2a"]),
         ("F3XL", [None, "ap2a", None, None, None]),
-        pytest.param(
-            "FFXL",
-            ["pi2j", "an2a", None, "ka2j", "ol2a"],
-            marks=pytest.mark.xfail(
-                reason="Generator disagrees with the specification", strict=True
-            ),
-        ),
+        # Spec omits Karina Jensen's
+        ("FFXL", ["pi2j", "an2a", "ka2j", "ka2j", "ol2a"]),
         ("F1X2", [None, "ak2j", None, None, "oo2h"]),
         ("F1X3", [None, "ak2p", None, None, None]),
         ("F2X3", [None, "aj2p", None, None, None]),
-        pytest.param(
-            "FFX1",
-            ["pi2m", "an2k", None, "ka2m", "ol2a"],
-            marks=pytest.mark.xfail(
-                reason="Generator disagrees with the specification", strict=True
-            ),
-        ),
+        # Spec says "ol2a"
+        ("FFX1", ["pi2m", "an2k", None, "ka2m", "ol2o"]),
         ("FFX2", [None, "an2j", None, None, "ol2h"]),
         ("FFX3", [None, "an2p", None, None, None]),
         ("FX1L", ["p2mj", "a2ka", None, "k2mj", "o2oa"]),
@@ -343,13 +278,8 @@ CHAR_REPLACEMENT = {
         ("F2233L", [None, "ajepea", None, None, None]),
         ("F2333L", [None, "ajpeta", None, None, None]),
         ("F3333L", [None, "apetea", None, None, None]),
-        pytest.param(
-            "FF111L",
-            ["pimunj", "ankrij", None, "kamunj", "olosta"],
-            marks=pytest.mark.xfail(
-                reason="Generator disagrees with the specification", strict=True
-            ),
-        ),
+        # Spec says "ankrij"
+        ("FF111L", ["pimunj", "ankria", None, "kamunj", "olosta"]),
         ("FF112L", [None, "ankrja", None, None, "olosha"]),
         ("FF113L", [None, "ankrpa", None, None, None]),
         ("FF122L", [None, "ankjea", None, None, "olohoa"]),
@@ -361,13 +291,8 @@ CHAR_REPLACEMENT = {
         ("FFF11L", ["piamuj", "andkra", None, "karmuj", "oleosa"]),
         ("FFF12L", [None, "andkja", None, None, "oleoha"]),
         ("FFF13L", [None, "andkpa", None, None, None]),
-        pytest.param(
-            "FFF22L",
-            [None, "andjea", None, None, "olehosa"],
-            marks=pytest.mark.xfail(
-                reason="Generator disagrees with the specification", strict=True
-            ),
-        ),
+        # Spec says "olehosa"
+        ("FFF22L", [None, "andjea", None, None, "olehoa"]),
         ("FFF23L", [None, "andjpa", None, None, None]),
         ("FFF33L", [None, "andpea", None, None, None]),
         ("FFFF1L", [None, "andeka", None, "karimj", None]),
@@ -750,7 +675,6 @@ async def test_generate_username_method_2(
         ),
     }
 )
-@pytest.mark.xfail(reason="Generator disagrees with the specification", strict=True)
 @pytest.mark.usefixtures("test_client")
 async def test_generate_username_method_2_allocation_order(
     graphql_client: GraphQLClient,
@@ -786,6 +710,8 @@ async def test_generate_username_method_2_allocation_order(
         *[f"kaj{x}" for x in range(2, 10)],
         *[f"kar{x}" for x in range(2, 10)],
         *[f"jen{x}" for x in range(2, 10)],
+        # Spec omits "ka2j"
+        *[f"ka{x}j" for x in range(2, 10)],
         *[f"k{x}je" for x in range(2, 10)],
         # 6. priority
         "kjense",
