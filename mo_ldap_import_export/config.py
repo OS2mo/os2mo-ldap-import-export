@@ -267,13 +267,16 @@ class LDAP2MOMapping(MappingBaseModel):
 
 
 class UsernameGeneratorConfig(MappingBaseModel):
-    # TODO: This default is not desired, but kept here for backwards compatability.
-    #       In the future it should be moved to the salt-automation configuration.
-    #       And the default here should be removed entirely.
     # TODO: Perhaps it would be desirable to remove the other UsernameGenerator
     #       entirely instead opting to simply have one which is configurable.
     #       I.e. check MO for usernames if `existing_usernames_itsystem` is set.
-    existing_usernames_itsystem: str = "ADSAMA"
+    existing_usernames_itsystem: str | None = Field(
+        None,
+        description=(
+            "User-key of the MO IT-system whose IT-users hold the LDAP usernames. "
+            "Required if disallow_mo_usernames is set."
+        ),
+    )
     char_replacement: dict[str, str] = {}
     forbidden_usernames: list[str] = []
     combinations_to_try: list[str] = []
@@ -282,6 +285,20 @@ class UsernameGeneratorConfig(MappingBaseModel):
     reuse_old_usernames: bool = Field(
         False, description="Allow reusing a user's previously allocated usernames"
     )
+
+    @root_validator(skip_on_failure=True)
+    def check_existing_usernames_itsystem(
+        cls, values: dict[str, Any]
+    ) -> dict[str, Any]:
+        if (
+            values["disallow_mo_usernames"]
+            and values["existing_usernames_itsystem"] is None
+        ):
+            raise ValueError(
+                "'existing_usernames_itsystem' must be set "
+                "when 'disallow_mo_usernames' is enabled"
+            )
+        return values
 
     @validator("forbidden_usernames")
     def casefold_forbidden_usernames(cls, v: list[str]) -> list[str]:

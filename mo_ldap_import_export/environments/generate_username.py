@@ -57,6 +57,8 @@ async def _mo_allows_username(
     # Reference: https://redmine.magenta-aps.dk/issues/57043
 
     itsystem_user_key = username_generator_settings.existing_usernames_itsystem
+    # Guaranteed by UsernameGeneratorConfig when disallow_mo_usernames is set
+    assert itsystem_user_key is not None
 
     # The username is taken iff there exists atleast one validity in MO where:
     # * The username is set in the user-key

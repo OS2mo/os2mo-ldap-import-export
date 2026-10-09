@@ -634,3 +634,40 @@ def test_mo_to_ldap_mapping_invalid_template(monkeypatch: pytest.MonkeyPatch) ->
         Settings()
     for error_snippet in expected_error_snippets:
         assert error_snippet in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "mapping,expected",
+    [
+        # No username generator configuration at all
+        ({}, None),
+        ({"username_generator": {}}, None),
+        ({"username_generator": {"existing_usernames_itsystem": "ADtitle"}}, "ADtitle"),
+        (
+            {
+                "username_generator": {
+                    "disallow_mo_usernames": True,
+                    "existing_usernames_itsystem": "ADtitle",
+                }
+            },
+            "ADtitle",
+        ),
+    ],
+)
+def test_existing_usernames_itsystem(
+    mapping: dict[str, Any], expected: str | None
+) -> None:
+    conversion_mapping = parse_obj_as(ConversionMapping, mapping)
+    username_generator = conversion_mapping.username_generator
+    assert username_generator.existing_usernames_itsystem == expected
+
+
+def test_disallow_mo_usernames_requires_existing_usernames_itsystem() -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        parse_obj_as(
+            ConversionMapping, {"username_generator": {"disallow_mo_usernames": True}}
+        )
+    assert (
+        "'existing_usernames_itsystem' must be set "
+        "when 'disallow_mo_usernames' is enabled"
+    ) in str(exc_info.value)
