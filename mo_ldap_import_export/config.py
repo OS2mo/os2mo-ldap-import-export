@@ -290,7 +290,21 @@ class UsernameGeneratorConfig(MappingBaseModel):
     @validator("combinations_to_try")
     def check_combinations(cls, v: list[str]) -> list[str]:
         # Validator for combinations_to_try
-        accepted_characters = ["F", "L", "1", "2", "3", "X"]
+        # "1" through "9" refer to the first through ninth middle name
+        accepted_characters = [
+            "F",
+            "L",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "X",
+        ]
         for combination in v:
             if not all([c in accepted_characters for c in combination]):
                 raise ValueError(

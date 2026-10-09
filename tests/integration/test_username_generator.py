@@ -319,7 +319,7 @@ async def test_generate_username_use_invalid_combinations(
         "1 validation error for Settings",
         "conversion_mapping -> username_generator -> combinations_to_try",
         "Incorrect combination found: 'INVALID'",
-        "combinations can only contain ['F', 'L', '1', '2', '3', 'X']",
+        "combinations can only contain ['F', 'L', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'X']",
     ]
     for error in error_strings:
         assert error in str(exc_info.value)
@@ -462,6 +462,7 @@ async def test_generate_username_with_forbidden_usernames(
                 "username_generator": {
                     "char_replacement": {"ø": "oe", "æ": "ae", "å": "aa"},
                     "combinations_to_try": [
+                        "F123456789L",
                         "F123L",
                         "F12LL",
                         "F1LLL",
@@ -488,8 +489,20 @@ async def test_generate_username_with_forbidden_usernames(
         (["Nick", "Gerardus", "Cornelis", "Janssen"], "ngcja"),
         # User with three middle names
         (["Nick", "Gerardus", "Cornelis", "Optimus", "Janssen"], "ngcoj"),
-        # User with 4 middle names (only the first three are used)
+        # User with 4 middle names (too few for F123456789L, so F123L is used)
         (["Nick", "Gerardus", "Cornelis", "Optimus", "Prime", "Janssen"], "ngcoj"),
+        # User with 9 middle names
+        (
+            ["Nick", "Alfa", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot"]
+            + ["Golf", "Hotel", "India", "Janssen"],
+            "nabcdefghij",
+        ),
+        # User with 10 middle names (only the first nine are used)
+        (
+            ["Nick", "Alfa", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot"]
+            + ["Golf", "Hotel", "India", "Kilo", "Janssen"],
+            "nabcdefghij",
+        ),
     ),
 )
 @pytest.mark.usefixtures("test_client")
