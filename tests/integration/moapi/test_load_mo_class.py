@@ -17,10 +17,6 @@ from mo_ldap_import_export.moapi import MOAPI
 
 @pytest.mark.integration_test
 @pytest.mark.usefixtures("test_client")
-@pytest.mark.xfail(
-    strict=True,
-    reason="load_mo_class asserts that the start date is set",
-)
 async def test_load_mo_class_without_start_date(
     graphql_client: GraphQLClient,
     mo_api: MOAPI,

@@ -26,6 +26,11 @@ class Validity(StrictBaseModel):
     end: datetime | None
 
 
+class OpenValidity(StrictBaseModel):
+    start: datetime | None
+    end: datetime | None
+
+
 class Address(StrictBaseModel):
     uuid: UUID = Field(default_factory=uuid4)
     user_key: str = None  # type: ignore[assignment]
@@ -125,7 +130,7 @@ class Class(StrictBaseModel):
     parent: UUID | None
     published: str = "Publiceret"
 
-    validity: Validity
+    validity: OpenValidity
 
 
 MOBase = Address | Employee | Engagement | ITUser | OrganisationUnit | ITSystem | Class
