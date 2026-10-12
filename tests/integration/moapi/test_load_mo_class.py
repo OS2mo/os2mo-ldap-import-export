@@ -17,6 +17,10 @@ from mo_ldap_import_export.moapi import MOAPI
 
 @pytest.mark.integration_test
 @pytest.mark.usefixtures("test_client")
+@pytest.mark.xfail(
+    strict=True,
+    reason="load_mo_class asserts that the start date is set",
+)
 async def test_load_mo_class_without_start_date(
     graphql_client: GraphQLClient,
     mo_api: MOAPI,
@@ -39,6 +43,17 @@ async def test_load_mo_class_without_start_date(
     assert validity.from_ is None
     assert validity.to is None
 
-    # load_mo_class asserts that `from` is set, and thus crashes on None
-    with pytest.raises(AssertionError):
-        await mo_api.load_mo_class(class_uuid)
+    mo_class = await mo_api.load_mo_class(class_uuid)
+    assert mo_class is not None
+    assert mo_class.dict() == {
+        "uuid": class_uuid,
+        "user_key": "open_start",
+        "name": "Open start",
+        "scope": "TEXT",
+        "facet": role_facet,
+        "it_system": None,
+        "owner": None,
+        "parent": None,
+        "published": "Publiceret",
+        "validity": {"start": None, "end": None},
+    }
