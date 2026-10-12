@@ -115,23 +115,19 @@ async def test_inspect_mo_to_ldap_template_all(
         },
     )
 
-    response = await test_client.get("/Inspect/mo_to_ldap/all")
+    response = await test_client.get("/Inspect/mo_to_ldap/inspect_test_handler/all")
     assert response.status_code == 200
     result = response.json()
     assert result == "OK"
 
-    file_data = read_jsonl_file("/tmp/mo_to_ldap.jsonl")
+    file_data = read_jsonl_file("/tmp/mo_to_ldap_inspect_test_handler.jsonl")
 
-    # Helper to find output for a uuid
-    def find_by_uuid(uuid: UUID):
-        return [row for row in file_data if row.get("__mo_uuid") == str(uuid)]
+    rows = {UUID(row["uuid"]): row for row in file_data}
+    assert list(rows) == sorted(rows)
 
     # Verify Created
-    out_create = find_by_uuid(uuid_create)
-    assert len(out_create) == 1
-    assert out_create[0] == {
-        "__mo_uuid": str(uuid_create),
-        "identifier": "inspect_test_handler",
+    assert rows[uuid_create] == {
+        "uuid": str(uuid_create),
         "dn": dn_create,
         "message": "Would have created",
         "object_class": "inetOrgPerson",
@@ -144,11 +140,8 @@ async def test_inspect_mo_to_ldap_template_all(
     }
 
     # Verify Edited
-    out_edit = find_by_uuid(uuid_edit)
-    assert len(out_edit) == 1
-    assert out_edit[0] == {
-        "__mo_uuid": str(uuid_edit),
-        "identifier": "inspect_test_handler",
+    assert rows[uuid_edit] == {
+        "uuid": str(uuid_edit),
         "dn": dn_edit,
         "message": "Would have changed attributes",
         "attributes": {"title": [str(uuid_edit)]},
@@ -156,24 +149,22 @@ async def test_inspect_mo_to_ldap_template_all(
     }
 
     # Verify Nothing happens
-    out_nothing = find_by_uuid(uuid_nothing)
-    assert len(out_nothing) == 1
-    assert out_nothing[0] == {
-        "__mo_uuid": str(uuid_nothing),
-        "identifier": "inspect_test_handler",
+    assert rows[uuid_nothing] == {
+        "uuid": str(uuid_nothing),
         "message": "No changes",
     }
 
     # Verify that start_at only processes UUIDs strictly after it
     start_at = sorted([uuid_create, uuid_edit, uuid_nothing])[1]
     response = await test_client.get(
-        "/Inspect/mo_to_ldap/person/all", params={"start_at": str(start_at)}
+        "/Inspect/mo_to_ldap/inspect_test_handler/all",
+        params={"start_at": str(start_at)},
     )
     assert response.status_code == 200
     assert response.json() == "OK"
 
-    file_data = read_jsonl_file("/tmp/mo_to_ldap.jsonl")
-    processed = {UUID(row["__mo_uuid"]) for row in file_data}
+    file_data = read_jsonl_file("/tmp/mo_to_ldap_inspect_test_handler.jsonl")
+    processed = {UUID(row["uuid"]) for row in file_data}
     assert all(uuid > start_at for uuid in processed)
     assert {uuid_create, uuid_edit, uuid_nothing} & processed == {
         max(uuid_create, uuid_edit, uuid_nothing)

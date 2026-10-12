@@ -118,23 +118,20 @@ async def test_inspect_mo_to_ldap_ituser_template_all(
         },
     )
 
-    response = await test_client.get("/Inspect/mo_to_ldap/ituser/all")
+    response = await test_client.get(
+        "/Inspect/mo_to_ldap/inspect_test_handler_ituser/all"
+    )
     assert response.status_code == 200
     result = response.json()
     assert result == "OK"
 
-    file_data = read_jsonl_file("/tmp/mo_to_ldap_ituser.jsonl")
+    file_data = read_jsonl_file("/tmp/mo_to_ldap_inspect_test_handler_ituser.jsonl")
 
-    def find_by_uuid(uuid: UUID):
-        return [row for row in file_data if row.get("__mo_uuid") == str(uuid)]
+    rows = {UUID(row["uuid"]): row for row in file_data}
 
     # Verify Created
-    out_create = find_by_uuid(uuid_create)
-    assert len(out_create) == 1
-    assert out_create[0] == {
-        "__mo_uuid": str(uuid_create),
-        "__mo_employee_uuid": str(r1.uuid),
-        "identifier": "inspect_test_handler_ituser",
+    assert rows[uuid_create] == {
+        "uuid": str(uuid_create),
         "dn": dn_create,
         "message": "Would have created",
         "object_class": "inetOrgPerson",
@@ -148,12 +145,8 @@ async def test_inspect_mo_to_ldap_ituser_template_all(
     }
 
     # Verify Edited
-    out_edit = find_by_uuid(uuid_edit)
-    assert len(out_edit) == 1
-    assert out_edit[0] == {
-        "__mo_uuid": str(uuid_edit),
-        "__mo_employee_uuid": str(r2.uuid),
-        "identifier": "inspect_test_handler_ituser",
+    assert rows[uuid_edit] == {
+        "uuid": str(uuid_edit),
         "dn": dn_edit,
         "message": "Would have changed attributes",
         "attributes": {"title": [str(uuid_edit)]},

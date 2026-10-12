@@ -1124,133 +1124,59 @@ def construct_router(settings: Settings) -> APIRouter:
         )
         return update_result.uuid
 
-    async def _process_mo_to_ldap_type(
-        type_: str,
+    @router.get("/Inspect/mo_to_ldap/{identifier}/all", status_code=200, tags=["LDAP"])
+    async def mo_to_ldap_dry_run_all(
+        identifier: str,
         graphql_client: depends.GraphQLClient,
         sync_tool: depends.SyncTool,
         settings: depends.Settings,
         exit_stack: depends.ExitStack,
         start_at: UUID | None = None,
-    ) -> None:
+    ) -> Any:
         # Imported here to avoid a circular import, as main imports this module
         from .main import mo_to_ldap_handler
 
-        uuid_context: dict[UUID, dict[str, Any]] = {}
-        if type_ == "person":
-            person_result = await graphql_client.read_person_uuid()
-            for person in person_result.objects:
-                uuid_context[person.uuid] = {}
-        elif type_ == "ituser":
+        mapping = settings.conversion_mapping.mo_to_ldap.get(identifier)
+        if mapping is None:
+            raise HTTPException(
+                status_code=404, detail=f"Unknown identifier: {identifier}"
+            )
+
+        if mapping.routing_key == "person":
+            result = await graphql_client.read_person_uuid()
+            uuids = {person.uuid for person in result.objects}
+        elif mapping.routing_key == "ituser":
             read_all_itusers = partial(graphql_client.read_all_itusers, ITUserFilter())
-            async for entry in paged_query(read_all_itusers):
-                for validity in entry.validities:
-                    uuid_context[validity.uuid] = {
-                        "__mo_employee_uuid": validity.employee_uuid
-                    }
+            uuids = {
+                validity.uuid
+                async for entry in paged_query(read_all_itusers)
+                for validity in entry.validities
+            }
         else:
-            raise HTTPException(status_code=404, detail=f"Unsupported type: {type_}")
-
-        uuids = list(uuid_context.keys())
-        if start_at:
-            uuids = [u for u in uuids if u > start_at]
-
-        handlers = [
-            (
-                identifier,
-                mo_to_ldap_handler(identifier, mapping.template, mapping.object_class),
+            raise HTTPException(
+                status_code=404,
+                detail=f"Unsupported routing key: {mapping.routing_key}",
             )
-            for identifier, mapping in settings.conversion_mapping.mo_to_ldap.items()
-            if mapping.routing_key == type_
-        ]
 
-        async def process_uuid(uuid: UUID) -> list[dict[str, Any]]:
-            event: Event[UUID] = Event(
-                uuid=uuid,
-                timestamp=datetime.now(),
-                event_type="update",
-                origin="inspect",
-                subject=uuid,
-                data=uuid,
-                priority=0,
-            )
-            results = []
-            for identifier, handler in handlers:
-                base_result = {
-                    "__mo_uuid": uuid,
-                    **uuid_context[uuid],
-                    "identifier": identifier,
-                }
+        handler = mo_to_ldap_handler(identifier, mapping.template, mapping.object_class)
+        with open(f"/tmp/mo_to_ldap_{identifier}.jsonl", "w") as fout:
+            for uuid in sorted(uuids):
+                if start_at is not None and uuid <= start_at:
+                    continue
+                detail: dict[str, Any] = {"message": "No changes"}
                 try:
                     await handler(
                         exit_stack=exit_stack,
                         converter=sync_tool.converter,
                         dataloader=sync_tool.dataloader,
-                        event=event,
+                        event=Event(subject=uuid, priority=0),
                         dry_run=True,
                     )
-                    results.append({**base_result, "message": "No changes"})
                 except DryRunException as exc:
                     assert isinstance(exc.detail, dict)
-                    results.append({**base_result, **exc.detail})
-                except Exception:  # pragma: no cover
-                    logger.exception(f"Exception during Inspect/mo_to_ldap/{type_}/all")
-                    results.append(
-                        {**base_result, "message": "Exception during processing"}
-                    )
-            return results
-
-        filename = (
-            f"/tmp/mo_to_ldap_{type_}.jsonl"
-            if type_ != "person"
-            else "/tmp/mo_to_ldap.jsonl"
-        )
-        with open(filename, "w") as fout:
-            for uuid in uuids:
-                contexts = await process_uuid(uuid)
-                for context in contexts:
-                    fout.write(json.dumps(encode_result(context)) + "\n")
+                    detail = exc.detail
+                fout.write(json.dumps(encode_result({"uuid": uuid, **detail})) + "\n")
                 fout.flush()
-
-    @router.get("/Inspect/mo_to_ldap/all", status_code=200, tags=["LDAP"])
-    async def mo_to_ldap_templating_all_types(
-        graphql_client: depends.GraphQLClient,
-        sync_tool: depends.SyncTool,
-        settings: depends.Settings,
-        exit_stack: depends.ExitStack,
-        start_at: UUID | None = None,
-    ) -> Any:
-        types = {
-            mapping.routing_key
-            for mapping in settings.conversion_mapping.mo_to_ldap.values()
-        }
-        for type_ in sorted(types & {"person", "ituser"}):
-            await _process_mo_to_ldap_type(
-                type_=type_,
-                graphql_client=graphql_client,
-                sync_tool=sync_tool,
-                settings=settings,
-                exit_stack=exit_stack,
-                start_at=start_at,
-            )
-        return "OK"
-
-    @router.get("/Inspect/mo_to_ldap/{type_}/all", status_code=200, tags=["LDAP"])
-    async def mo_to_ldap_templating_by_type(
-        type_: str,
-        graphql_client: depends.GraphQLClient,
-        sync_tool: depends.SyncTool,
-        settings: depends.Settings,
-        exit_stack: depends.ExitStack,
-        start_at: UUID | None = None,
-    ) -> Any:
-        await _process_mo_to_ldap_type(
-            type_=type_,
-            graphql_client=graphql_client,
-            sync_tool=sync_tool,
-            settings=settings,
-            exit_stack=exit_stack,
-            start_at=start_at,
-        )
         return "OK"
 
     return router
