@@ -52,8 +52,8 @@ async def test_mo_to_ldap_dry_run_true(
     )
     assert response.status_code == 451
     response_json = response.json()
-    assert response_json["detail"]["message"] == "Would have created"
-    dn = response_json["detail"]["dn"]
+    assert response_json["message"] == "Would have created"
+    dn = response_json["dn"]
     assert dn == EXPECTED_DN
 
     # Ensure that no LDAP account was created

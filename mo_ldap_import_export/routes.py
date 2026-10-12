@@ -7,6 +7,7 @@ import json
 from collections.abc import AsyncIterator
 from collections.abc import Awaitable
 from collections.abc import Callable
+from collections.abc import MutableMapping
 from contextlib import suppress
 from datetime import datetime
 from datetime import time
@@ -18,10 +19,12 @@ from typing import Any
 from typing import cast
 from uuid import UUID
 
+import httpx
 import structlog
 from fastapi import APIRouter
 from fastapi import Body
 from fastapi import HTTPException
+from fastapi import Request
 from fastapi.encoders import jsonable_encoder
 from fastramqpi.events import Event
 from ldap3 import Connection
@@ -1126,16 +1129,12 @@ def construct_router(settings: Settings) -> APIRouter:
 
     @router.get("/Inspect/mo_to_ldap/{identifier}/all", status_code=200, tags=["LDAP"])
     async def mo_to_ldap_dry_run_all(
+        request: Request,
         identifier: str,
         graphql_client: depends.GraphQLClient,
-        sync_tool: depends.SyncTool,
         settings: depends.Settings,
-        exit_stack: depends.ExitStack,
         start_at: UUID | None = None,
     ) -> Any:
-        # Imported here to avoid a circular import, as main imports this module
-        from .main import mo_to_ldap_handler
-
         mapping = settings.conversion_mapping.mo_to_ldap.get(identifier)
         if mapping is None:
             raise HTTPException(
@@ -1158,25 +1157,30 @@ def construct_router(settings: Settings) -> APIRouter:
                 detail=f"Unsupported routing key: {mapping.routing_key}",
             )
 
-        handler = mo_to_ldap_handler(identifier, mapping.template, mapping.object_class)
-        with open(f"/tmp/mo_to_ldap_{identifier}.jsonl", "w") as fout:
-            for uuid in sorted(uuids):
-                if start_at is not None and uuid <= start_at:
-                    continue
-                detail: dict[str, Any] = {"message": "No changes"}
-                try:
-                    await handler(
-                        exit_stack=exit_stack,
-                        converter=sync_tool.converter,
-                        dataloader=sync_tool.dataloader,
-                        event=Event(subject=uuid, priority=0),
-                        dry_run=True,
+        # FastRAMQPI keeps its context in the lifespan state, which is not
+        # forwarded by ASGITransport, so we forward it from our own request
+        async def app(scope: MutableMapping[str, Any], receive: Any, send: Any) -> None:
+            state = request.scope["state"]
+            await request.app({**scope, "state": state}, receive, send)
+
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://self"
+        ) as client:
+            with open(f"/tmp/mo_to_ldap_{identifier}.jsonl", "w") as fout:
+                for uuid in sorted(uuids):
+                    if start_at is not None and uuid <= start_at:
+                        continue
+                    response = await client.post(
+                        f"/mo_to_ldap/{identifier}",
+                        params={"dry_run": True},
+                        json=jsonable_encoder(Event(subject=uuid, priority=0)),
                     )
-                except DryRunException as exc:
-                    assert isinstance(exc.detail, dict)
-                    detail = exc.detail
-                fout.write(json.dumps(encode_result({"uuid": uuid, **detail})) + "\n")
-                fout.flush()
+                    if response.status_code != 451:
+                        response.raise_for_status()
+                    row = {"uuid": str(uuid), **response.json()}
+                    fout.write(json.dumps(row) + "\n")
+                    fout.flush()
         return "OK"
 
     return router
