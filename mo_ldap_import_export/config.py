@@ -653,6 +653,15 @@ class Settings(BaseSettings):
         ),
     )
 
+    create_user_trees_exclude_engagement_types: set[UUID] = Field(
+        default_factory=set,
+        description=(
+            "Engagement types to ignore when determining the primary engagement for"
+            "the create_user_trees check, the empty set uses the primary engagement"
+            "flag as calculated by MO"
+        ),
+    )
+
     disallow_ldap_processing_between_7_45_and_8_45: bool = Field(
         default=False,
         description="Disallow processing LDAP events between 7:45 and 8:45.",
