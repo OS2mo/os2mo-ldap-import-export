@@ -254,9 +254,11 @@ async def _create_class(
     class_user_key: str,
     name: str,
     scope: str,
+    uuid: UUID | None = None,
 ) -> UUID:
     r = await graphql_client.class_create(
         input=ClassCreateInput(
+            uuid=uuid,
             user_key=class_user_key,
             name=name,
             facet_uuid=facet_uuid,
@@ -385,12 +387,20 @@ async def ansat(graphql_client: GraphQLClient, engagement_type_facet: UUID) -> U
     )
 
 
+PRAKTIKANT_UUID = UUID("f307f585-e786-4cf2-8ae4-89dc1aa9e9ff")
+
+
 @pytest.fixture
 async def praktikant(
     graphql_client: GraphQLClient, engagement_type_facet: UUID
 ) -> UUID:
     return await _create_class(
-        graphql_client, engagement_type_facet, "Praktikant", "Praktikant", "TEXT"
+        graphql_client,
+        engagement_type_facet,
+        "Praktikant",
+        "Praktikant",
+        "TEXT",
+        uuid=PRAKTIKANT_UUID,
     )
 
 

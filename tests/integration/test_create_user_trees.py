@@ -26,6 +26,7 @@ from mo_ldap_import_export.ldapapi import LDAPAPI
 from mo_ldap_import_export.types import EmployeeUUID
 from mo_ldap_import_export.types import OrgUnitUUID
 from mo_ldap_import_export.utils import combine_dn_strings
+from tests.integration.conftest import PRAKTIKANT_UUID
 from tests.integration.conftest import AddLdapPerson
 
 #       root
@@ -111,21 +112,25 @@ async def create_engagement(
     ansat: UUID,
     jurist: UUID,
     primary: UUID,
+    non_primary: UUID,
 ) -> Callable[..., Awaitable[UUID]]:
     async def inner(
         person: EmployeeUUID,
         org_unit: OrgUnitUUID,
         validity: dict[str, str] | None = None,
+        engagement_type: UUID | None = None,
+        is_primary: bool = True,
+        user_key: str = "engagement",
     ) -> UUID:
         validity = validity or {"from": "1970-01-01T00:00:00"}
         result = await graphql_client.engagement_create(
             input=EngagementCreateInput(
-                user_key="engagement",
+                user_key=user_key,
                 person=person,
                 org_unit=org_unit,
-                engagement_type=ansat,
+                engagement_type=engagement_type or ansat,
                 job_function=jurist,
-                primary=primary,
+                primary=primary if is_primary else non_primary,
                 validity=validity,
             )
         )
@@ -426,3 +431,101 @@ async def test_create_user_tree_only_create(
         # If create user trees failed, we should not have gotten an account
         account = await fetch_mo_person_ldap_account()
         assert account is None
+
+
+@pytest.mark.integration_test
+@pytest.mark.usefixtures("ldap_org_unit")
+@pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
+        "CONVERSION_MAPPING": CONVERSION_MAPPING,
+        "CREATE_USER_TREES": json.dumps([str(UUID_MAP["root"])]),
+    }
+)
+async def test_create_user_trees_outside_tree_with_multiple_primaries(
+    trigger_mo_person: Callable[[], Awaitable[None]],
+    fetch_mo_person_ldap_account: Callable[[], Awaitable[dict[str, Any] | None]],
+    create_engagement: Callable[..., Awaitable[UUID]],
+    create_org_unit: Callable[[OrgUnitUUID, OrgUnitUUID | None], Awaitable[None]],
+    mo_person: EmployeeUUID,
+    mo_org_unit: OrgUnitUUID,
+    praktikant: UUID,
+) -> None:
+    """The current primary engagement blocks creation, even though another
+    engagement is inside the trees."""
+    await create_org_unit(UUID_MAP["root"], None)
+    # Current primary engagement outside the tree, of the ignorable type
+    await create_engagement(
+        mo_person,
+        mo_org_unit,
+        engagement_type=praktikant,
+        user_key="external",
+    )
+    # Non-primary engagement inside the tree
+    await create_engagement(
+        mo_person,
+        UUID_MAP["root"],
+        is_primary=False,
+        user_key="internal",
+    )
+
+    with capture_logs() as cap_logs:
+        await trigger_mo_person()
+
+    log_events = [x["event"] for x in cap_logs]
+    assert "Primary engagement OU outside create_user_trees, skipping" in log_events
+
+    account = await fetch_mo_person_ldap_account()
+    assert account is None
+
+
+@pytest.mark.integration_test
+@pytest.mark.usefixtures("ldap_org_unit")
+@pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
+        "CONVERSION_MAPPING": CONVERSION_MAPPING,
+        "CREATE_USER_TREES": json.dumps([str(UUID_MAP["root"])]),
+        "CREATE_USER_TREES_EXCLUDE_ENGAGEMENT_TYPES": json.dumps(
+            [str(PRAKTIKANT_UUID)]
+        ),
+    }
+)
+async def test_create_user_trees_exclude_engagement_types(
+    explicitly_primary: UUID,
+    trigger_mo_person: Callable[[], Awaitable[None]],
+    fetch_mo_person_ldap_account: Callable[[], Awaitable[dict[str, Any] | None]],
+    create_engagement: Callable[..., Awaitable[UUID]],
+    create_org_unit: Callable[[OrgUnitUUID, OrgUnitUUID | None], Awaitable[None]],
+    mo_person: EmployeeUUID,
+    mo_org_unit: OrgUnitUUID,
+    praktikant: UUID,
+) -> None:
+    """Ignoring an engagement type lets another engagement drive the check."""
+    await create_org_unit(UUID_MAP["root"], None)
+    # Current primary engagement outside the tree, of the ignored type
+    await create_engagement(
+        mo_person,
+        mo_org_unit,
+        engagement_type=praktikant,
+        user_key="external",
+    )
+    # Non-primary engagement inside the tree
+    await create_engagement(
+        mo_person,
+        UUID_MAP["root"],
+        is_primary=False,
+        user_key="internal",
+    )
+
+    with capture_logs() as cap_logs:
+        await trigger_mo_person()
+
+    log_events = [x["event"] for x in cap_logs]
+    assert "Finding primary engagement while ignoring engagement types" in log_events
+    assert "Primary engagement OU outside create_user_trees, skipping" not in log_events
+
+    account = await fetch_mo_person_ldap_account()
+    assert account is not None
