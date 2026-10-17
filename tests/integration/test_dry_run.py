@@ -202,8 +202,18 @@ LDAP_PERSON_DN = "uid=abk,ou=os2mo,o=magenta,dc=magenta,dc=dk"
                 }
             },
         ),
-        ("no_changes", 200, None),
-        ("skip", 200, None),
+        pytest.param(
+            "no_changes",
+            200,
+            {"message": "No changes"},
+            marks=pytest.mark.xfail(strict=True, reason="no changes returns null"),
+        ),
+        pytest.param(
+            "skip",
+            200,
+            {"message": "Skipping object as requested"},
+            marks=pytest.mark.xfail(strict=True, reason="skipping returns null"),
+        ),
     ],
 )
 async def test_mo_to_ldap_dry_run_output(
@@ -211,7 +221,7 @@ async def test_mo_to_ldap_dry_run_output(
     ldap_api: LDAPAPI,
     identifier: str,
     status_code: int,
-    expected: dict[str, Any] | None,
+    expected: dict[str, Any],
 ) -> None:
     ldap_person = await ldap_api.get_object_by_dn(LDAP_PERSON_DN)
 
@@ -341,7 +351,11 @@ async def test_mo_to_ldap_dry_run_output(
             },
         ),
         ("no_changes", None),
-        ("skip", None),
+        pytest.param(
+            "skip",
+            {"message": "Skipping object as requested"},
+            marks=pytest.mark.xfail(strict=True, reason="skipping returns null"),
+        ),
     ],
 )
 async def test_mo_to_ldap_read_only_output(
