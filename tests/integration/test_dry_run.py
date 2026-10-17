@@ -41,6 +41,10 @@ EXPECTED_DN = "cn=Aage Bach Klarskov,ou=os2mo,o=magenta,dc=magenta,dc=dk"
 @pytest.mark.integration_test
 @pytest.mark.usefixtures("ldap_org_unit")
 @pytest.mark.envvar({"CONVERSION_MAPPING": json.dumps(DRY_RUN_CONVERSION_MAPPING)})
+@pytest.mark.xfail(
+    strict=True,
+    reason="the dry-run outcome is not returned directly",
+)
 async def test_mo_to_ldap_dry_run_true(
     test_client: AsyncClient,
     ldap_api: LDAPAPI,
@@ -54,8 +58,8 @@ async def test_mo_to_ldap_dry_run_true(
     )
     assert response.status_code == 451
     response_json = response.json()
-    assert response_json["detail"]["message"] == "Would have created"
-    dn = response_json["detail"]["dn"]
+    assert response_json["message"] == "Would have created"
+    dn = response_json["dn"]
     assert dn == EXPECTED_DN
 
     # Ensure that no LDAP account was created
@@ -171,50 +175,48 @@ OUTPUT_CONVERSION_MAPPING = {
             "create",
             451,
             {
-                "detail": {
-                    "message": "Would have created",
-                    "dn": EXPECTED_DN,
-                    "object_class": "inetOrgPerson",
-                    "attributes": {
-                        "employeeNumber": ["2108613133"],
-                        "sn": ["Bach Klarskov"],
-                    },
-                }
+                "message": "Would have created",
+                "dn": EXPECTED_DN,
+                "object_class": "inetOrgPerson",
+                "attributes": {
+                    "employeeNumber": ["2108613133"],
+                    "sn": ["Bach Klarskov"],
+                },
             },
         ),
         (
             "modify",
             451,
             {
-                "detail": {
-                    "message": "Would have changed attributes",
-                    "dn": LDAP_PERSON_DN,
-                    "attributes": {"title": ["Skoleleder"]},
-                    "old_attributes": {"title": ["Skole underviser"]},
-                }
+                "message": "Would have changed attributes",
+                "dn": LDAP_PERSON_DN,
+                "attributes": {"title": ["Skoleleder"]},
+                "old_attributes": {"title": ["Skole underviser"]},
             },
         ),
         (
             "modify_dn",
             451,
             {
-                "detail": {
-                    "message": "Would have changed DN",
-                    "dn": LDAP_PERSON_DN,
-                    "new_rdn": "uid=aage",
-                }
+                "message": "Would have changed DN",
+                "dn": LDAP_PERSON_DN,
+                "new_rdn": "uid=aage",
             },
         ),
-        ("no_changes", 200, None),
-        ("skip", 200, None),
+        ("no_changes", 200, {"message": "No changes"}),
+        ("skip", 200, {"message": "Skipping object as requested"}),
     ],
+)
+@pytest.mark.xfail(
+    strict=True,
+    reason="the dry-run outcome is not returned directly",
 )
 async def test_mo_to_ldap_dry_run_output(
     test_client: AsyncClient,
     ldap_api: LDAPAPI,
     identifier: str,
     status_code: int,
-    expected: dict[str, Any] | None,
+    expected: dict[str, Any],
 ) -> None:
     ldap_person = await ldap_api.get_object_by_dn(LDAP_PERSON_DN)
 
@@ -282,7 +284,14 @@ async def test_mo_to_ldap_dry_run_output(
             },
         ),
         ("no_changes", None),
-        ("skip", None),
+        pytest.param(
+            "skip",
+            {"message": "Skipping object as requested"},
+            marks=pytest.mark.xfail(
+                strict=True,
+                reason="skipping returns null",
+            ),
+        ),
     ],
 )
 async def test_mo_to_ldap_read_only_output(
