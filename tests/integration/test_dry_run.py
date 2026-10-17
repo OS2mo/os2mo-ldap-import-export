@@ -41,10 +41,6 @@ EXPECTED_DN = "cn=Aage Bach Klarskov,ou=os2mo,o=magenta,dc=magenta,dc=dk"
 @pytest.mark.integration_test
 @pytest.mark.usefixtures("ldap_org_unit")
 @pytest.mark.envvar({"CONVERSION_MAPPING": json.dumps(DRY_RUN_CONVERSION_MAPPING)})
-@pytest.mark.xfail(
-    strict=True,
-    reason="the dry-run outcome is not returned directly",
-)
 async def test_mo_to_ldap_dry_run_true(
     test_client: AsyncClient,
     ldap_api: LDAPAPI,
@@ -207,10 +203,6 @@ OUTPUT_CONVERSION_MAPPING = {
         ("skip", 200, {"message": "Skipping object as requested"}),
     ],
 )
-@pytest.mark.xfail(
-    strict=True,
-    reason="the dry-run outcome is not returned directly",
-)
 async def test_mo_to_ldap_dry_run_output(
     test_client: AsyncClient,
     ldap_api: LDAPAPI,
@@ -284,14 +276,7 @@ async def test_mo_to_ldap_dry_run_output(
             },
         ),
         ("no_changes", None),
-        pytest.param(
-            "skip",
-            {"message": "Skipping object as requested"},
-            marks=pytest.mark.xfail(
-                strict=True,
-                reason="skipping returns null",
-            ),
-        ),
+        ("skip", {"message": "Skipping object as requested"}),
     ],
 )
 async def test_mo_to_ldap_read_only_output(

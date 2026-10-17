@@ -17,6 +17,7 @@ from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import Query
+from fastapi.responses import JSONResponse
 from fastramqpi.events import Event
 from fastramqpi.events import GraphQLEvents
 from fastramqpi.events import Listener
@@ -44,6 +45,7 @@ from .customer_specific_checks import ExportChecks
 from .database import Base
 from .dataloaders import DataLoader
 from .environments.main import construct_environment
+from .exceptions import DryRunException
 from .exceptions import NoObjectsReturnedException
 from .exceptions import ReadOnlyException
 from .exceptions import SkipObject
@@ -438,7 +440,7 @@ def mo_to_ldap_handler(
         dataloader: depends.DataLoader,
         event: Event[UUID],
         dry_run: bool = Query(False),
-    ) -> None:
+    ) -> Any:
         uuid = event.subject
         exit_stack.enter_context(
             bound_contextvars(identifier=identifier, uuid=str(uuid))
@@ -449,8 +451,9 @@ def mo_to_ldap_handler(
         try:
             result = await template.render_async({"uuid": uuid})
         except SkipObject:
-            logger.info("Skipping object as requested")
-            return
+            message = "Skipping object as requested"
+            logger.info(message)
+            return {"message": message}
         logger.debug("Rendered jinja template", result=result)
 
         try:
@@ -475,6 +478,8 @@ def mo_to_ldap_handler(
                 parsed.create,
                 dry_run=dry_run,
             )
+        except DryRunException as exc:
+            return JSONResponse(status_code=exc.status_code, content=exc.detail)
         except NoObjectsReturnedException as exc:
             message = "Unable to find Jinja referenced dn"
             logger.exception(message)
@@ -495,6 +500,9 @@ def mo_to_ldap_handler(
             message = "LDAP connection is read-only"
             logger.exception(message)
             raise exc
+        if dry_run:
+            return {"message": "No changes"}
+        return None
 
     return inner
 
