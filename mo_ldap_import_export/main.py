@@ -438,7 +438,7 @@ def mo_to_ldap_handler(
         dataloader: depends.DataLoader,
         event: Event[UUID],
         dry_run: bool = Query(False),
-    ) -> None:
+    ) -> Any:
         uuid = event.subject
         exit_stack.enter_context(
             bound_contextvars(identifier=identifier, uuid=str(uuid))
@@ -449,8 +449,9 @@ def mo_to_ldap_handler(
         try:
             result = await template.render_async({"uuid": uuid})
         except SkipObject:
-            logger.info("Skipping object as requested")
-            return
+            message = "Skipping object as requested"
+            logger.info(message)
+            return {"message": message}
         logger.debug("Rendered jinja template", result=result)
 
         try:
@@ -495,6 +496,9 @@ def mo_to_ldap_handler(
             message = "LDAP connection is read-only"
             logger.exception(message)
             raise exc
+        if dry_run:
+            return {"message": "No changes"}
+        return None
 
     return inner
 
