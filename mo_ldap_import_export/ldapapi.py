@@ -382,19 +382,24 @@ class LDAPAPI:
 
         Raises:
             ReadOnlyException: If the LDAP connection is read-only.
+            OUNotWritableException: If the OU is not in LDAP_OUS_TO_WRITE_TO.
         """
         # Checks
+        if not requested_changes:
+            logger.info("Not writing to LDAP as changeset is empty", dn=dn)
+            return None
+
         if not self.ou_in_ous_to_write_to(dn):
             logger.info(
                 "Not allowed to write to the specified OU",
                 operation="modify_ldap",
                 dn=dn,
             )
-            return None
-
-        if not requested_changes:
-            logger.info("Not writing to LDAP as changeset is empty", dn=dn)
-            return None
+            raise OUNotWritableException(
+                "Not allowed to write to the specified OU",
+                dn=dn,
+                requested_state=requested_changes,
+            )
 
         controls: list[tuple[str, bool, Any]] = []
         if old_state:

@@ -41,7 +41,6 @@ async def test_add_ldap_object_no_add(ldap_api: LDAPAPI, ldap_person_dn: DN) -> 
 
 @pytest.mark.integration_test
 @pytest.mark.envvar({"LDAP_OUS_TO_WRITE_TO": '["ou=other"]'})
-@pytest.mark.xfail(reason="modify_ldap_object silently skips the write", strict=True)
 async def test_modify_ldap_object_ou_not_writable(
     ldap_api: LDAPAPI, ldap_person_dn: DN
 ) -> None:
