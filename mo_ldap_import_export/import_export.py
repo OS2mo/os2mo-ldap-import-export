@@ -37,6 +37,7 @@ from .customer_specific_checks import ExportChecks
 from .dataloaders import DN
 from .dataloaders import DataLoader
 from .dataloaders import NoGoodLDAPAccountFound
+from .environments.main import load_primary_engagement_recalculated
 from .exceptions import DryRunException
 from .exceptions import EmptyFieldsToSynchronise
 from .exceptions import IncorrectMapping
@@ -210,9 +211,28 @@ class SyncTool:
             logger.debug("create_user_trees not configured, allowing create")
             return True
 
-        primary_engagement_uuid = await get_primary_engagement(
-            self.dataloader.moapi.graphql_client, uuid
+        exclude_engagement_types = (
+            self.settings.create_user_trees_exclude_engagement_types
         )
+        if exclude_engagement_types:
+            # Recalculate the primary engagement ourselves, ignoring the
+            # configured engagement types
+            logger.info(
+                "Finding primary engagement while ignoring engagement types",
+                exclude_engagement_types=exclude_engagement_types,
+            )
+            engagement = await load_primary_engagement_recalculated(
+                self.dataloader.moapi,
+                uuid,
+                exclude_engagement_types=exclude_engagement_types,
+            )
+            primary_engagement_uuid: UUID | None = (
+                engagement.uuid if engagement is not None else None
+            )
+        else:
+            primary_engagement_uuid = await get_primary_engagement(
+                self.dataloader.moapi.graphql_client, uuid
+            )
         if primary_engagement_uuid is None:
             logger.info(
                 "create_user_trees configured, but no primary engagement, skipping"
