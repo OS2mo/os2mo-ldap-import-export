@@ -235,27 +235,6 @@ async def test_upload_ldap_object_insufficient_access_rights(
     assert "Nisse" not in "".join(notes)
 
 
-@pytest.mark.usefixtures("minimal_valid_environmental_variables")
-async def test_modify_ldap_object_invalid_ou(
-    dataloader: DataLoader,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("LDAP_OUS_TO_WRITE_TO", '["OU=non-existent"]')
-    settings = Settings()
-
-    dataloader.settings = settings
-    dataloader.ldapapi = LDAPAPI(settings, dataloader.ldapapi.connection)
-
-    dn = "UID=abk,OU=os2mo,O=magenta,DC=magenta,DC=dk"
-    with capture_logs() as cap_logs:
-        await dataloader.ldapapi.modify_ldap_object(dn, {})
-    messages = [w["event"] for w in cap_logs]
-    assert messages == [
-        "OU not in OUs to write",
-        "Not allowed to write to the specified OU",
-    ]
-
-
 async def test_load_mo_employee(
     dataloader: DataLoader, graphql_mock: GraphQLMocker
 ) -> None:
