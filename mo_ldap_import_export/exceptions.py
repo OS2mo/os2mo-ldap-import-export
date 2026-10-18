@@ -70,6 +70,25 @@ class ReadOnlyException(HTTPException):
         )
 
 
+class OUNotWritableException(HTTPException):
+    """Raised when the integration would write outside LDAP_OUS_TO_WRITE_TO."""
+
+    def __init__(
+        self,
+        message: str,
+        dn: DN,
+        requested_state: dict[str, list],
+    ) -> None:
+        super().__init__(
+            status_code=200,  # acknowledge event
+            detail={
+                "message": message,
+                "dn": dn,
+                "requested_state": requested_state,
+            },
+        )
+
+
 class UUIDNotFoundException(HTTPException):
     def __init__(self, message: str) -> None:
         super().__init__(status_code=404, detail=message)

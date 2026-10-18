@@ -52,7 +52,7 @@ from mo_ldap_import_export.dataloaders import DataLoader
 from mo_ldap_import_export.environments.main import get_or_create_job_function_uuid
 from mo_ldap_import_export.exceptions import MultipleObjectsReturnedException
 from mo_ldap_import_export.exceptions import NoObjectsReturnedException
-from mo_ldap_import_export.exceptions import ReadOnlyException
+from mo_ldap_import_export.exceptions import OUNotWritableException
 from mo_ldap_import_export.exceptions import RequeueException
 from mo_ldap_import_export.ldap_classes import LdapObject
 from mo_ldap_import_export.ldapapi import LDAPAPI
@@ -916,7 +916,7 @@ async def test_add_ldap_object(settings: Settings, ldap_connection: MagicMock) -
     ldapapi.ou_in_ous_to_write_to = MagicMock()  # type: ignore
     ldapapi.ou_in_ous_to_write_to.return_value = False
 
-    with pytest.raises(ReadOnlyException) as exc:
+    with pytest.raises(OUNotWritableException) as exc:
         await ldapapi.add_ldap_object(
             "CN=foo", attributes={}, object_class=settings.ldap_object_class
         )
