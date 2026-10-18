@@ -21,7 +21,7 @@ from .config import Settings
 from .exceptions import DryRunException
 from .exceptions import IncorrectMapping
 from .exceptions import NoObjectsReturnedException
-from .exceptions import ReadOnlyException
+from .exceptions import OUNotWritableException
 from .ldap import LDAPConnection
 from .ldap import construct_assertion_control
 from .ldap import construct_assertion_control_filter
@@ -222,7 +222,7 @@ class LDAPAPI:
                 dn=dn,
                 attributes=attributes,
             )
-            raise ReadOnlyException(
+            raise OUNotWritableException(
                 "Not allowed to write to the specified OU",
                 dn=dn,
                 requested_state=attributes,
