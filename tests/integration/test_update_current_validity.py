@@ -272,6 +272,10 @@ async def test_terminate(
     }
 )
 @pytest.mark.usefixtures("test_client")
+@pytest.mark.xfail(
+    strict=True,
+    reason="edits write the full engagement rather than just the changes",
+)
 async def test_terminate_untemplated_fields(
     graphql_client: GraphQLClient,
     mo_person: Any,
@@ -318,10 +322,10 @@ async def test_terminate_untemplated_fields(
     )
     await trigger_ldap_person()
 
-    # The untemplated extension_1 of the future validity is overwritten with
-    # the value of the current validity.
+    # The untemplated extension_1 of the future validity is left untouched
     today = mo_today().date()
     assert await read_validities() == [
         ("past", date(2001, 2, 3), today, None),
-        ("Skole underviser", today, date(3035, 1, 1), None),
+        ("Skole underviser", today, date(3030, 1, 1), None),
+        ("Skole underviser", date(3030, 1, 1), date(3035, 1, 1), "future"),
     ]
