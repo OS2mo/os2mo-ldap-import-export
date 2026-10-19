@@ -272,10 +272,6 @@ async def test_terminate(
     }
 )
 @pytest.mark.usefixtures("test_client")
-@pytest.mark.xfail(
-    strict=True,
-    reason="edits write the full engagement rather than just the changes",
-)
 async def test_terminate_future_validities(
     graphql_client: GraphQLClient,
     mo_person: Any,

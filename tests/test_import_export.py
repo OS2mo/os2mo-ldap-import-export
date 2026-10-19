@@ -24,9 +24,11 @@ from mo_ldap_import_export.exceptions import RequeueException
 from mo_ldap_import_export.import_export import SyncTool
 from mo_ldap_import_export.ldap_classes import LdapObject
 from mo_ldap_import_export.main import GRAPHQL_VERSION
+from mo_ldap_import_export.maybe import Some
 from mo_ldap_import_export.moapi import get_primary_engagement
 from mo_ldap_import_export.models import Employee
 from mo_ldap_import_export.models import Engagement
+from mo_ldap_import_export.models import EngagementChanges
 from mo_ldap_import_export.models import Validity
 from mo_ldap_import_export.types import DN
 from mo_ldap_import_export.types import EmployeeUUID
@@ -159,12 +161,16 @@ async def test_import_single_entity_engagement_edit(
         dry_run=False,
     )
 
-    assert dataloader.moapi.edit.called
-    args, _ = dataloader.moapi.edit.call_args
-    desired_engagement = one(args)
+    assert not dataloader.moapi.edit.called
+    assert dataloader.moapi.edit_engagement.called
+    args, _ = dataloader.moapi.edit_engagement.call_args
+    changes = one(args)
 
-    assert isinstance(desired_engagement, Engagement)
-    assert desired_engagement.user_key == ldap_engagement.user_key
+    assert isinstance(changes, EngagementChanges)
+    assert changes.uuid == mo_engagement_uuid
+    assert changes.user_key == Some(ldap_engagement.user_key)
+    # Unchanged fields are left untouched
+    assert changes.person is None
 
 
 async def test_import_single_entity_engagement_create(

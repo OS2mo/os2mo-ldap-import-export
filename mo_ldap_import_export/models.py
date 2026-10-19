@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
+from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 from uuid import uuid4
@@ -7,6 +8,8 @@ from uuid import uuid4
 from pydantic import BaseModel
 from pydantic import Extra
 from pydantic import Field
+
+from .maybe import Maybe
 
 
 class StrictBaseModel(BaseModel):
@@ -94,6 +97,33 @@ class Engagement(StrictBaseModel):
     extension_10: str | None = UNSET
     fraction: int | None
     validity: Validity
+
+
+@dataclass(frozen=True)
+class EngagementChanges:
+    """Changes to write to an engagement in MO within the validity.
+
+    Fields which are `None` are left untouched in MO, see `Maybe`.
+    """
+
+    uuid: UUID
+    validity: Validity
+    user_key: Maybe[str] = None
+    org_unit: Maybe[UUID] = None
+    person: Maybe[UUID] = None
+    job_function: Maybe[UUID] = None
+    engagement_type: Maybe[UUID] = None
+    primary: Maybe[UUID | None] = None
+    extension_1: Maybe[str | None] = None
+    extension_2: Maybe[str | None] = None
+    extension_3: Maybe[str | None] = None
+    extension_4: Maybe[str | None] = None
+    extension_5: Maybe[str | None] = None
+    extension_6: Maybe[str | None] = None
+    extension_7: Maybe[str | None] = None
+    extension_8: Maybe[str | None] = None
+    extension_9: Maybe[str | None] = None
+    extension_10: Maybe[str | None] = None
 
 
 class ITUser(StrictBaseModel):
