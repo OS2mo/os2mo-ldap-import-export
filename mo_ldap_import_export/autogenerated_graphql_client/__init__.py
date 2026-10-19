@@ -535,6 +535,9 @@ from .read_manager_person_uuid import ReadManagerPersonUuidManagers
 from .read_manager_person_uuid import ReadManagerPersonUuidManagersObjects
 from .read_manager_person_uuid import ReadManagerPersonUuidManagersObjectsCurrent
 from .read_manager_person_uuid import ReadManagerPersonUuidManagersObjectsCurrentPerson
+from .read_manager_uuid import ReadManagerUuid
+from .read_manager_uuid import ReadManagerUuidManagers
+from .read_manager_uuid import ReadManagerUuidManagersObjects
 from .read_org_unit_ancestor_names import ReadOrgUnitAncestorNames
 from .read_org_unit_ancestor_names import ReadOrgUnitAncestorNamesOrgUnits
 from .read_org_unit_ancestor_names import ReadOrgUnitAncestorNamesOrgUnitsObjects
@@ -976,6 +979,9 @@ __all__ = [
     "ReadManagerPersonUuidManagersObjects",
     "ReadManagerPersonUuidManagersObjectsCurrent",
     "ReadManagerPersonUuidManagersObjectsCurrentPerson",
+    "ReadManagerUuid",
+    "ReadManagerUuidManagers",
+    "ReadManagerUuidManagersObjects",
     "ReadOrgUnitAncestorNames",
     "ReadOrgUnitAncestorNamesOrgUnits",
     "ReadOrgUnitAncestorNamesOrgUnitsObjects",

@@ -769,6 +769,15 @@ async def get_engagement_uuid(
     return only(await get_engagement_uuids(graphql_client, filter))
 
 
+async def get_manager_uuid(
+    graphql_client: GraphQLClient, filter: dict[str, Any]
+) -> UUID | None:
+    manager_filter = parse_obj_as(ManagerFilter, filter)
+    result = await graphql_client.read_manager_uuid(manager_filter)
+    obj = only(result.objects)
+    return obj.uuid if obj else None
+
+
 async def get_org_unit_uuid(
     graphql_client: GraphQLClient, filter: dict[str, Any]
 ) -> UUID | None:
@@ -1250,6 +1259,7 @@ def construct_globals_dict(
         "get_engagement_uuid": partial(get_engagement_uuid, graphql_client),
         "get_engagement_uuids": partial(get_engagement_uuids, graphql_client),
         "get_org_unit_uuid": partial(get_org_unit_uuid, graphql_client),
+        "get_manager_uuid": partial(get_manager_uuid, graphql_client),
         "get_employment_interval": partial(get_employment_interval, graphql_client),
         "get_manager_person_uuid": partial(get_manager_person_uuid, graphql_client),
         "get_person_dn": partial(get_person_dn, dataloader),

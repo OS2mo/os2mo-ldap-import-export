@@ -235,6 +235,8 @@ from .read_itusers import ReadItusers
 from .read_itusers import ReadItusersItusers
 from .read_manager_person_uuid import ReadManagerPersonUuid
 from .read_manager_person_uuid import ReadManagerPersonUuidManagers
+from .read_manager_uuid import ReadManagerUuid
+from .read_manager_uuid import ReadManagerUuidManagers
 from .read_org_unit_ancestor_names import ReadOrgUnitAncestorNames
 from .read_org_unit_ancestor_names import ReadOrgUnitAncestorNamesOrgUnits
 from .read_org_unit_ancestors import ReadOrgUnitAncestors
@@ -1509,6 +1511,21 @@ class GraphQLClient(AsyncBaseClient):
         response = await self.execute(query=query, variables=variables)
         data = self.get_data(response)
         return ReadEngagementUuid.parse_obj(data).engagements
+
+    async def read_manager_uuid(self, filter: ManagerFilter) -> ReadManagerUuidManagers:
+        query = gql("""
+            query read_manager_uuid($filter: ManagerFilter!) {
+              managers(filter: $filter) {
+                objects {
+                  uuid
+                }
+              }
+            }
+            """)
+        variables: dict[str, object] = {"filter": filter}
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return ReadManagerUuid.parse_obj(data).managers
 
     async def read_org_unit_uuid(
         self, filter: OrganisationUnitFilter
