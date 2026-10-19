@@ -243,3 +243,83 @@ async def test_terminate(
     await trigger_ldap_person()
 
     assert await read_validities() == expected(mo_today().date())
+
+
+@pytest.mark.integration_test
+@pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+        "LISTEN_TO_CHANGES_IN_LDAP": "False",
+        "CONVERSION_MAPPING": json.dumps(
+            {
+                "ldap_to_mo": {
+                    "Engagement": {
+                        "objectClass": "Engagement",
+                        "_import_to_mo_": "true",
+                        "_ldap_attributes_": ["carLicense"],
+                        "_terminate_": "{{ ldap.carLicense }}",
+                        "uuid": "{{ load_mo_primary_engagement(employee_uuid).uuid }}",
+                        "user_key": "{{ load_mo_primary_engagement(employee_uuid).user_key }}",
+                        "person": "{{ load_mo_primary_engagement(employee_uuid).person }}",
+                        "org_unit": "{{ load_mo_primary_engagement(employee_uuid).org_unit }}",
+                        "engagement_type": "{{ load_mo_primary_engagement(employee_uuid).engagement_type }}",
+                        "job_function": "{{ load_mo_primary_engagement(employee_uuid).job_function }}",
+                        "primary": "{{ load_mo_primary_engagement(employee_uuid).primary }}",
+                    },
+                },
+            }
+        ),
+    }
+)
+@pytest.mark.usefixtures("test_client")
+async def test_terminate_future_validities(
+    graphql_client: GraphQLClient,
+    mo_person: Any,
+    mo_org_unit: Any,
+    ansat: Any,
+    jurist: Any,
+    primary: Any,
+    ldap_api: LDAPAPI,
+    ldap_person_dn: DN,
+    trigger_ldap_person: Callable[[], Awaitable[None]],
+    read_validities: ReadValidities,
+) -> None:
+    """_terminate_ differing from the final end-date edits across validities."""
+    # Seed: [2001, 3030]="past", [3030, infinity]="future" with extension_1.
+    created = await graphql_client.engagement_create(
+        input=EngagementCreateInput(
+            user_key="past",
+            person=mo_person,
+            org_unit=mo_org_unit,
+            engagement_type=ansat,
+            job_function=jurist,
+            primary=primary,
+            validity=RAValidityInput(from_="2001-02-03T00:00:00Z"),
+        )
+    )
+    await graphql_client.engagement_update(
+        input=EngagementUpdateInput(
+            uuid=created.uuid,
+            user_key="future",
+            extension_1="future",
+            validity=RAValidityInput(from_="3030-01-01T00:00:00Z"),
+        )
+    )
+
+    # Before the sync.
+    assert await read_validities() == [
+        ("past", date(2001, 2, 3), date(3030, 1, 1), None),
+        ("future", date(3030, 1, 1), None, "future"),
+    ]
+
+    await ldap_api.ldap_connection.ldap_modify(
+        ldap_person_dn,
+        changes={"carLicense": [("MODIFY_REPLACE", "3035-01-01")]},
+    )
+    await trigger_ldap_person()
+
+    # The templated user_key and the untemplated extension_1 of the future
+    # validity are overwritten with the values of the current validity.
+    assert await read_validities() == [
+        ("past", date(2001, 2, 3), date(3035, 1, 1), None),
+    ]
