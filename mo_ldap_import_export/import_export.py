@@ -5,6 +5,7 @@ import json
 from collections.abc import Awaitable
 from collections.abc import Callable
 from contextlib import ExitStack
+from dataclasses import fields
 from datetime import date
 from datetime import datetime
 from datetime import time
@@ -49,12 +50,14 @@ from .exceptions import SkipObject
 from .ldap import apply_discriminator
 from .ldap import filter_dns
 from .ldap_classes import LdapObject
+from .maybe import Some
 from .moapi import Verb
 from .moapi import get_primary_engagement
 from .models import Address
 from .models import Class
 from .models import Employee
 from .models import Engagement
+from .models import EngagementChanges
 from .models import ITSystem
 from .models import ITUser
 from .models import MOBase
@@ -69,6 +72,11 @@ from .utils import is_list
 from .utils import mo_today
 
 logger = structlog.stdlib.get_logger()
+
+ENGAGEMENT_CHANGES_FIELDS = {field.name for field in fields(EngagementChanges)} - {
+    "uuid",
+    "validity",
+}
 
 
 T = TypeVar("T", covariant=True)
@@ -834,6 +842,18 @@ class SyncTool:
                     "obj": jsonable_encoder(obj, exclude={"mo_class"}),
                 },
             )
+
+        if isinstance(obj, Engagement):
+            # Only write the changed fields, leaving the rest untouched in MO.
+            # Note that fraction is not written to MO.
+            changed_fields = update_values.keys() & ENGAGEMENT_CHANGES_FIELDS
+            changes = EngagementChanges(
+                uuid=obj.uuid,
+                validity=obj.validity,
+                **{key: Some(getattr(obj, key)) for key in changed_fields},
+            )
+            await self.dataloader.moapi.edit_engagement(changes)
+            return
 
         await self.dataloader.moapi.edit(obj)
 

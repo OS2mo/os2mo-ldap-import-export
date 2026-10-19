@@ -58,10 +58,12 @@ from .exceptions import AcknowledgeException
 from .exceptions import InvalidCPR
 from .exceptions import MultipleObjectsReturnedException
 from .exceptions import UUIDNotFoundException
+from .maybe import Maybe
 from .models import Address
 from .models import Class
 from .models import Employee
 from .models import Engagement
+from .models import EngagementChanges
 from .models import ITSystem
 from .models import ITUser
 from .models import MOBase
@@ -151,6 +153,7 @@ def extract_current_or_latest_validity(validities: list[T]) -> T | None:
 
 
 Tc = TypeVar("Tc", covariant=True)
+V = TypeVar("V")
 
 
 class HasValidities(Protocol[Tc]):
@@ -772,8 +775,6 @@ class MOAPI:
             return await self.edit_address(obj)
         elif isinstance(obj, Employee):  # pragma: no cover
             return await self.edit_employee(obj)
-        elif isinstance(obj, Engagement):
-            return await self.edit_engagement(obj)
         elif isinstance(obj, ITUser):
             return await self.edit_ituser(obj)
         elif isinstance(obj, ITSystem):
@@ -817,8 +818,15 @@ class MOAPI:
         # validity.
         return await self.create_employee(obj)
 
-    async def edit_engagement(self, obj: Engagement) -> UUID:
-        def to_mo_extension_patch_semantics(extension: str | None) -> str | None:
+    async def edit_engagement(self, changes: EngagementChanges) -> UUID:
+        def to_mo_patch_semantics(field: Maybe[V]) -> V | None:
+            # MO leaves fields which are null on EngagementUpdateInput as-is.
+            # Note that this means that these fields cannot be cleared.
+            return field.value if field is not None else None
+
+        def to_mo_extension_patch_semantics(
+            extension: Maybe[str | None],
+        ) -> str | None:
             # The default value for extension attributes on
             # EngagementUpdateInput is `null`, so MO cannot tell the difference
             # between a null and unset field. Therefore, if a field is null, MO
@@ -828,34 +836,34 @@ class MOAPI:
             # for some reason, null the field. This is definitely not intended,
             # but since we rely on it, it is now part of the official OS2mo
             # API.
-            if extension == models.UNSET:
-                return None
             if extension is None:
+                return None
+            if extension.value is None:
                 return ""
-            return extension
+            return extension.value
 
         engagement = await self.graphql_client.engagement_update(
             input=EngagementUpdateInput(
-                uuid=obj.uuid,
-                user_key=obj.user_key,
-                org_unit=obj.org_unit,
-                person=obj.person,
-                job_function=obj.job_function,
-                engagement_type=obj.engagement_type,
-                primary=obj.primary,
-                extension_1=to_mo_extension_patch_semantics(obj.extension_1),
-                extension_2=to_mo_extension_patch_semantics(obj.extension_2),
-                extension_3=to_mo_extension_patch_semantics(obj.extension_3),
-                extension_4=to_mo_extension_patch_semantics(obj.extension_4),
-                extension_5=to_mo_extension_patch_semantics(obj.extension_5),
-                extension_6=to_mo_extension_patch_semantics(obj.extension_6),
-                extension_7=to_mo_extension_patch_semantics(obj.extension_7),
-                extension_8=to_mo_extension_patch_semantics(obj.extension_8),
-                extension_9=to_mo_extension_patch_semantics(obj.extension_9),
-                extension_10=to_mo_extension_patch_semantics(obj.extension_10),
+                uuid=changes.uuid,
+                user_key=to_mo_patch_semantics(changes.user_key),
+                org_unit=to_mo_patch_semantics(changes.org_unit),
+                person=to_mo_patch_semantics(changes.person),
+                job_function=to_mo_patch_semantics(changes.job_function),
+                engagement_type=to_mo_patch_semantics(changes.engagement_type),
+                primary=to_mo_patch_semantics(changes.primary),
+                extension_1=to_mo_extension_patch_semantics(changes.extension_1),
+                extension_2=to_mo_extension_patch_semantics(changes.extension_2),
+                extension_3=to_mo_extension_patch_semantics(changes.extension_3),
+                extension_4=to_mo_extension_patch_semantics(changes.extension_4),
+                extension_5=to_mo_extension_patch_semantics(changes.extension_5),
+                extension_6=to_mo_extension_patch_semantics(changes.extension_6),
+                extension_7=to_mo_extension_patch_semantics(changes.extension_7),
+                extension_8=to_mo_extension_patch_semantics(changes.extension_8),
+                extension_9=to_mo_extension_patch_semantics(changes.extension_9),
+                extension_10=to_mo_extension_patch_semantics(changes.extension_10),
                 validity=RAValidityInput(
-                    from_=obj.validity.start,
-                    to=obj.validity.end,
+                    from_=changes.validity.start,
+                    to=changes.validity.end,
                 ),
             )
         )
