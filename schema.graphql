@@ -38,7 +38,7 @@ input AccessLogFilter {
   "Filter access log events by their reading actor.\n\nCan be used to select all data read by a particular user or integration.\n\n| `actors`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   actors: [UUID!] = null
 
-  "Filter access log events by their model type.\n\nCan be used to select all reads for a data type.\n\nCan be one of:\n* `\"AccessLog\"`\n* `\"Bruger\"`\n* `\"Facet\"`\n* `\"ItSystem\"`\n* `\"Klasse\"`\n* `\"Organisation\"`\n* `\"OrganisationEnhed\"`\n* `\"OrganisationFunktion\"`\n\n| `models`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  "Filter access log events by their model type.\n\nCan be used to select all reads for a data type.\n\nCan be one of:\n* `\"AccessLog\"`\n* `\"Actor\"`\n* `\"Bruger\"`\n* `\"Facet\"`\n* `\"ItSystem\"`\n* `\"Klasse\"`\n* `\"Organisation\"`\n* `\"OrganisationEnhed\"`\n* `\"OrganisationFunktion\"`\n\n| `models`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   models: [AccessLogModel!] = null
 
   """
@@ -54,6 +54,7 @@ input AccessLogFilter {
 
 enum AccessLogModel {
   ACCESS_LOG
+  ACTOR
   PERSON
   FACET
   IT_SYSTEM
@@ -114,6 +115,25 @@ interface Actor {
   Appropriate display text for any actor (regardless of type)
   """
   display_name: String
+}
+
+"""
+Actor filter.
+"""
+input ActorFilter {
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  uuids: [UUID!] = null
+}
+
+"""
+Result page in cursor-based pagination.
+"""
+type ActorPaged {
+  "List of results.\n\nThe number of elements is defined by the `limit` argument.\n"
+  objects: [Actor!]!
+
+  "Container for page information.\n\nContains the cursors necessary to fetch other pages.\nContains information on when to stop iteration.\n"
+  page_info: PageInfo!
 }
 
 "\nAddress information for either an employee or organisational unit\n"
@@ -1259,6 +1279,9 @@ input AssociationUpdateInput {
   association_type: UUID = null
 }
 
+"Expression in the Common Expression Language, refused unless it compiles.\n\nSee: https://cel.dev\n"
+scalar CEL
+
 "Scalar implementing the danish national identification number / civil registration number.\n\nThe number is a unique identifier for a single individual, although individuals may go through several numbers over time.\n\nThe number is expected to have 10 digits, 6 digits defining a date, and a 4 digit serial number.\nThe number does not have to fulfill the modulo 11 checksum.\nIt does however (optionally) have to define a valid date.\nNo dash should be included to separate the date and serial number sections.\n\nFor further details refer to the Central Person Register (CPR) at:\n* https://cpr.dk/\n\nOr \"Bekendtgørelse af lov om Det Centrale Personregister\" (\"CPR-Loven\"):\n* https://www.retsinformation.dk/eli/lta/2017/646\n\nExamples:\n* `\"0106875049\"`\n* `\"0106878994\"`\n* `\"406568970\"`\n"
 scalar CPR
 
@@ -1339,6 +1362,9 @@ type Class {
     @deprecated(
       reason: "Use 'it_system_response' instead. Will be removed in a future version of OS2mo."
     )
+
+  "\nThe organisation unit that owns this class.\n"
+  owner_response: OrganisationUnitResponse
 
   "\nFacet of this class's upmost parent.\n\nThe result of following `parent` until `parent` becomes `null`, then calling `facet`.\n\nAlmost always the same as `facet` as class hierarchies are rare.\nCurrently mostly used to describe (trade) union hierachies.\n"
   top_level_facet: Facet!
@@ -1612,6 +1638,11 @@ input ClassOwnerFilter {
   "Filter organisation units to only include matches pointed to by engagements.\n\nCan be used to find organisation units for certain engagements.\n"
   engagement: EngagementFilter = null
 
+  """
+  Owner filter limiting which entries are returned.
+  """
+  owner: OwnerFilter = null
+
   "Include classes with `owner=None`.\n"
   include_none: Boolean! = false
 }
@@ -1838,6 +1869,30 @@ input ClassUpdateInput {
   description: String = null
 }
 
+"""
+A collection a read rule may grant access to.
+"""
+enum Collection {
+  Address
+  Association
+  Class
+  Employee
+  Engagement
+  Facet
+  ITSystem
+  ITUser
+  KLE
+  Leave
+  Listener
+  Manager
+  Namespace
+  Organisation
+  OrganisationUnit
+  Owner
+  RelatedUnit
+  RoleBinding
+}
+
 "Scalar implementing the cursor of cursor-based pagination.\n\nThe cursor is opaque by design abstracting away the underlying implementation details.\n\nExamples:\n* `\"Njk=\"`\n* `\"NDIw\"`\n* `\"MTMzNw==\"`\n\nNote:\n\nAs the cursor is to be considered opaque its implementation may change in the future.\nI.e. in the future it may be implemented as a simple integer or a complex object.\n\nThe caller should not concern themselves with the actual value contained within, but rather simply pass whatever is returned in the `cursor` argument to continue iteration.\n"
 scalar Cursor
 
@@ -1875,20 +1930,56 @@ type DefaultAddress implements ResolvedAddress {
 }
 
 input DescendantParentBoundOrganisationUnitFilter {
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Registration filter limiting which entries are returned.\n"
   registration: OrganisationUnitRegistrationFilter = null
+
+  "Free text search.\n\nDoes best effort lookup to find entities matching the query string.\nNo quarantees are given w.r.t. the entries returned.\n"
   query: String
+
+  "Name filter finding exact matches by name.\n\n| `names`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   names: [String!]
-  parents: [UUID!]
+
+  "Select organisation units whose children matches the given filter.\n\nSet to `None` to find leaf node units.\nSet to `{}` to find inner node units.\n\nThis endpoint behaves to descendant as parent does to ancestor.\n"
   child: OrganisationUnitFilter
+
+  "Hierarchy filter limiting which entries are returned.\n\nFilter organisation units by their organisational hierarchy labels.\n\nCan be used to extract a subset of the organisational structure.\n\nExamples of user-keys:\n* `\"Line-management\"`\n* `\"Self-owned institution\"`\n* `\"Outside organisation\"`\n* `\"Hidden\"`\n\nNote:\nThe organisation-gatekeeper integration is one option to keep hierarchy labels up-to-date.\n"
   hierarchy: ClassFilter = null
+
+  "Filter organisation units by their organisational hierarchy labels.\n\nCan be used to extract a subset of the organisational structure.\n\nExamples of user-keys:\n* `\"Line-management\"`\n* `\"Self-owned institution\"`\n* `\"Outside organisation\"`\n* `\"Hidden\"`\n\nNote:\nThe organisation-gatekeeper integration is one option to keep hierarchy labels up-to-date.\n\n| `hierarchies`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   hierarchies: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'hierarchy' filter")
+
+  "Select organisation units which have an ancestor matching the given filter.\n\nNote that every node is its own ancestor as per [CLRS] 12.2-6.\n\nGiven the following tree:\n```\nA\n├── B\n│   ├── C\n│   │   └── D\n│   └── E\n└── F\n```\nthe `ancestor` filter behaves according to the following table:\n\n| Filter | Returned    |\n|--------|-------------|\n|      A | A B C D E F |\n|      B | B C D E     |\n|      C | C D         |\n|      D | D           |\n|      E | E           |\n|      F | F           |\n"
   ancestor: OrganisationUnitFilter
+
+  "Filter organisation units to only include matches pointed to by engagements.\n\nCan be used to find organisation units for certain engagements.\n"
   engagement: EngagementFilter = null
+
+  """
+  Owner filter limiting which entries are returned.
+  """
+  owner: OwnerFilter = null
 }
 
 """
@@ -2136,92 +2227,297 @@ type Employee {
 }
 
 input EmployeeBoundAddressFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Organisation Unit filter limiting which entries are returned.\n"
+  org_unit: OrganisationUnitFilter = null
+
+  "Organisational Unit UUID filter limiting which entries are returned.\n\n| `org_units`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  org_units: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'org_unit' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: AddressRegistrationFilter = null
+
+  "Address type filter limiting which entries are returned.\n"
   address_type: ClassFilter = null
+
+  "Address type UUID filter limiting which entries are returned.\n\n| `address_types`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   address_types: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'address_type' filter")
+
+  "Address type user-key filter limiting which entries are returned.\n\n| `address_type_user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   address_type_user_keys: [String!] = null
+    @deprecated(reason: "Replaced by the 'address_type' filter")
+
+  "Engagement filter limiting which entries are returned.\n"
   engagement: EngagementFilter = null
+
+  "Engagement UUID filter limiting which entries are returned.\n\n| `engagements`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   engagements: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'engagement' filter")
+
+  """
+  ITUser filter limiting which entries are returned.
+  """
   ituser: ITUserFilter = null
+
+  """
+  Visibility filter limiting which entries are returned.
+  """
   visibility: ClassFilter = null
 }
 
 input EmployeeBoundAssociationFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Organisation Unit filter limiting which entries are returned.\n"
+  org_unit: OrganisationUnitFilter = null
+
+  "Organisational Unit UUID filter limiting which entries are returned.\n\n| `org_units`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  org_units: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'org_unit' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: AssociationRegistrationFilter = null
+
+  "Address type filter limiting which entries are returned.\n"
   association_type: ClassFilter = null
+
+  "Association type UUID filter limiting which entries are returned.\n\n| `association_types`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   association_types: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'association_type' filter")
+
+  "Association type user-key filter limiting which entries are returned.\n\n| `association_type_user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   association_type_user_keys: [String!] = null
+    @deprecated(reason: "Replaced by the 'association_type' filter")
+
+  "Query for either IT-Associations or \"normal\" Associations. `None` returns all.\n\nThis field is needed to replicate the functionality in the service API:\n`?it=1`\n"
   it_association: Boolean = null
 }
 
 input EmployeeBoundEngagementFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Organisation Unit filter limiting which entries are returned.\n"
+  org_unit: OrganisationUnitFilter = null
+
+  "Organisational Unit UUID filter limiting which entries are returned.\n\n| `org_units`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  org_units: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'org_unit' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: EngagementRegistrationFilter = null
+
+  "Job function filter limiting which entries are returned.\n"
   job_function: ClassFilter = null
+
+  "Engagement type filter limiting which entries are returned.\n"
   engagement_type: ClassFilter = null
+
+  "Explicit manager filter limiting which entries are returned.\n\n* Omitted (`UNSET`): no filtering on explicit manager.\n* `null`: only engagements without an explicit manager.\n* A `ManagerFilter`: only engagements whose explicit manager\n  matches the nested filter.\n"
+  explicit_manager: ManagerFilter
+
+  """
+  ITUser filter limiting which entries are returned.
+  """
   ituser: ITUserFilter = null
+
+  "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return engagements without a primary class.\n"
+  primary: ClassFilter
 }
 
 input EmployeeBoundITUserFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Organisation Unit filter limiting which entries are returned.\n"
+  org_unit: OrganisationUnitFilter = null
+
+  "Organisational Unit UUID filter limiting which entries are returned.\n\n| `org_units`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  org_units: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'org_unit' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: ITUserRegistrationFilter = null
+
+  "ITSystem filter limiting which entries are returned.\n"
   itsystem: ITSystemFilter = null
+
+  "Only return IT users of ITSystem with these UUIDs filter limiting which entries are returned.\n\n| `itsystem_uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   itsystem_uuids: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'itsystem' filter")
+
+  "Engagement filter limiting which entries are returned.\n"
   engagement: EngagementFilter = null
+
+  "Rolebinding filter limiting which entries are returned.\n\nSet to `null` to only return IT users without any rolebindings.\n"
+  rolebinding: RoleBindingFilter
+
+  "Only return IT users with this `external_id`.\n\n| `external_id` | Elements returned                            |\n|---------------|----------------------------------------------|\n| not provided  | All                                          |\n| `null`        | Only entries where `external_id` is not set  |\n| `[]`          | None                                         |\n| `\"x\"`         | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]`  | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   external_ids: [String!]
+
+  "Only return IT users with this `binding_type` filter limiting which entries are returned.\n\n| `binding_type`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   binding_types: [String!] = null
+
+  "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return IT users without a primary class.\n"
+  primary: ClassFilter
 }
 
 input EmployeeBoundLeaveFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Organisation Unit filter limiting which entries are returned.\n"
+  org_unit: OrganisationUnitFilter = null
+
+  "Organisational Unit UUID filter limiting which entries are returned.\n\n| `org_units`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  org_units: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'org_unit' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: LeaveRegistrationFilter = null
 }
 
 input EmployeeBoundManagerFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Organisation Unit filter limiting which entries are returned.\n"
+  org_unit: OrganisationUnitFilter = null
+
+  "Organisational Unit UUID filter limiting which entries are returned.\n\n| `org_units`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  org_units: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'org_unit' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: ManagerRegistrationFilter = null
+
+  "Engagement filter limiting which entries are returned.\n"
   engagement: EngagementFilter = null
+
+  "Responsibility filter limiting which entries are returned.\n"
   responsibility: ClassFilter = null
+
+  "Manager_type filter limiting which entries are returned.\n"
   manager_type: ClassFilter = null
+
+  "Employee filter for managers to exclude from the result.\n"
   exclude: EmployeeFilter = null
+
+  "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return managers without a primary class.\n"
+  primary: ClassFilter
 }
 
 input EmployeeCreateInput {
@@ -2299,6 +2595,14 @@ input EmployeeFilter {
 
   "CPR number filter limiting which entries are returned.\n\n| `cpr_numbers`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   cpr_numbers: [CPR!] = null
+
+  """
+  Owner filter limiting which entries are returned.
+  """
+  owner: OwnerFilter = null
+
+  "IT-user filter limiting which entries are returned.\n\nSet to `null` to only return employees without any IT-users.\n"
+  ituser: ITUserFilter
 }
 
 """
@@ -2639,6 +2943,11 @@ type Engagement {
     )
 
   """
+  This field can be used to point the engagement to a specific manager anywhere in the organisation. Note that this field is independent of the 'managers' field.
+  """
+  explicit_manager: ManagerResponse
+
+  """
   UUID of the entity
   """
   uuid: UUID!
@@ -2776,38 +3085,123 @@ type Engagement {
 }
 
 input EngagementBoundAddressFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
-  employee: EmployeeFilter
-  employees: [UUID!] = null
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Employee filter limiting which entries are returned.\n"
+  employee: EmployeeFilter
+
+  "Employee UUID filter limiting which entries are returned.\n\n| `employees`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  employees: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'employee' filter")
+
+  "Organisation Unit filter limiting which entries are returned.\n"
+  org_unit: OrganisationUnitFilter = null
+
+  "Organisational Unit UUID filter limiting which entries are returned.\n\n| `org_units`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  org_units: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'org_unit' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: AddressRegistrationFilter = null
+
+  "Address type filter limiting which entries are returned.\n"
   address_type: ClassFilter = null
+
+  "Address type UUID filter limiting which entries are returned.\n\n| `address_types`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   address_types: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'address_type' filter")
+
+  "Address type user-key filter limiting which entries are returned.\n\n| `address_type_user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   address_type_user_keys: [String!] = null
+    @deprecated(reason: "Replaced by the 'address_type' filter")
+
+  """
+  ITUser filter limiting which entries are returned.
+  """
   ituser: ITUserFilter = null
+
+  """
+  Visibility filter limiting which entries are returned.
+  """
   visibility: ClassFilter = null
 }
 
 input EngagementBoundITUserFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
-  employee: EmployeeFilter
-  employees: [UUID!] = null
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Employee filter limiting which entries are returned.\n"
+  employee: EmployeeFilter
+
+  "Employee UUID filter limiting which entries are returned.\n\n| `employees`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  employees: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'employee' filter")
+
+  "Organisation Unit filter limiting which entries are returned.\n"
+  org_unit: OrganisationUnitFilter = null
+
+  "Organisational Unit UUID filter limiting which entries are returned.\n\n| `org_units`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  org_units: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'org_unit' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: ITUserRegistrationFilter = null
+
+  "ITSystem filter limiting which entries are returned.\n"
   itsystem: ITSystemFilter = null
+
+  "Only return IT users of ITSystem with these UUIDs filter limiting which entries are returned.\n\n| `itsystem_uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   itsystem_uuids: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'itsystem' filter")
+
+  "Rolebinding filter limiting which entries are returned.\n\nSet to `null` to only return IT users without any rolebindings.\n"
+  rolebinding: RoleBindingFilter
+
+  "Only return IT users with this `external_id`.\n\n| `external_id` | Elements returned                            |\n|---------------|----------------------------------------------|\n| not provided  | All                                          |\n| `null`        | Only entries where `external_id` is not set  |\n| `[]`          | None                                         |\n| `\"x\"`         | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]`  | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   external_ids: [String!]
+
+  "Only return IT users with this `binding_type` filter limiting which entries are returned.\n\n| `binding_type`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   binding_types: [String!] = null
+
+  "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return IT users without a primary class.\n"
+  primary: ClassFilter
 }
 
 input EngagementCreateInput {
@@ -2865,6 +3259,11 @@ input EngagementCreateInput {
 
   "Arbitrary value extension fields.\n\nA collection of field for storing arbitrary extra data.\nCan be used for extraordinary occasions when no standardized field to model the data exists.\n\n"
   extension_10: String = null
+
+  """
+  UUID of the explicit manager related to the engagement.
+  """
+  explicit_manager: UUID = null
 
   """
   UUID of the related employee.
@@ -2935,10 +3334,16 @@ input EngagementFilter {
   "Engagement type filter limiting which entries are returned.\n"
   engagement_type: ClassFilter = null
 
+  "Explicit manager filter limiting which entries are returned.\n\n* Omitted (`UNSET`): no filtering on explicit manager.\n* `null`: only engagements without an explicit manager.\n* A `ManagerFilter`: only engagements whose explicit manager\n  matches the nested filter.\n"
+  explicit_manager: ManagerFilter
+
   """
   ITUser filter limiting which entries are returned.
   """
   ituser: ITUserFilter = null
+
+  "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return engagements without a primary class.\n"
+  primary: ClassFilter
 }
 
 type EngagementRegistration implements IRegistration & RegistrationBase {
@@ -3102,88 +3507,30 @@ input EngagementTerminateInput {
 }
 
 input EngagementUpdateInput {
-  """
-  UUID of the Engagement you want to update.
-  """
   uuid: UUID!
-
-  """
-  Name or UUID of the related engagement.
-  """
-  user_key: String = null
-
-  """
-  Primary field of the engagement
-  """
-  primary: UUID = null
-
-  """
-  Validity of the engagement object.
-  """
   validity: RAValidityInput!
-
-  """
-  Worktime between 0-1000000 for the engagement object.
-  """
+  user_key: String = null
+  primary: UUID = null
   fraction: Int = null
-
-  "Arbitrary value extension fields.\n\nA collection of field for storing arbitrary extra data.\nCan be used for extraordinary occasions when no standardized field to model the data exists.\n\n"
   extension_1: String = null
-
-  "Arbitrary value extension fields.\n\nA collection of field for storing arbitrary extra data.\nCan be used for extraordinary occasions when no standardized field to model the data exists.\n\n"
   extension_2: String = null
-
-  "Arbitrary value extension fields.\n\nA collection of field for storing arbitrary extra data.\nCan be used for extraordinary occasions when no standardized field to model the data exists.\n\n"
   extension_3: String = null
-
-  "Arbitrary value extension fields.\n\nA collection of field for storing arbitrary extra data.\nCan be used for extraordinary occasions when no standardized field to model the data exists.\n\n"
   extension_4: String = null
-
-  "Arbitrary value extension fields.\n\nA collection of field for storing arbitrary extra data.\nCan be used for extraordinary occasions when no standardized field to model the data exists.\n\n"
   extension_5: String = null
-
-  "Arbitrary value extension fields.\n\nA collection of field for storing arbitrary extra data.\nCan be used for extraordinary occasions when no standardized field to model the data exists.\n\n"
   extension_6: String = null
-
-  "Arbitrary value extension fields.\n\nA collection of field for storing arbitrary extra data.\nCan be used for extraordinary occasions when no standardized field to model the data exists.\n\n"
   extension_7: String = null
-
-  "Arbitrary value extension fields.\n\nA collection of field for storing arbitrary extra data.\nCan be used for extraordinary occasions when no standardized field to model the data exists.\n\n"
   extension_8: String = null
-
-  "Arbitrary value extension fields.\n\nA collection of field for storing arbitrary extra data.\nCan be used for extraordinary occasions when no standardized field to model the data exists.\n\n"
   extension_9: String = null
-
-  "Arbitrary value extension fields.\n\nA collection of field for storing arbitrary extra data.\nCan be used for extraordinary occasions when no standardized field to model the data exists.\n\n"
   extension_10: String = null
-
-  """
-  UUID of the related employee.
-  """
   employee: UUID = null
     @deprecated(
       reason: "Use 'person' instead. Will be removed in a future version of OS2mo."
     )
-
-  """
-  UUID of the related employee.
-  """
   person: UUID = null
-
-  """
-  The related org-unit object.
-  """
   org_unit: UUID = null
-
-  """
-  UUID of the engagement type.
-  """
   engagement_type: UUID = null
-
-  """
-  UUID of the job function.
-  """
   job_function: UUID = null
+  explicit_manager: UUID
 }
 
 "Event.\n\nYou need to use the `token` to acknowledge that the event has been handled properly by calling `event_acknowledge`.\n\nYour integration is supposed to handle *all* events that the listener subscribes to. If your integration does not need to do anything for a particular event, it still needs to be acknowledged.\n\nYou might see events in the `events` collection that you do not appear to receive when calling `event_fetch`. This is because OS2mo will not spam you with the same event over and over if it fails.\n"
@@ -3210,6 +3557,21 @@ input EventAcknowledgeInput {
 }
 
 """
+Event creation time filter.
+"""
+input EventCreatedAtFilter {
+  """
+  Only match events created at or after this time.
+  """
+  start: DateTime = null
+
+  """
+  Only match events created before this time.
+  """
+  end: DateTime = null
+}
+
+"""
 Event filter.
 """
 input EventFilter {
@@ -3217,6 +3579,16 @@ input EventFilter {
   ID of listener.
   """
   listener: UUID!
+}
+
+"""
+Rerun all matching events.
+"""
+input EventRerunInput {
+  listeners: ListenerFilter = null
+  subjects: [String!] = null
+  priorities: [Int!] = null
+  silenced: Boolean = null
 }
 
 input EventSendInput {
@@ -3241,7 +3613,7 @@ input EventSendInput {
   priority: Int! = 10000
 }
 
-"Silence an event.\n\nSilenced events are not received with `event_fetch`.\n"
+"Silence an event.\n\nSilencing does not affect delivery, it only affects whether alerts are triggered.\n"
 input EventSilenceInput {
   """
   Only silence the event for these listeners.
@@ -3389,18 +3761,50 @@ type Facet {
 }
 
 input FacetBoundClassFilter {
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Registration filter limiting which entries are returned.\n"
   registration: ClassRegistrationFilter = null
+
+  "Name filter finding exact matches by name.\n"
   name: [String!] = null
+
+  "Parent filter limiting which entries are returned.\n"
   parent: ClassFilter = null
-  parents: [UUID!] = null
+
+  "Parent UUID filter limiting which entries are returned.\n\n| `parents`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  parents: [UUID!] = null @deprecated(reason: "Replaced by the 'parent' filter")
+
+  "Parent user-key filter limiting which entries are returned.\n\n| `parent_user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   parent_user_keys: [String!] = null
+    @deprecated(reason: "Replaced by the 'parent' filter")
+
+  "IT-System filter limiting which entries are returned.\n"
   it_system: ITSystemFilter = null
+
+  "Owner filter limiting which entries are returned.\n"
   owner: ClassOwnerFilter = null
+
+  "Scope filter limiting which entries are returned.\n\n| `scope`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   scope: [String!] = null
 }
 
@@ -3715,9 +4119,14 @@ type FullEvent {
   priority: Int!
 
   """
-  Whether the event is silenced. Silenced event cannot be read by `event_fetch`.
+  Whether the event is silenced. Silencing does not affect delivery, it only affects whether alerts are triggered.
   """
   silenced: Boolean!
+
+  """
+  The time the event was first created. Preserved across deduplication.
+  """
+  created_at: DateTime!
 
   """
   The listener that will receive this event.
@@ -3737,6 +4146,11 @@ input FullEventFilter {
   Filter based on silence status.
   """
   silenced: Boolean = null
+
+  """
+  Filter based on creation time.
+  """
+  created_at: EventCreatedAtFilter = null
 }
 
 """
@@ -3748,6 +4162,22 @@ type FullEventPaged {
 
   "Container for page information.\n\nContains the cursors necessary to fetch other pages.\nContains information on when to stop iteration.\n"
   page_info: PageInfo!
+}
+
+"""
+A version of the GraphQL schema, which the condition filters of a rule are written in.
+"""
+enum GraphQLVersion {
+  VERSION_21
+  VERSION_22
+  VERSION_23
+  VERSION_24
+  VERSION_25
+  VERSION_26
+  VERSION_27
+  VERSION_28
+  VERSION_29
+  VERSION_30
 }
 
 enum HardcodedActor {
@@ -4600,11 +5030,17 @@ input ITUserFilter {
   "Engagement filter limiting which entries are returned.\n"
   engagement: EngagementFilter = null
 
+  "Rolebinding filter limiting which entries are returned.\n\nSet to `null` to only return IT users without any rolebindings.\n"
+  rolebinding: RoleBindingFilter
+
   "Only return IT users with this `external_id`.\n\n| `external_id` | Elements returned                            |\n|---------------|----------------------------------------------|\n| not provided  | All                                          |\n| `null`        | Only entries where `external_id` is not set  |\n| `[]`          | None                                         |\n| `\"x\"`         | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]`  | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   external_ids: [String!]
 
   "Only return IT users with this `binding_type` filter limiting which entries are returned.\n\n| `binding_type`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   binding_types: [String!] = null
+
+  "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return IT users without a primary class.\n"
+  primary: ClassFilter
 }
 
 type ITUserRegistration implements IRegistration & RegistrationBase {
@@ -4830,51 +5266,156 @@ input ITUserUpdateInput {
 }
 
 input ItSystemboundclassfilter {
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Registration filter limiting which entries are returned.\n"
   registration: ClassRegistrationFilter = null
+
+  "Name filter finding exact matches by name.\n"
   name: [String!] = null
+
+  "Facet filter limiting which entries are returned.\n"
   facet: FacetFilter = null
-  facets: [UUID!] = null
+
+  "Facet UUID filter limiting which entries are returned.\n\n| `facets`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  facets: [UUID!] = null @deprecated(reason: "Replaced by the 'facet' filter")
+
+  "Facet user-key filter limiting which entries are returned.\n\n| `facet_user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   facet_user_keys: [String!] = null
+    @deprecated(reason: "Replaced by the 'facet' filter")
+
+  "Parent filter limiting which entries are returned.\n"
   parent: ClassFilter = null
-  parents: [UUID!] = null
+
+  "Parent UUID filter limiting which entries are returned.\n\n| `parents`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  parents: [UUID!] = null @deprecated(reason: "Replaced by the 'parent' filter")
+
+  "Parent user-key filter limiting which entries are returned.\n\n| `parent_user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   parent_user_keys: [String!] = null
+    @deprecated(reason: "Replaced by the 'parent' filter")
+
+  "Owner filter limiting which entries are returned.\n"
   owner: ClassOwnerFilter = null
+
+  "Scope filter limiting which entries are returned.\n\n| `scope`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   scope: [String!] = null
 }
 
 input ItuserBoundAddressFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
-  employee: EmployeeFilter
-  employees: [UUID!] = null
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Employee filter limiting which entries are returned.\n"
+  employee: EmployeeFilter
+
+  "Employee UUID filter limiting which entries are returned.\n\n| `employees`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  employees: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'employee' filter")
+
+  "Organisation Unit filter limiting which entries are returned.\n"
+  org_unit: OrganisationUnitFilter = null
+
+  "Organisational Unit UUID filter limiting which entries are returned.\n\n| `org_units`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  org_units: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'org_unit' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: AddressRegistrationFilter = null
+
+  "Address type filter limiting which entries are returned.\n"
   address_type: ClassFilter = null
+
+  "Address type UUID filter limiting which entries are returned.\n\n| `address_types`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   address_types: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'address_type' filter")
+
+  "Address type user-key filter limiting which entries are returned.\n\n| `address_type_user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   address_type_user_keys: [String!] = null
+    @deprecated(reason: "Replaced by the 'address_type' filter")
+
+  "Engagement filter limiting which entries are returned.\n"
   engagement: EngagementFilter = null
+
+  "Engagement UUID filter limiting which entries are returned.\n\n| `engagements`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   engagements: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'engagement' filter")
+
+  """
+  Visibility filter limiting which entries are returned.
+  """
   visibility: ClassFilter = null
 }
 
 input ItuserBoundRoleBindingFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Organisation Unit filter limiting which entries are returned.\n"
+  org_unit: OrganisationUnitFilter = null
+
+  "Organisational Unit UUID filter limiting which entries are returned.\n\n| `org_units`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  org_units: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'org_unit' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: RoleRegistrationFilter = null
+
+  "Role filter limiting which entries are returned.\n"
   role: ClassFilter = null
 }
 
@@ -5737,7 +6278,16 @@ type ListenerPaged {
 input ListenersBoundFullEventFilter {
   subjects: [String!] = null
   priorities: [Int!] = null
+
+  """
+  Filter based on silence status.
+  """
   silenced: Boolean = null
+
+  """
+  Filter based on creation time.
+  """
+  created_at: EventCreatedAtFilter = null
 }
 
 "\nManagers of organisation units and their connected identities.\n"
@@ -5852,6 +6402,9 @@ type Manager {
   "\nEngagement that this manager role is associated with.\n"
   engagement_response: EngagementResponse
 
+  "\nMarks which managerial position is primary (if any).\n"
+  primary_response: ClassResponse
+
   "\nThe object type.\n\nAlways contains the string `manager`.\n"
   type: String!
     @deprecated(
@@ -5956,6 +6509,11 @@ input ManagerCreateInput {
   manager_type: UUID!
 
   """
+  Primary field of the manager object
+  """
+  primary: UUID = null
+
+  """
   Validity range for the manager.
   """
   validity: RAValidityInput!
@@ -6014,6 +6572,9 @@ input ManagerFilter {
 
   "Employee filter for managers to exclude from the result.\n"
   exclude: EmployeeFilter = null
+
+  "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return managers without a primary class.\n"
+  primary: ClassFilter
 }
 
 type ManagerRegistration implements IRegistration & RegistrationBase {
@@ -6186,11 +6747,21 @@ input ManagerUpdateInput {
   org_unit: UUID = null
   manager_type: UUID = null
   manager_level: UUID = null
+  primary: UUID
 }
 
 input ModelsUuidsBoundRegistrationFilter {
+  "Filter registrations by their changing actor.\n\nCan be used to select all changes made by a particular user or integration.\n\n| `actors`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   actors: [UUID!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   start: DateTime = null
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   end: DateTime = null
 }
 
@@ -6267,6 +6838,9 @@ type Mutation {
   Terminates an association
   """
   association_terminate(input: AssociationTerminateInput!): AssociationResponse!
+
+  "Deletes an association.\n**Warning**:\nThis mutator does bitemporal deletion, **not** temporal termination.\nDo **not** use this mutator **unless** you **fully understand** its implications.\n\nBitemporal deletion and temporal termination are **very** different operations and should **not** be confused.\nIf you do not know which of the operations you need, you most likely need temporal termination.\n\nBitemporal deletion works on the bitemporal time-axis, and should **only** be used by clients that **fully understand** the underlying bitemporal model, including how a bitemporal delete affects the registration history.\n\nAfter this call the deleted entity will no longer show up in **any** temporal listing.\n\nNote:\nIt is currently the callers responsibility to ensure that references are dealt with before doing bitemporal deletions.\nFailure to do so **will** leave dangling references breaking temporal foreign-keys, and potentially breaking invariants in the data.\n"
+  association_delete(uuid: UUID!): AssociationResponse!
 
   """
   Refresh associations.
@@ -6617,6 +7191,9 @@ type Mutation {
   """
   kle_terminate(input: KLETerminateInput!): KLEResponse!
 
+  "Deletes a KLE annotation.\n**Warning**:\nThis mutator does bitemporal deletion, **not** temporal termination.\nDo **not** use this mutator **unless** you **fully understand** its implications.\n\nBitemporal deletion and temporal termination are **very** different operations and should **not** be confused.\nIf you do not know which of the operations you need, you most likely need temporal termination.\n\nBitemporal deletion works on the bitemporal time-axis, and should **only** be used by clients that **fully understand** the underlying bitemporal model, including how a bitemporal delete affects the registration history.\n\nAfter this call the deleted entity will no longer show up in **any** temporal listing.\n\nNote:\nIt is currently the callers responsibility to ensure that references are dealt with before doing bitemporal deletions.\nFailure to do so **will** leave dangling references breaking temporal foreign-keys, and potentially breaking invariants in the data.\n"
+  kle_delete(uuid: UUID!): KLEResponse!
+
   """
   Refresh KLEs.
   """
@@ -6659,6 +7236,9 @@ type Mutation {
   Terminates a leave.
   """
   leave_terminate(input: LeaveTerminateInput!): LeaveResponse!
+
+  "Deletes a leave.\n**Warning**:\nThis mutator does bitemporal deletion, **not** temporal termination.\nDo **not** use this mutator **unless** you **fully understand** its implications.\n\nBitemporal deletion and temporal termination are **very** different operations and should **not** be confused.\nIf you do not know which of the operations you need, you most likely need temporal termination.\n\nBitemporal deletion works on the bitemporal time-axis, and should **only** be used by clients that **fully understand** the underlying bitemporal model, including how a bitemporal delete affects the registration history.\n\nAfter this call the deleted entity will no longer show up in **any** temporal listing.\n\nNote:\nIt is currently the callers responsibility to ensure that references are dealt with before doing bitemporal deletions.\nFailure to do so **will** leave dangling references breaking temporal foreign-keys, and potentially breaking invariants in the data.\n"
+  leave_delete(uuid: UUID!): LeaveResponse!
 
   """
   Refresh leaves.
@@ -6708,6 +7288,9 @@ type Mutation {
   """
   manager_terminate(input: ManagerTerminateInput!): ManagerResponse!
 
+  "Deletes a manager relation.\n**Warning**:\nThis mutator does bitemporal deletion, **not** temporal termination.\nDo **not** use this mutator **unless** you **fully understand** its implications.\n\nBitemporal deletion and temporal termination are **very** different operations and should **not** be confused.\nIf you do not know which of the operations you need, you most likely need temporal termination.\n\nBitemporal deletion works on the bitemporal time-axis, and should **only** be used by clients that **fully understand** the underlying bitemporal model, including how a bitemporal delete affects the registration history.\n\nAfter this call the deleted entity will no longer show up in **any** temporal listing.\n\nNote:\nIt is currently the callers responsibility to ensure that references are dealt with before doing bitemporal deletions.\nFailure to do so **will** leave dangling references breaking temporal foreign-keys, and potentially breaking invariants in the data.\n"
+  manager_delete(uuid: UUID!): ManagerResponse!
+
   """
   Refresh managers.
   """
@@ -6736,9 +7319,7 @@ type Mutation {
     priority: Int! = 10000
   ): UUIDPaged!
 
-  """
-  Creates the root-organisation.
-  """
+  "Sets the municipality code of the root-organisation.\n\nThe root-organisation always exists, so - in spite of the name -\nthis does not actually create anything.\n"
   org_create(input: OrganisationCreate!): Organisation!
     @deprecated(
       reason: "The root organisation concept will be removed in a future version of OS2mo."
@@ -6810,6 +7391,9 @@ type Mutation {
   Terminates an owner.
   """
   owner_terminate(input: OwnerTerminateInput!): OwnerResponse!
+
+  "Deletes an owner.\n**Warning**:\nThis mutator does bitemporal deletion, **not** temporal termination.\nDo **not** use this mutator **unless** you **fully understand** its implications.\n\nBitemporal deletion and temporal termination are **very** different operations and should **not** be confused.\nIf you do not know which of the operations you need, you most likely need temporal termination.\n\nBitemporal deletion works on the bitemporal time-axis, and should **only** be used by clients that **fully understand** the underlying bitemporal model, including how a bitemporal delete affects the registration history.\n\nAfter this call the deleted entity will no longer show up in **any** temporal listing.\n\nNote:\nIt is currently the callers responsibility to ensure that references are dealt with before doing bitemporal deletions.\nFailure to do so **will** leave dangling references breaking temporal foreign-keys, and potentially breaking invariants in the data.\n"
+  owner_delete(uuid: UUID!): OwnerResponse!
 
   """
   Refresh owners.
@@ -6949,7 +7533,7 @@ type Mutation {
   """
   event_send(input: EventSendInput!): Boolean!
 
-  "Silence an event.\n\nIn general, this should only be done by humans while the implementation of a fix is in the works.\n"
+  "Mark an event as silenced.\n\nSilencing does not affect delivery, it only affects whether alerts are triggered.\n"
   event_silence(input: EventSilenceInput!): Boolean!
 
   """
@@ -6957,7 +7541,22 @@ type Mutation {
   """
   event_unsilence(input: EventUnsilenceInput!): Boolean!
 
-  "Upload a file.\n\nFile upload must be done via multipart form-data.\n\nHow to do this is client-specific, but below is an example using [curl](https://curl.se/):\n```console\ncurl https://{{MO_URL}}/graphql/v7 \\\n  -H \"Authorization: Bearer {{TOKEN}}\" \\\n  -F operations=\"{\\\"query\\\": \\\"{{QUERY}}\\\", \\\n      \\\"variables\\\": {\\\"file\\\": null}}\" \\\n  -F map='{\"file\": [\"variables.file\"]}' \\\n  -F file=@myfile.txt\n```\nWhere:\n* `myfile.txt` is the file to upload.\n* `{{MO_URL}}` is the base-url for the OS2mo instance to upload the file to.\n* `{{TOKEN}}` is a valid JWT-token acquired from Keycloak.\n* `{{QUERY}}` is the upload query:\n```gql\nmutation($file: Upload!) {\n  upload_file(\n    file_store: EXPORTS,\n    file: $file\n  )\n}\n```\n\nNote:\nAs GraphiQL does not support sending multipart form-data payloads, it is unfortunately not possible to upload files from GraphiQL.\n"
+  """
+  Rerun all matching events
+  """
+  event_rerun(input: EventRerunInput!): [FullEvent!]!
+
+  "Declare a policy.\n\nDeclaring a policy brings it to the desired state: either a state to upsert\nthe policy to, or null for the policy not to exist.\n\nManaged policies cannot be modified.\n"
+  policy_declare(
+    uuid: UUID!
+
+    """
+    The desired state of the policy, or null for it not to exist.
+    """
+    state: PolicyStateInput = null
+  ): Policy
+
+  "Upload a file.\n\nFile upload must be done via multipart form-data.\n\nHow to do this is client-specific, but below is an example using [curl](https://curl.se/):\n```console\ncurl https://{{MO_URL}}/graphql/v30 \\\n  -H \"Authorization: Bearer {{TOKEN}}\" \\\n  -F operations='{\"query\": \"mutation($file: Upload!) { upload_file(file_store: EXPORTS, file: $file, force: false) }\", \"variables\": {\"file\": null}}' \\\n  -F map='{\"file\": [\"variables.file\"]}' \\\n  -F file=@myfile.txt\n```\nWhere:\n* `{{MO_URL}}` is the base-url for the OS2mo instance to upload the file to.\n* `{{TOKEN}}` is a valid JWT-token acquired from Keycloak.\n* `myfile.txt` is the file to upload. The filename is taken from this\n  multipart part; there is no separate filename argument.\n\nNote:\nAs GraphiQL does not support sending multipart form-data payloads, it is unfortunately not possible to upload files from GraphiQL.\n"
   upload_file(
     """
     The filestore to upload the file into
@@ -6972,6 +7571,105 @@ type Mutation {
     """
     force: Boolean! = false
   ): String!
+}
+
+"""
+A mutator a write rule may grant.
+"""
+enum Mutator {
+  address_create
+  addresses_create
+  address_update
+  address_terminate
+  address_delete
+  address_refresh
+  association_create
+  association_update
+  association_terminate
+  association_delete
+  association_refresh
+  class_create
+  class_update
+  class_terminate
+  class_delete
+  class_refresh
+  employee_create
+  employee_update
+  employee_terminate
+  employee_delete
+  employee_refresh
+  engagement_create
+  engagements_create
+  engagement_update
+  engagements_update
+  engagement_terminate
+  engagement_delete
+  engagement_refresh
+  facet_create
+  facet_update
+  facet_terminate
+  facet_delete
+  facet_refresh
+  itassociation_create
+  itassociation_update
+  itassociation_terminate
+  itsystem_create
+  itsystem_update
+  itsystem_terminate
+  itsystem_delete
+  itsystem_refresh
+  ituser_create
+  itusers_create
+  ituser_update
+  ituser_terminate
+  ituser_delete
+  ituser_refresh
+  kle_create
+  kle_update
+  kle_terminate
+  kle_delete
+  kle_refresh
+  leave_create
+  leave_update
+  leave_terminate
+  leave_delete
+  leave_refresh
+  manager_create
+  managers_create
+  manager_update
+  manager_terminate
+  manager_delete
+  manager_refresh
+  org_create
+  org_unit_create
+  org_unit_update
+  org_unit_terminate
+  org_unit_delete
+  org_unit_refresh
+  owner_create
+  owner_update
+  owner_terminate
+  owner_delete
+  owner_refresh
+  related_units_update
+  related_unit_refresh
+  rolebinding_create
+  rolebindings_create
+  rolebinding_update
+  rolebinding_terminate
+  rolebinding_delete
+  rolebinding_refresh
+  event_namespace_declare
+  event_namespace_delete
+  event_listener_declare
+  event_listener_delete
+  event_acknowledge
+  event_send
+  event_silence
+  event_unsilence
+  event_rerun
+  policy_declare
+  upload_file
 }
 
 """
@@ -7079,9 +7777,16 @@ type NamespacePaged {
 }
 
 input NamespacesBoundListenerFilter {
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "Listener filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  "Owner filter limiting which entries are returned.\n\n| `owners`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   owners: [UUID!] = null
+
+  "Routing key filter limiting which entries are returned.\n\n| `routing_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   routing_keys: [String!] = null
 }
 
@@ -7101,119 +7806,378 @@ type OpenValidity {
 }
 
 input OrgUnitboundaddressfilter {
-  employee: EmployeeFilter
-  employees: [UUID!] = null
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Employee filter limiting which entries are returned.\n"
+  employee: EmployeeFilter
+
+  "Employee UUID filter limiting which entries are returned.\n\n| `employees`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  employees: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'employee' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: AddressRegistrationFilter = null
+
+  "Address type filter limiting which entries are returned.\n"
   address_type: ClassFilter = null
+
+  "Address type UUID filter limiting which entries are returned.\n\n| `address_types`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   address_types: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'address_type' filter")
+
+  "Address type user-key filter limiting which entries are returned.\n\n| `address_type_user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   address_type_user_keys: [String!] = null
+    @deprecated(reason: "Replaced by the 'address_type' filter")
+
+  "Engagement filter limiting which entries are returned.\n"
   engagement: EngagementFilter = null
+
+  "Engagement UUID filter limiting which entries are returned.\n\n| `engagements`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   engagements: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'engagement' filter")
+
+  """
+  ITUser filter limiting which entries are returned.
+  """
   ituser: ITUserFilter = null
+
+  """
+  Visibility filter limiting which entries are returned.
+  """
   visibility: ClassFilter = null
 }
 
 input OrgUnitboundassociationfilter {
-  employee: EmployeeFilter
-  employees: [UUID!] = null
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Employee filter limiting which entries are returned.\n"
+  employee: EmployeeFilter
+
+  "Employee UUID filter limiting which entries are returned.\n\n| `employees`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  employees: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'employee' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: AssociationRegistrationFilter = null
+
+  "Address type filter limiting which entries are returned.\n"
   association_type: ClassFilter = null
+
+  "Association type UUID filter limiting which entries are returned.\n\n| `association_types`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   association_types: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'association_type' filter")
+
+  "Association type user-key filter limiting which entries are returned.\n\n| `association_type_user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   association_type_user_keys: [String!] = null
+    @deprecated(reason: "Replaced by the 'association_type' filter")
+
+  "Query for either IT-Associations or \"normal\" Associations. `None` returns all.\n\nThis field is needed to replicate the functionality in the service API:\n`?it=1`\n"
   it_association: Boolean = null
 }
 
 input OrgUnitboundengagementfilter {
-  employee: EmployeeFilter
-  employees: [UUID!] = null
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Employee filter limiting which entries are returned.\n"
+  employee: EmployeeFilter
+
+  "Employee UUID filter limiting which entries are returned.\n\n| `employees`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  employees: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'employee' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: EngagementRegistrationFilter = null
+
+  "Job function filter limiting which entries are returned.\n"
   job_function: ClassFilter = null
+
+  "Engagement type filter limiting which entries are returned.\n"
   engagement_type: ClassFilter = null
+
+  "Explicit manager filter limiting which entries are returned.\n\n* Omitted (`UNSET`): no filtering on explicit manager.\n* `null`: only engagements without an explicit manager.\n* A `ManagerFilter`: only engagements whose explicit manager\n  matches the nested filter.\n"
+  explicit_manager: ManagerFilter
+
+  """
+  ITUser filter limiting which entries are returned.
+  """
   ituser: ITUserFilter = null
+
+  "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return engagements without a primary class.\n"
+  primary: ClassFilter
 }
 
 input OrgUnitboundituserfilter {
-  employee: EmployeeFilter
-  employees: [UUID!] = null
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Employee filter limiting which entries are returned.\n"
+  employee: EmployeeFilter
+
+  "Employee UUID filter limiting which entries are returned.\n\n| `employees`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  employees: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'employee' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: ITUserRegistrationFilter = null
+
+  "ITSystem filter limiting which entries are returned.\n"
   itsystem: ITSystemFilter = null
+
+  "Only return IT users of ITSystem with these UUIDs filter limiting which entries are returned.\n\n| `itsystem_uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   itsystem_uuids: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'itsystem' filter")
+
+  "Engagement filter limiting which entries are returned.\n"
   engagement: EngagementFilter = null
+
+  "Rolebinding filter limiting which entries are returned.\n\nSet to `null` to only return IT users without any rolebindings.\n"
+  rolebinding: RoleBindingFilter
+
+  "Only return IT users with this `external_id`.\n\n| `external_id` | Elements returned                            |\n|---------------|----------------------------------------------|\n| not provided  | All                                          |\n| `null`        | Only entries where `external_id` is not set  |\n| `[]`          | None                                         |\n| `\"x\"`         | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]`  | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   external_ids: [String!]
+
+  "Only return IT users with this `binding_type` filter limiting which entries are returned.\n\n| `binding_type`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   binding_types: [String!] = null
+
+  "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return IT users without a primary class.\n"
+  primary: ClassFilter
 }
 
 input OrgUnitboundklefilter {
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Registration filter limiting which entries are returned.\n"
   registration: KLERegistrationFilter = null
 }
 
 input OrgUnitboundleavefilter {
-  employee: EmployeeFilter
-  employees: [UUID!] = null
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Employee filter limiting which entries are returned.\n"
+  employee: EmployeeFilter
+
+  "Employee UUID filter limiting which entries are returned.\n\n| `employees`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  employees: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'employee' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: LeaveRegistrationFilter = null
 }
 
 input OrgUnitboundmanagerfilter {
-  employee: EmployeeFilter
-  employees: [UUID!] = null
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Employee filter limiting which entries are returned.\n"
+  employee: EmployeeFilter
+
+  "Employee UUID filter limiting which entries are returned.\n\n| `employees`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  employees: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'employee' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: ManagerRegistrationFilter = null
+
+  "Engagement filter limiting which entries are returned.\n"
   engagement: EngagementFilter = null
+
+  "Responsibility filter limiting which entries are returned.\n"
   responsibility: ClassFilter = null
+
+  "Manager_type filter limiting which entries are returned.\n"
   manager_type: ClassFilter = null
+
+  "Employee filter for managers to exclude from the result.\n"
   exclude: EmployeeFilter = null
+
+  "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return managers without a primary class.\n"
+  primary: ClassFilter
 }
 
 input OrgUnitboundownerfilter {
-  employee: EmployeeFilter
-  employees: [UUID!] = null
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Employee filter limiting which entries are returned.\n"
+  employee: EmployeeFilter
+
+  "Employee UUID filter limiting which entries are returned.\n\n| `employees`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  employees: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'employee' filter")
+
+  "Owner filter limiting which entries are returned.\n"
   owner: EmployeeFilter = null
 }
 
 input OrgUnitboundrelatedunitfilter {
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
 }
 
@@ -7737,6 +8701,11 @@ input OrganisationUnitFilter {
 
   "Filter organisation units to only include matches pointed to by engagements.\n\nCan be used to find organisation units for certain engagements.\n"
   engagement: EngagementFilter = null
+
+  """
+  Owner filter limiting which entries are returned.
+  """
+  owner: OwnerFilter = null
 }
 
 type OrganisationUnitRegistration implements IRegistration & RegistrationBase {
@@ -8284,13 +9253,23 @@ input OwnerUpdateInput {
 }
 
 input OwnersBoundListenerFilter {
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "Listener filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  "Routing key filter limiting which entries are returned.\n\n| `routing_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   routing_keys: [String!] = null
+
+  """
+  Only match listeners in this namespace
+  """
   namespaces: NamespaceFilter = null
 }
 
 input OwnersBoundNamespaceFilter {
+  "Name filter limiting which entries are returned.\n\n| `names`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   names: [String!] = null
   public: Boolean = null
 }
@@ -8302,46 +9281,134 @@ type PageInfo {
 }
 
 input ParentBoundClassFilter {
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Registration filter limiting which entries are returned.\n"
   registration: ClassRegistrationFilter = null
+
+  "Name filter finding exact matches by name.\n"
   name: [String!] = null
+
+  "Facet filter limiting which entries are returned.\n"
   facet: FacetFilter = null
-  facets: [UUID!] = null
+
+  "Facet UUID filter limiting which entries are returned.\n\n| `facets`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  facets: [UUID!] = null @deprecated(reason: "Replaced by the 'facet' filter")
+
+  "Facet user-key filter limiting which entries are returned.\n\n| `facet_user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   facet_user_keys: [String!] = null
+    @deprecated(reason: "Replaced by the 'facet' filter")
+
+  "IT-System filter limiting which entries are returned.\n"
   it_system: ITSystemFilter = null
+
+  "Owner filter limiting which entries are returned.\n"
   owner: ClassOwnerFilter = null
+
+  "Scope filter limiting which entries are returned.\n\n| `scope`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   scope: [String!] = null
 }
 
 input ParentBoundFacetFilter {
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Registration filter limiting which entries are returned.\n"
   registration: FacetRegistrationFilter = null
 }
 
 input ParentBoundOrganisationUnitFilter {
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   uuids: [UUID!] = null
+
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Registration filter limiting which entries are returned.\n"
   registration: OrganisationUnitRegistrationFilter = null
+
+  "Free text search.\n\nDoes best effort lookup to find entities matching the query string.\nNo quarantees are given w.r.t. the entries returned.\n"
   query: String
+
+  "Name filter finding exact matches by name.\n\n| `names`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   names: [String!]
+
+  "Select organisation units whose children matches the given filter.\n\nSet to `None` to find leaf node units.\nSet to `{}` to find inner node units.\n\nThis endpoint behaves to descendant as parent does to ancestor.\n"
   child: OrganisationUnitFilter
+
+  "Hierarchy filter limiting which entries are returned.\n\nFilter organisation units by their organisational hierarchy labels.\n\nCan be used to extract a subset of the organisational structure.\n\nExamples of user-keys:\n* `\"Line-management\"`\n* `\"Self-owned institution\"`\n* `\"Outside organisation\"`\n* `\"Hidden\"`\n\nNote:\nThe organisation-gatekeeper integration is one option to keep hierarchy labels up-to-date.\n"
   hierarchy: ClassFilter = null
+
+  "Filter organisation units by their organisational hierarchy labels.\n\nCan be used to extract a subset of the organisational structure.\n\nExamples of user-keys:\n* `\"Line-management\"`\n* `\"Self-owned institution\"`\n* `\"Outside organisation\"`\n* `\"Hidden\"`\n\nNote:\nThe organisation-gatekeeper integration is one option to keep hierarchy labels up-to-date.\n\n| `hierarchies`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   hierarchies: [UUID!] = null
-  subtree: OrganisationUnitFilter
+    @deprecated(reason: "Replaced by the 'hierarchy' filter")
+  subtree: OrganisationUnitFilter @deprecated(reason: "Renamed to 'descendant'")
+
+  "Select organisation units which have a descendant matching the given filter.\n\nNote that every node is its own descendant as per [CLRS] 12.2-6.\n\nGiven the following tree:\n```\nA\n├── B\n│   ├── C\n│   │   └── D\n│   └── E\n└── F\n```\nthe `descendant` filter behaves according to the following table:\n\n| Filter | Returned    |\n|--------|-------------|\n|      A | A           |\n|      B | A B         |\n|      C | A B C       |\n|      D | A B C D     |\n|      E | A B E       |\n|      F | A F         |\n"
   descendant: OrganisationUnitFilter
+
+  "Select organisation units which have an ancestor matching the given filter.\n\nNote that every node is its own ancestor as per [CLRS] 12.2-6.\n\nGiven the following tree:\n```\nA\n├── B\n│   ├── C\n│   │   └── D\n│   └── E\n└── F\n```\nthe `ancestor` filter behaves according to the following table:\n\n| Filter | Returned    |\n|--------|-------------|\n|      A | A B C D E F |\n|      B | B C D E     |\n|      C | C D         |\n|      D | D           |\n|      E | E           |\n|      F | F           |\n"
   ancestor: OrganisationUnitFilter
+
+  "Filter organisation units to only include matches pointed to by engagements.\n\nCan be used to find organisation units for certain engagements.\n"
   engagement: EngagementFilter = null
+
+  """
+  Owner filter limiting which entries are returned.
+  """
+  owner: OwnerFilter = null
 }
 
 type PersonRegistration implements IRegistration & RegistrationBase {
@@ -8379,6 +9446,233 @@ type PersonRegistration implements IRegistration & RegistrationBase {
 
   "\nTemporal state entrypoint.\n\nReturns the state of the object at varying validities and current assertion time.\n\nA list of objects are returned as only many different validity intervals can be active at a given assertion time.\n\nNote:\nThis the entrypoint should be used for temporal integrations and UIs.\nFor actual-state integrations, please consider using `current` instead.\n"
   validities(start: DateTime, end: DateTime): [Employee!]!
+}
+
+"""
+Policies assign meaning to roles.
+"""
+type Policy {
+  """
+  UUID of the policy.
+  """
+  uuid: UUID!
+
+  """
+  Unique name of the policy.
+  """
+  name: String!
+
+  """
+  Description of the policy.
+  """
+  description: String!
+
+  """
+  Whether the policy is active. Inactive policies are not considered for access control.
+  """
+  active: Boolean!
+
+  """
+  The policy is activated for every actor matching any of these.
+  """
+  selectors: [PolicySelector!]!
+
+  """
+  Whether MO manages the policy. MO managed policies cannot be modified.
+  """
+  managed: Boolean!
+
+  """
+  The collections the policy grants access to.
+  """
+  read_rules: [PolicyReadRule!]!
+
+  """
+  The mutators the policy grants access to.
+  """
+  write_rules: [PolicyWriteRule!]!
+}
+
+"""
+Policy filter.
+"""
+input PolicyFilter {
+  "UUID filter limiting which entries are returned.\n\n| `uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  uuids: [UUID!] = null
+
+  "Name filter limiting which entries are returned.\n\n| `names`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  names: [String!] = null
+
+  "Selector filter limiting which entries are returned.\n\n| `selectors`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  selectors: [PolicySelectorInput!] = null
+
+  """
+  Filter based on whether the policy is active.
+  """
+  active: Boolean = null
+}
+
+"""
+Result page in cursor-based pagination.
+"""
+type PolicyPaged {
+  "List of results.\n\nThe number of elements is defined by the `limit` argument.\n"
+  objects: [Policy!]!
+
+  "Container for page information.\n\nContains the cursors necessary to fetch other pages.\nContains information on when to stop iteration.\n"
+  page_info: PageInfo!
+}
+
+"""
+Grants conditional access to the specified fields on a collection.
+"""
+type PolicyReadRule {
+  """
+  The collection field access is granted on.
+  """
+  collection: Collection!
+
+  """
+  The fields that are granted.
+  """
+  fields: [String!]!
+
+  "CEL expression evaluating to either a boolean, or a filter naming the\nentities that fields are granted on.\n\n`true` grants the fields of every entity. `false` grants nothing.\n"
+  condition: CEL!
+
+  """
+  The GraphQL version the condition filter is written in.
+  """
+  graphql_version: GraphQLVersion!
+}
+
+"""
+Grants conditional access to the specified fields on a collection.
+"""
+input PolicyReadRuleInput {
+  """
+  The collection to grant field access on.
+  """
+  collection: Collection!
+
+  """
+  The fields to grant.
+  """
+  fields: [String!]!
+
+  "CEL expression evaluating to either a boolean, or a filter naming the\nentities to grant the fields on.\n\n`true`, the default, grants the fields of every entity. `false` grants nothing.\n"
+  condition: CEL! = "true"
+
+  """
+  The GraphQL version the condition filter is written in.
+  """
+  graphql_version: GraphQLVersion!
+}
+
+"""
+Selects the actors a policy is activated for.
+"""
+type PolicySelector {
+  """
+  What the selector matches actors by.
+  """
+  kind: PolicySelectorKind!
+
+  """
+  The value matched, whose meaning depends on the kind.
+  """
+  value: String!
+}
+
+"""
+Selects the actors a policy is activated for.
+"""
+input PolicySelectorInput {
+  """
+  What the selector matches actors by.
+  """
+  kind: PolicySelectorKind!
+
+  """
+  The value matched, whose meaning depends on the kind.
+  """
+  value: String!
+}
+
+"What a selector matches actors by, and what its value names:\n\n* `role`: the actors carrying the role named by the value.\n"
+enum PolicySelectorKind {
+  role
+}
+
+"""
+The desired state of a policy.
+"""
+input PolicyStateInput {
+  """
+  Unique name of the policy.
+  """
+  name: String!
+
+  """
+  The policy is activated for every actor matching any of these.
+  """
+  selectors: [PolicySelectorInput!]!
+
+  """
+  Description of the policy.
+  """
+  description: String! = ""
+
+  """
+  Whether the policy is active. Inactive policies are not considered for access control.
+  """
+  active: Boolean! = true
+
+  """
+  The collections the policy grants access to.
+  """
+  read_rules: [PolicyReadRuleInput!]! = []
+
+  """
+  The mutators the policy grants access to.
+  """
+  write_rules: [PolicyWriteRuleInput!]! = []
+}
+
+"""
+Grants conditional access to the specified mutator.
+"""
+type PolicyWriteRule {
+  """
+  The mutator granted.
+  """
+  mutator: Mutator!
+
+  "CEL expression evaluating to either a boolean, or a\n`{collection, filter}` map naming what must exist for the mutator to be\ngranted. Combine maps with `{or: [...]}`, `{and: [...]}` and `{not: ...}`.\n\n`true` grants the mutator outright. `false` grants nothing.\n"
+  condition: CEL!
+
+  """
+  The GraphQL version the condition filters are written in.
+  """
+  graphql_version: GraphQLVersion!
+}
+
+"""
+Grants conditional access to the specified mutator.
+"""
+input PolicyWriteRuleInput {
+  """
+  The mutator to grant.
+  """
+  mutator: Mutator!
+
+  "CEL expression evaluating to either a boolean, or a\n`{collection, filter}` map naming what must exist for the mutator to be\ngranted. Combine maps with `{or: [...]}`, `{and: [...]}` and `{not: ...}`.\n\n`true`, the default, grants the mutator outright. `false` grants nothing.\n"
+  condition: CEL! = "true"
+
+  """
+  The GraphQL version the condition filters are written in.
+  """
+  graphql_version: GraphQLVersion!
 }
 
 """
@@ -8650,6 +9944,17 @@ type Query {
     cursor: Cursor = null
   ): AccessLogPaged!
 
+  "Get a list of actors.\n\nActors are the users and integrations that read and change data in\nOS2mo. This is the data-source backing the `actor` / `actor_object`\nfields exposed on access log entries and registrations.\n"
+  actors(
+    filter: ActorFilter = null
+
+    "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
+    limit: int = null
+
+    "Cursor defining the next elements to fetch.\n\n| `cursor`       | Next element is    |\n|----------------|--------------------|\n| not provided   | First              |\n| `null`         | First              |\n| `\"MA==\"` (`*`) | First after Cursor |\n\n`*`: Placeholder for the cursor returned by the previous iteration.\n"
+    cursor: Cursor = null
+  ): ActorPaged!
+
   "Get full events.\n\nFullEvents represent Events, but they do not have a token for acknowledgement.\n\nUse `event_fetch` for event-driven applications.\n\nThis collection is intended for inspection by humans.\n"
   events(
     filter: FullEventFilter = null
@@ -8689,6 +9994,19 @@ type Query {
 
   "Get an event.\n\n`event_fetch` is a key operation for event-driven integrations.\n\nFetched events must be acknowledged by the consumer after it has been processed.\n\nConsumers cannot rely on the order of events, and may receive the same event multiple times.\n"
   event_fetch(filter: EventFilter!): Event
+
+  """
+  Get policies.
+  """
+  policies(
+    filter: PolicyFilter = null
+
+    "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
+    limit: int = null
+
+    "Cursor defining the next elements to fetch.\n\n| `cursor`       | Next element is    |\n|----------------|--------------------|\n| not provided   | First              |\n| `null`         | First              |\n| `\"MA==\"` (`*`) | First after Cursor |\n\n`*`: Placeholder for the cursor returned by the previous iteration.\n"
+    cursor: Cursor = null
+  ): PolicyPaged!
 
   "Get information about the API client itself (i.e. the current caller).\n\nThis collection allows clients to query information about themselves, such\nas their configured actor UUID, RBAC roles, login / contact email address,\ncreated event namespaces and listeners, etc.\n"
   me: Myself!
@@ -9466,116 +10784,367 @@ type UnknownActor implements Actor {
   error: String!
 }
 
+"""
+Represents a file upload.
+"""
 scalar Upload
 
 input UuidsBoundClassFilter {
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Registration filter limiting which entries are returned.\n"
   registration: ClassRegistrationFilter = null
+
+  "Name filter finding exact matches by name.\n"
   name: [String!] = null
+
+  "Facet filter limiting which entries are returned.\n"
   facet: FacetFilter = null
-  facets: [UUID!] = null
+
+  "Facet UUID filter limiting which entries are returned.\n\n| `facets`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  facets: [UUID!] = null @deprecated(reason: "Replaced by the 'facet' filter")
+
+  "Facet user-key filter limiting which entries are returned.\n\n| `facet_user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   facet_user_keys: [String!] = null
+    @deprecated(reason: "Replaced by the 'facet' filter")
+
+  "Parent filter limiting which entries are returned.\n"
   parent: ClassFilter = null
-  parents: [UUID!] = null
+
+  "Parent UUID filter limiting which entries are returned.\n\n| `parents`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  parents: [UUID!] = null @deprecated(reason: "Replaced by the 'parent' filter")
+
+  "Parent user-key filter limiting which entries are returned.\n\n| `parent_user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   parent_user_keys: [String!] = null
+    @deprecated(reason: "Replaced by the 'parent' filter")
+
+  "IT-System filter limiting which entries are returned.\n"
   it_system: ITSystemFilter = null
+
+  "Owner filter limiting which entries are returned.\n"
   owner: ClassOwnerFilter = null
+
+  "Scope filter limiting which entries are returned.\n\n| `scope`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   scope: [String!] = null
 }
 
 input UuidsBoundEmployeeFilter {
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Registration filter limiting which entries are returned.\n"
   registration: EmployeeRegistrationFilter = null
+
+  "Free text search.\n\nDoes best effort lookup to find entities matching the query string.\nNo quarantees are given w.r.t. the entries returned.\n"
   query: String
+
+  "CPR number filter limiting which entries are returned.\n\n| `cpr_numbers`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   cpr_numbers: [CPR!] = null
+
+  """
+  Owner filter limiting which entries are returned.
+  """
+  owner: OwnerFilter = null
+
+  "IT-user filter limiting which entries are returned.\n\nSet to `null` to only return employees without any IT-users.\n"
+  ituser: ITUserFilter
 }
 
 input UuidsBoundEngagementFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
-  employee: EmployeeFilter
-  employees: [UUID!] = null
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Employee filter limiting which entries are returned.\n"
+  employee: EmployeeFilter
+
+  "Employee UUID filter limiting which entries are returned.\n\n| `employees`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  employees: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'employee' filter")
+
+  "Organisation Unit filter limiting which entries are returned.\n"
+  org_unit: OrganisationUnitFilter = null
+
+  "Organisational Unit UUID filter limiting which entries are returned.\n\n| `org_units`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  org_units: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'org_unit' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: EngagementRegistrationFilter = null
+
+  "Job function filter limiting which entries are returned.\n"
   job_function: ClassFilter = null
+
+  "Engagement type filter limiting which entries are returned.\n"
   engagement_type: ClassFilter = null
+
+  "Explicit manager filter limiting which entries are returned.\n\n* Omitted (`UNSET`): no filtering on explicit manager.\n* `null`: only engagements without an explicit manager.\n* A `ManagerFilter`: only engagements whose explicit manager\n  matches the nested filter.\n"
+  explicit_manager: ManagerFilter
+
+  """
+  ITUser filter limiting which entries are returned.
+  """
   ituser: ITUserFilter = null
+
+  "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return engagements without a primary class.\n"
+  primary: ClassFilter
 }
 
 input UuidsBoundFacetFilter {
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Registration filter limiting which entries are returned.\n"
   registration: FacetRegistrationFilter = null
+
+  "Parent filter limiting which entries are returned.\n"
   parent: FacetFilter = null
-  parents: [UUID!] = null
+
+  "Parent UUID filter limiting which entries are returned.\n\n| `parents`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  parents: [UUID!] = null @deprecated(reason: "Replaced by the 'parent' filter")
+
+  "Parent user-key filter limiting which entries are returned.\n\n| `parent_user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   parent_user_keys: [String!] = null
+    @deprecated(reason: "Replaced by the 'parent' filter")
 }
 
 input UuidsBoundITSystemFilter {
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Registration filter limiting which entries are returned.\n"
   registration: ITSystemRegistrationFilter = null
 }
 
 input UuidsBoundITUserFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
-  employee: EmployeeFilter
-  employees: [UUID!] = null
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Employee filter limiting which entries are returned.\n"
+  employee: EmployeeFilter
+
+  "Employee UUID filter limiting which entries are returned.\n\n| `employees`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  employees: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'employee' filter")
+
+  "Organisation Unit filter limiting which entries are returned.\n"
+  org_unit: OrganisationUnitFilter = null
+
+  "Organisational Unit UUID filter limiting which entries are returned.\n\n| `org_units`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  org_units: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'org_unit' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: ITUserRegistrationFilter = null
+
+  "ITSystem filter limiting which entries are returned.\n"
   itsystem: ITSystemFilter = null
+
+  "Only return IT users of ITSystem with these UUIDs filter limiting which entries are returned.\n\n| `itsystem_uuids`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   itsystem_uuids: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'itsystem' filter")
+
+  "Engagement filter limiting which entries are returned.\n"
   engagement: EngagementFilter = null
+
+  "Rolebinding filter limiting which entries are returned.\n\nSet to `null` to only return IT users without any rolebindings.\n"
+  rolebinding: RoleBindingFilter
+
+  "Only return IT users with this `external_id`.\n\n| `external_id` | Elements returned                            |\n|---------------|----------------------------------------------|\n| not provided  | All                                          |\n| `null`        | Only entries where `external_id` is not set  |\n| `[]`          | None                                         |\n| `\"x\"`         | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]`  | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   external_ids: [String!]
+
+  "Only return IT users with this `binding_type` filter limiting which entries are returned.\n\n| `binding_type`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   binding_types: [String!] = null
+
+  "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return IT users without a primary class.\n"
+  primary: ClassFilter
 }
 
 input UuidsBoundLeaveFilter {
-  org_unit: OrganisationUnitFilter = null
-  org_units: [UUID!] = null
-  employee: EmployeeFilter
-  employees: [UUID!] = null
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Employee filter limiting which entries are returned.\n"
+  employee: EmployeeFilter
+
+  "Employee UUID filter limiting which entries are returned.\n\n| `employees`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  employees: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'employee' filter")
+
+  "Organisation Unit filter limiting which entries are returned.\n"
+  org_unit: OrganisationUnitFilter = null
+
+  "Organisational Unit UUID filter limiting which entries are returned.\n\n| `org_units`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  org_units: [UUID!] = null
+    @deprecated(reason: "Replaced by the 'org_unit' filter")
+
+  "Registration filter limiting which entries are returned.\n"
   registration: LeaveRegistrationFilter = null
 }
 
 input UuidsBoundOrganisationUnitFilter {
+  "User-key filter limiting which entries are returned.\n\n| `user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   user_keys: [String!] = null
+
+  """
+  Limit the elements returned by their starting validity.
+  """
   from_date: DateTime
+
+  """
+  Limit the elements returned by their ending validity.
+  """
   to_date: DateTime
+
+  """
+  Show elements as they were at the provided registration time
+  """
   registration_time: DateTime = null
+
+  "Registration filter limiting which entries are returned.\n"
   registration: OrganisationUnitRegistrationFilter = null
+
+  "Free text search.\n\nDoes best effort lookup to find entities matching the query string.\nNo quarantees are given w.r.t. the entries returned.\n"
   query: String
+
+  "Name filter finding exact matches by name.\n\n| `names`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   names: [String!]
+
+  "Select organisation units whose parent matches the given filter.\n\nSet to `None` to find root units.\nSet to `{}` to find non-root units.\n\nThis endpoint behaves to ancestor as child does to descendant.\n"
   parent: OrganisationUnitFilter
-  parents: [UUID!]
+
+  "Parent UUID filter limiting which entries are returned.\n\n| `parents`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
+  parents: [UUID!] @deprecated(reason: "Replaced by the 'parent' filter")
+
+  "Select organisation units whose children matches the given filter.\n\nSet to `None` to find leaf node units.\nSet to `{}` to find inner node units.\n\nThis endpoint behaves to descendant as parent does to ancestor.\n"
   child: OrganisationUnitFilter
+
+  "Hierarchy filter limiting which entries are returned.\n\nFilter organisation units by their organisational hierarchy labels.\n\nCan be used to extract a subset of the organisational structure.\n\nExamples of user-keys:\n* `\"Line-management\"`\n* `\"Self-owned institution\"`\n* `\"Outside organisation\"`\n* `\"Hidden\"`\n\nNote:\nThe organisation-gatekeeper integration is one option to keep hierarchy labels up-to-date.\n"
   hierarchy: ClassFilter = null
+
+  "Filter organisation units by their organisational hierarchy labels.\n\nCan be used to extract a subset of the organisational structure.\n\nExamples of user-keys:\n* `\"Line-management\"`\n* `\"Self-owned institution\"`\n* `\"Outside organisation\"`\n* `\"Hidden\"`\n\nNote:\nThe organisation-gatekeeper integration is one option to keep hierarchy labels up-to-date.\n\n| `hierarchies`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   hierarchies: [UUID!] = null
-  subtree: OrganisationUnitFilter
+    @deprecated(reason: "Replaced by the 'hierarchy' filter")
+  subtree: OrganisationUnitFilter @deprecated(reason: "Renamed to 'descendant'")
+
+  "Select organisation units which have a descendant matching the given filter.\n\nNote that every node is its own descendant as per [CLRS] 12.2-6.\n\nGiven the following tree:\n```\nA\n├── B\n│   ├── C\n│   │   └── D\n│   └── E\n└── F\n```\nthe `descendant` filter behaves according to the following table:\n\n| Filter | Returned    |\n|--------|-------------|\n|      A | A           |\n|      B | A B         |\n|      C | A B C       |\n|      D | A B C D     |\n|      E | A B E       |\n|      F | A F         |\n"
   descendant: OrganisationUnitFilter
+
+  "Select organisation units which have an ancestor matching the given filter.\n\nNote that every node is its own ancestor as per [CLRS] 12.2-6.\n\nGiven the following tree:\n```\nA\n├── B\n│   ├── C\n│   │   └── D\n│   └── E\n└── F\n```\nthe `ancestor` filter behaves according to the following table:\n\n| Filter | Returned    |\n|--------|-------------|\n|      A | A B C D E F |\n|      B | B C D E     |\n|      C | C D         |\n|      D | D           |\n|      E | E           |\n|      F | F           |\n"
   ancestor: OrganisationUnitFilter
+
+  "Filter organisation units to only include matches pointed to by engagements.\n\nCan be used to find organisation units for certain engagements.\n"
   engagement: EngagementFilter = null
+
+  """
+  Owner filter limiting which entries are returned.
+  """
+  owner: OwnerFilter = null
 }
 
 """

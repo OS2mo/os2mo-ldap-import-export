@@ -116,9 +116,13 @@ from .engagement_terminate import EngagementTerminateEngagementTerminate
 from .engagement_update import EngagementUpdate
 from .engagement_update import EngagementUpdateEngagementUpdate
 from .enums import AccessLogModel
+from .enums import Collection
 from .enums import FileStore
+from .enums import GraphQLVersion
 from .enums import HardcodedActor
+from .enums import Mutator
 from .enums import OwnerInferencePriority
+from .enums import PolicySelectorKind
 from .exceptions import GraphQLClientError
 from .exceptions import GraphQLClientGraphQLError
 from .exceptions import GraphQLClientGraphQLMultiError
@@ -135,6 +139,7 @@ from .get_event_namespaces import GetEventNamespacesEventNamespaces
 from .get_event_namespaces import GetEventNamespacesEventNamespacesObjects
 from .get_event_namespaces import GetEventNamespacesEventNamespacesObjectsListeners
 from .input_types import AccessLogFilter
+from .input_types import ActorFilter
 from .input_types import AddressCreateInput
 from .input_types import AddressFilter
 from .input_types import AddressRegistrationFilter
@@ -171,7 +176,9 @@ from .input_types import EngagementRegistrationFilter
 from .input_types import EngagementTerminateInput
 from .input_types import EngagementUpdateInput
 from .input_types import EventAcknowledgeInput
+from .input_types import EventCreatedAtFilter
 from .input_types import EventFilter
+from .input_types import EventRerunInput
 from .input_types import EventSendInput
 from .input_types import EventSilenceInput
 from .input_types import EventUnsilenceInput
@@ -248,6 +255,11 @@ from .input_types import OwnerUpdateInput
 from .input_types import ParentBoundClassFilter
 from .input_types import ParentBoundFacetFilter
 from .input_types import ParentBoundOrganisationUnitFilter
+from .input_types import PolicyFilter
+from .input_types import PolicyReadRuleInput
+from .input_types import PolicySelectorInput
+from .input_types import PolicyStateInput
+from .input_types import PolicyWriteRuleInput
 from .input_types import RAOpenValidityInput
 from .input_types import RAValidityInput
 from .input_types import RegistrationFilter
@@ -581,6 +593,7 @@ __all__ = [
     "AccessLogFilter",
     "AccessLogModel",
     "AcknowledgeEvent",
+    "ActorFilter",
     "AddressCreate",
     "AddressCreateAddressCreate",
     "AddressCreateInput",
@@ -621,6 +634,7 @@ __all__ = [
     "ClassUpdate",
     "ClassUpdateClassUpdate",
     "ClassUpdateInput",
+    "Collection",
     "DeclareEventListener",
     "DeclareEventListenerEventListenerDeclare",
     "DescendantParentBoundOrganisationUnitFilter",
@@ -651,7 +665,9 @@ __all__ = [
     "EngagementUpdateEngagementUpdate",
     "EngagementUpdateInput",
     "EventAcknowledgeInput",
+    "EventCreatedAtFilter",
     "EventFilter",
+    "EventRerunInput",
     "EventSendInput",
     "EventSilenceInput",
     "EventUnsilenceInput",
@@ -679,6 +695,7 @@ __all__ = [
     "GraphQLClientGraphQLError",
     "GraphQLClientGraphQLMultiError",
     "GraphQLClientHttpError",
+    "GraphQLVersion",
     "GraphQlClientInvalidResponseError",
     "HardcodedActor",
     "HealthFilter",
@@ -751,6 +768,7 @@ __all__ = [
     "ManagerTerminateInput",
     "ManagerUpdateInput",
     "ModelsUuidsBoundRegistrationFilter",
+    "Mutator",
     "NamespaceCreateInput",
     "NamespaceDeleteInput",
     "NamespaceFilter",
@@ -796,6 +814,12 @@ __all__ = [
     "PersonCreateEmployeeCreate",
     "PersonRefresh",
     "PersonRefreshEmployeeRefresh",
+    "PolicyFilter",
+    "PolicyReadRuleInput",
+    "PolicySelectorInput",
+    "PolicySelectorKind",
+    "PolicyStateInput",
+    "PolicyWriteRuleInput",
     "RAOpenValidityInput",
     "RAValidityInput",
     "ReadAddressRelationUuids",
