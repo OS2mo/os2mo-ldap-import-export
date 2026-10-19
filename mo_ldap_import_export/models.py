@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 from uuid import uuid4
 
@@ -70,7 +71,8 @@ class OrganisationUnit(StrictBaseModel):
 
 # Because we dump to json all over the place, we cannot really invent our own
 # custom (proper) types.
-UNSET = "LDAP-PLEASE-MAKE-NO-CHANGES (unset sentinel)"
+UnsetLiteral = Literal["LDAP-PLEASE-MAKE-NO-CHANGES (unset sentinel)"]
+UNSET: UnsetLiteral = "LDAP-PLEASE-MAKE-NO-CHANGES (unset sentinel)"
 
 
 class Engagement(StrictBaseModel):
@@ -92,6 +94,8 @@ class Engagement(StrictBaseModel):
     extension_8: str | None = UNSET
     extension_9: str | None = UNSET
     extension_10: str | None = UNSET
+    # UUID of a MO manager object (not a person)
+    explicit_manager: UUID | None | UnsetLiteral = UNSET
     fraction: int | None
     validity: Validity
 

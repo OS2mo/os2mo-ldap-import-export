@@ -281,6 +281,9 @@ def read_engagement_to_engagement(
         extension_8=validity.extension_8,
         extension_9=validity.extension_9,
         extension_10=validity.extension_10,
+        explicit_manager=validity.explicit_manager.uuid
+        if validity.explicit_manager
+        else None,
         validity=models.Validity(
             start=validity.validity.from_,
             end=validity.validity.to,
@@ -690,6 +693,9 @@ class MOAPI:
                 extension_8=sanitize_extension(obj.extension_8),
                 extension_9=sanitize_extension(obj.extension_9),
                 extension_10=sanitize_extension(obj.extension_10),
+                explicit_manager=None
+                if obj.explicit_manager == models.UNSET
+                else obj.explicit_manager,
                 validity=RAValidityInput(
                     from_=obj.validity.start,
                     to=obj.validity.end,
@@ -857,6 +863,10 @@ class MOAPI:
                 to=obj.validity.end,
             ),
         )
+        # Unlike the extension fields, MO distinguishes between an omitted and
+        # a null explicit_manager, so we only send it if it is set.
+        if obj.explicit_manager != models.UNSET:
+            update_input.explicit_manager = obj.explicit_manager
         engagement = await self.graphql_client.engagement_update(input=update_input)
         return engagement.uuid
 

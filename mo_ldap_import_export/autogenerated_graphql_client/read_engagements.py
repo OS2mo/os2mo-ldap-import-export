@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from uuid import UUID
 
 from pydantic import Field
@@ -38,7 +39,14 @@ class ReadEngagementsEngagementsObjectsValidities(BaseModel):
     org_unit_uuid: UUID
     engagement_type_uuid: UUID
     employee_uuid: UUID
+    explicit_manager: Optional[
+        "ReadEngagementsEngagementsObjectsValiditiesExplicitManager"
+    ]
     validity: "ReadEngagementsEngagementsObjectsValiditiesValidity"
+
+
+class ReadEngagementsEngagementsObjectsValiditiesExplicitManager(BaseModel):
+    uuid: UUID
 
 
 class ReadEngagementsEngagementsObjectsValiditiesValidity(BaseModel):
@@ -50,4 +58,5 @@ ReadEngagements.update_forward_refs()
 ReadEngagementsEngagements.update_forward_refs()
 ReadEngagementsEngagementsObjects.update_forward_refs()
 ReadEngagementsEngagementsObjectsValidities.update_forward_refs()
+ReadEngagementsEngagementsObjectsValiditiesExplicitManager.update_forward_refs()
 ReadEngagementsEngagementsObjectsValiditiesValidity.update_forward_refs()

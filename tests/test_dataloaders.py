@@ -458,6 +458,7 @@ async def test_load_mo_engagement(
                             "extension_8": None,
                             "extension_9": None,
                             "extension_10": None,
+                            "explicit_manager": None,
                             "leave_uuid": uuid4(),
                             "primary_uuid": uuid4(),
                             "job_function_uuid": uuid4(),

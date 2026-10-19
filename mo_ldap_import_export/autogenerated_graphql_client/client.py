@@ -763,6 +763,9 @@ class GraphQLClient(AsyncBaseClient):
                     org_unit_uuid
                     engagement_type_uuid
                     employee_uuid
+                    explicit_manager {
+                      uuid
+                    }
                     validity {
                       from
                       to
