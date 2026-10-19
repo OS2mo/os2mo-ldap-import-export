@@ -21,12 +21,14 @@ from mo_ldap_import_export.ldapapi import LDAPAPI
 from mo_ldap_import_export.types import DN
 from mo_ldap_import_export.utils import mo_today
 
-ReadValidities = Callable[[], Awaitable[list[tuple[str, date, date | None]]]]
+ReadValidities = Callable[
+    [], Awaitable[list[tuple[str, date, date | None, str | None]]]
+]
 
 
 @pytest.fixture
 def read_validities(graphql_client: GraphQLClient, mo_person: Any) -> ReadValidities:
-    async def inner() -> list[tuple[str, date, date | None]]:
+    async def inner() -> list[tuple[str, date, date | None, str | None]]:
         engagements = await graphql_client._testing__engagement_read(
             filter=EngagementFilter(
                 from_date=None,
@@ -40,6 +42,7 @@ def read_validities(graphql_client: GraphQLClient, mo_person: Any) -> ReadValidi
                 v.user_key,
                 v.validity.from_.date(),
                 v.validity.to.date() if v.validity.to is not None else None,
+                v.extension_1,
             )
             for v in engagement.validities
         ]
@@ -117,17 +120,17 @@ async def test_no_terminate_template_preserves_future_validity(
 
     # Before the sync.
     assert await read_validities() == [
-        ("past", date(2001, 2, 3), date(2030, 1, 1)),
-        ("future", date(2030, 1, 1), date(2040, 1, 1)),
+        ("past", date(2001, 2, 3), date(2030, 1, 1), None),
+        ("future", date(2030, 1, 1), date(2040, 1, 1), None),
     ]
 
     await trigger_ldap_person()
 
     today = mo_today().date()
     assert await read_validities() == [
-        ("past", date(2001, 2, 3), today),
-        ("Skole underviser", today, date(2030, 1, 1)),
-        ("future", date(2030, 1, 1), date(2040, 1, 1)),
+        ("past", date(2001, 2, 3), today, None),
+        ("Skole underviser", today, date(2030, 1, 1), None),
+        ("future", date(2030, 1, 1), date(2040, 1, 1), None),
     ]
 
 
@@ -164,9 +167,9 @@ async def test_no_terminate_template_preserves_future_validity(
         pytest.param(
             "2040-01-01",
             lambda today: [
-                ("past", date(2001, 2, 3), today),
-                ("Skole underviser", today, date(2030, 1, 1)),
-                ("future", date(2030, 1, 1), date(2040, 1, 1)),
+                ("past", date(2001, 2, 3), today, None),
+                ("Skole underviser", today, date(2030, 1, 1), None),
+                ("future", date(2030, 1, 1), date(2040, 1, 1), None),
             ],
             id="equal-to-final-end-keeps-future",
         ),
@@ -174,8 +177,8 @@ async def test_no_terminate_template_preserves_future_validity(
         pytest.param(
             "2035-01-01",
             lambda today: [
-                ("past", date(2001, 2, 3), today),
-                ("Skole underviser", today, date(2035, 1, 1)),
+                ("past", date(2001, 2, 3), today, None),
+                ("Skole underviser", today, date(2035, 1, 1), None),
             ],
             id="before-final-end-terminates",
         ),
@@ -184,7 +187,7 @@ async def test_no_terminate_template_preserves_future_validity(
 @pytest.mark.usefixtures("test_client")
 async def test_terminate(
     car_license: str,
-    expected: Callable[[date], list[tuple[str, date, date | None]]],
+    expected: Callable[[date], list[tuple[str, date, date | None, str | None]]],
     graphql_client: GraphQLClient,
     mo_person: Any,
     mo_org_unit: Any,
@@ -229,8 +232,8 @@ async def test_terminate(
 
     # Before the sync.
     assert await read_validities() == [
-        ("past", date(2001, 2, 3), date(2030, 1, 1)),
-        ("future", date(2030, 1, 1), date(2040, 1, 1)),
+        ("past", date(2001, 2, 3), date(2030, 1, 1), None),
+        ("future", date(2030, 1, 1), date(2040, 1, 1), None),
     ]
 
     await ldap_api.ldap_connection.ldap_modify(
