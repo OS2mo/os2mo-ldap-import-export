@@ -410,6 +410,13 @@ class Settings(BaseSettings):
         True, description="Whether to write to AD, when changes in MO are registered"
     )
 
+    enable_default_mo2ldap_handlers: bool = Field(
+        True,
+        description=(
+            "Whether to enable the built-in MO to LDAP handlers and listeners"
+        ),
+    )
+
     listen_to_changes_in_ldap: bool = Field(
         True, description="Whether to write to MO, when changes in LDAP are registered"
     )

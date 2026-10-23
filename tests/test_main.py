@@ -14,6 +14,7 @@ from uuid import uuid4
 
 import pytest
 from fastapi import FastAPI
+from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 from fastramqpi.main import FastRAMQPI
 from fastramqpi.ramqp.depends import Context
@@ -228,6 +229,34 @@ def test_create_app() -> None:
     """Test that we can construct our FastAPI application."""
     app = create_app()
     assert isinstance(app, FastAPI)
+
+
+@pytest.mark.parametrize(
+    "expected_paths",
+    [
+        pytest.param(
+            {"/mo2ldap/reconcile"},
+            marks=pytest.mark.envvar({"ENABLE_DEFAULT_MO2LDAP_HANDLERS": "False"}),
+        ),
+        {
+            "/mo2ldap/address",
+            "/mo2ldap/engagement",
+            "/mo2ldap/ituser",
+            "/mo2ldap/person",
+            "/mo2ldap/org_unit",
+            "/mo2ldap/reconcile",
+        },
+    ],
+)
+async def test_default_mo2ldap_handlers(expected_paths: set[str]) -> None:
+    """Ensure that the built-in mo2ldap handlers can be turned off."""
+    app = create_app()
+    mo2ldap_paths = {
+        route.path
+        for route in app.routes
+        if isinstance(route, APIRoute) and route.path.startswith("/mo2ldap")
+    }
+    assert mo2ldap_paths == expected_paths
 
 
 async def test_incorrect_ous_to_search_in() -> None:
