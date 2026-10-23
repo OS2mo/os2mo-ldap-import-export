@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 from datetime import timedelta
 from uuid import UUID
+from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
@@ -48,12 +49,14 @@ async def _create_ituser(
     person: UUID,
     itsystem: UUID,
     user_key: str,
+    external_id: UUID | None,
     engagements: list[UUID] | None = None,
 ) -> UUID:
     result = await graphql_client.ituser_create(
         ITUserCreateInput(
             person=person,
             user_key=user_key,
+            external_id=str(external_id) if external_id else None,
             itsystem=itsystem,
             engagements=engagements,
             validity=RAValidityInput(from_=FROM),
@@ -77,16 +80,38 @@ async def addresses(
     email_employee: UUID,
     phone_employee: UUID,
     aduuid: UUID,
+    ldap_person_uuid: UUID,
     add_engagement: AddEngagement,
 ) -> dict[str, UUID]:
     """Create one address per scenario, keyed by scenario name."""
     engagement = await add_engagement("eng")
 
     ituser_with_engagement = await _create_ituser(
-        graphql_client, mo_person, aduuid, "with-engagement", [engagement]
+        graphql_client,
+        mo_person,
+        aduuid,
+        "with-engagement",
+        ldap_person_uuid,
+        [engagement],
     )
     ituser_without_engagement = await _create_ituser(
-        graphql_client, mo_person, aduuid, "without-engagement"
+        graphql_client, mo_person, aduuid, "without-engagement", uuid4()
+    )
+    ituser_missing_from_ad = await _create_ituser(
+        graphql_client,
+        mo_person,
+        aduuid,
+        "missing-from-ad",
+        uuid4(),
+        [engagement],
+    )
+    ituser_without_external_id = await _create_ituser(
+        graphql_client,
+        mo_person,
+        aduuid,
+        "without-external-id",
+        None,
+        [engagement],
     )
 
     return {
@@ -109,6 +134,22 @@ async def addresses(
             email_employee,
             "no-engagement@example.org",
             ituser_without_engagement,
+        ),
+        # ITUser is present in MO and has an engagement, but its AD entry is gone
+        "missing_from_ad": await _create_address(
+            graphql_client,
+            mo_person,
+            email_employee,
+            "missing-from-ad@example.org",
+            ituser_missing_from_ad,
+        ),
+        # ITUser has no LDAP UUID to check
+        "without_external_id": await _create_address(
+            graphql_client,
+            mo_person,
+            email_employee,
+            "without-external-id@example.org",
+            ituser_without_external_id,
         ),
         # Orphaned, but of an address type we are not asked to clean
         "other_type": await _create_address(
@@ -154,6 +195,8 @@ async def test_dry_run_reports_without_terminating(
     assert set(response.json()) == {
         str(addresses["no_ituser"]),
         str(addresses["no_engagement"]),
+        str(addresses["missing_from_ad"]),
+        str(addresses["without_external_id"]),
     }
 
     for address_uuid in addresses.values():
@@ -180,10 +223,14 @@ async def test_terminates_orphaned_addresses(
     assert set(response.json()) == {
         str(addresses["no_ituser"]),
         str(addresses["no_engagement"]),
+        str(addresses["missing_from_ad"]),
+        str(addresses["without_external_id"]),
     }
 
     assert await _is_terminated(graphql_client, addresses["no_ituser"])
     assert await _is_terminated(graphql_client, addresses["no_engagement"])
+    assert await _is_terminated(graphql_client, addresses["missing_from_ad"])
+    assert await _is_terminated(graphql_client, addresses["without_external_id"])
     assert not await _is_terminated(graphql_client, addresses["healthy"])
     assert not await _is_terminated(graphql_client, addresses["other_type"])
 
@@ -214,6 +261,8 @@ async def test_multiple_address_types(
     assert set(response.json()) == {
         str(addresses["no_ituser"]),
         str(addresses["no_engagement"]),
+        str(addresses["missing_from_ad"]),
+        str(addresses["without_external_id"]),
         str(addresses["other_type"]),
     }
 

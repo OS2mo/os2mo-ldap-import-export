@@ -184,7 +184,7 @@ class AddressValidation(BaseModel):
     has_it_user: bool
     it_user_uuid: UUID | None
     has_engagement: bool
-    ldap_uuid: str | None
+    ldap_uuid: UUID | None
     set_for_deletion: bool
 
 
@@ -202,7 +202,8 @@ class AddressValidation(BaseModel):
         else:
             has_it_user = True
             it_user_uuid = current.ituser_response.current.uuid
-            ldap_uuid = current.ituser_response.current.external_id
+            external_id = current.ituser_response.current.external_id
+            ldap_uuid = UUID(external_id) if external_id else None
             has_engagement = False
 
             for eng in current.ituser_response.current.engagements:

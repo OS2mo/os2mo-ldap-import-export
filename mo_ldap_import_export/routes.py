@@ -240,6 +240,18 @@ async def load_all_current_it_users(
     ]
 
 
+async def get_ldap_unique_uuids(
+    settings: Settings, ldap_connection: Connection
+) -> set[LDAPUUID]:
+    # Fetch all entity UUIDs in LDAP
+    ldap_uuid_attributes = await load_ldap_attribute_values(
+        settings, ldap_connection, settings.ldap_unique_id_field
+    )
+    logger.info("Fetched LDAP UUIDs", count=len(ldap_uuid_attributes))
+    ldap_uuid_attributes.discard(tuple())
+    return set(map(LDAPUUID, map(one, ldap_uuid_attributes)))
+
+
 async def get_non_existing_unique_ldap_uuids(
     settings: Settings,
     ldap_connection: Connection,
@@ -254,12 +266,7 @@ async def get_non_existing_unique_ldap_uuids(
         raise ObjectGUIDITSystemNotFound("Could not find it_system_uuid")
 
     # Fetch all entity UUIDs in LDAP
-    ldap_uuid_attributes = await load_ldap_attribute_values(
-        settings, ldap_connection, settings.ldap_unique_id_field
-    )
-    ldap_uuid_attributes.discard(tuple())
-
-    unique_ldap_uuids = set(map(LDAPUUID, map(one, ldap_uuid_attributes)))
+    unique_ldap_uuids = await get_ldap_unique_uuids(settings, ldap_connection)
 
     # Fetch all MO IT-users and find those with LDAP UUIDs not in LDAP
     all_it_users = await load_all_current_it_users(
@@ -286,6 +293,8 @@ async def get_addresses_governed_by_ldap(
 async def find_orphaned_addresses(
     address_type_user_keys_to_clean: list[str],
     dataloader: DataLoader,
+    settings: Settings,
+    ldap_connection: Connection,
 ) -> list[AddressValidation]:
     # split for readability, and further development
     mo_address_validations: list[
@@ -293,6 +302,39 @@ async def find_orphaned_addresses(
     ] = await get_addresses_governed_by_ldap(
         dataloader.moapi.graphql_client, address_type_user_keys_to_clean
     )
+    logger.debug(
+        "Orphaned Address cleanup, addresses from MO", count=len(mo_address_validations)
+    )
+    if not mo_address_validations:
+        return []
+
+    # Fetch all entity UUIDs in LDAP
+    unique_ldap_uuids = await get_ldap_unique_uuids(settings, ldap_connection)
+
+    for validation in mo_address_validations:
+        if validation.set_for_deletion:
+            continue
+        if validation.ldap_uuid is None:
+            logger.debug(
+                "Address has no LDAP UUID, setting for deletion",
+                address_uuid=validation.address_uuid,
+            )
+            validation.set_for_deletion = True
+            continue
+
+        if validation.ldap_uuid not in unique_ldap_uuids:
+            logger.debug(
+                "Address LDAP UUID not found in LDAP, setting for deletion",
+                address_uuid=validation.address_uuid,
+                ldap_uuid=validation.ldap_uuid,
+            )
+            validation.set_for_deletion = True
+
+    if all(validation.set_for_deletion for validation in mo_address_validations):
+        raise HTTPException(
+            status_code=409,
+            detail="All addresses are set for deletion, aborting to avoid mass deletion",
+        )
 
     return [
         address_validation
@@ -733,14 +775,25 @@ def construct_router(settings: Settings) -> APIRouter:
     @router.post("/fixup/cleanup_orphaned_addresses", status_code=200, tags=["LDAP"])
     async def fixup_orphaned_addresses(
         dataloader: depends.DataLoader,
+        settings: depends.Settings,
+        ldap_connection: depends.Connection,
+        address_type_user_keys_raw: Annotated[
+            list[str] | None, Query(alias="address_type_user_keys")
+        ] = None,
         dry_run: bool = True,
-        address_type_user_keys: Annotated[list[str] | None, Query()] = None,
     ) -> list[str]:
+        address_type_user_keys = (
+            list(filter(None, address_type_user_keys_raw))
+            if address_type_user_keys_raw
+            else None
+        )
         if address_type_user_keys is None:
             return []
 
         addresses_to_delete = await find_orphaned_addresses(
             dataloader=dataloader,
+            settings=settings,
+            ldap_connection=ldap_connection,
             address_type_user_keys_to_clean=address_type_user_keys,
         )
 
