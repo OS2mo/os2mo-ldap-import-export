@@ -548,6 +548,38 @@ from .read_org_units import ReadOrgUnitsOrgUnitsObjectsValidities
 from .read_org_units import ReadOrgUnitsOrgUnitsObjectsValiditiesParent
 from .read_org_units import ReadOrgUnitsOrgUnitsObjectsValiditiesUnitType
 from .read_org_units import ReadOrgUnitsOrgUnitsObjectsValiditiesValidity
+from .read_orphaned_addresses import ReadOrphanedAddresses
+from .read_orphaned_addresses import ReadOrphanedAddressesAddresses
+from .read_orphaned_addresses import ReadOrphanedAddressesAddressesObjects
+from .read_orphaned_addresses import ReadOrphanedAddressesAddressesObjectsCurrent
+from .read_orphaned_addresses import (
+    ReadOrphanedAddressesAddressesObjectsCurrentAddressTypeResponse,
+)
+from .read_orphaned_addresses import (
+    ReadOrphanedAddressesAddressesObjectsCurrentAddressTypeResponseCurrent,
+)
+from .read_orphaned_addresses import (
+    ReadOrphanedAddressesAddressesObjectsCurrentItuserResponse,
+)
+from .read_orphaned_addresses import (
+    ReadOrphanedAddressesAddressesObjectsCurrentItuserResponseCurrent,
+)
+from .read_orphaned_addresses import (
+    ReadOrphanedAddressesAddressesObjectsCurrentItuserResponseCurrentEngagements,
+)
+from .read_orphaned_addresses import (
+    ReadOrphanedAddressesAddressesObjectsCurrentItuserResponseCurrentEngagementsCurrent,
+)
+from .read_orphaned_addresses import (
+    ReadOrphanedAddressesAddressesObjectsCurrentVisibilityResponse,
+)
+from .read_orphaned_addresses import (
+    ReadOrphanedAddressesAddressesObjectsCurrentVisibilityResponseCurrent,
+)
+from .read_orphaned_addresses import (
+    ReadOrphanedAddressesAddressesObjectsCurrentVisibilityResponseCurrentFacetResponse,
+)
+from .read_orphaned_addresses import ReadOrphanedAddressesAddressesPageInfo
 from .read_person_uuid import ReadPersonUuid
 from .read_person_uuid import ReadPersonUuidEmployees
 from .read_person_uuid import ReadPersonUuidEmployeesObjects
@@ -974,6 +1006,20 @@ __all__ = [
     "ReadOrgUnitsOrgUnitsObjectsValiditiesParent",
     "ReadOrgUnitsOrgUnitsObjectsValiditiesUnitType",
     "ReadOrgUnitsOrgUnitsObjectsValiditiesValidity",
+    "ReadOrphanedAddresses",
+    "ReadOrphanedAddressesAddresses",
+    "ReadOrphanedAddressesAddressesObjects",
+    "ReadOrphanedAddressesAddressesObjectsCurrent",
+    "ReadOrphanedAddressesAddressesObjectsCurrentAddressTypeResponse",
+    "ReadOrphanedAddressesAddressesObjectsCurrentAddressTypeResponseCurrent",
+    "ReadOrphanedAddressesAddressesObjectsCurrentItuserResponse",
+    "ReadOrphanedAddressesAddressesObjectsCurrentItuserResponseCurrent",
+    "ReadOrphanedAddressesAddressesObjectsCurrentItuserResponseCurrentEngagements",
+    "ReadOrphanedAddressesAddressesObjectsCurrentItuserResponseCurrentEngagementsCurrent",
+    "ReadOrphanedAddressesAddressesObjectsCurrentVisibilityResponse",
+    "ReadOrphanedAddressesAddressesObjectsCurrentVisibilityResponseCurrent",
+    "ReadOrphanedAddressesAddressesObjectsCurrentVisibilityResponseCurrentFacetResponse",
+    "ReadOrphanedAddressesAddressesPageInfo",
     "ReadPersonUuid",
     "ReadPersonUuidEmployees",
     "ReadPersonUuidEmployeesObjects",

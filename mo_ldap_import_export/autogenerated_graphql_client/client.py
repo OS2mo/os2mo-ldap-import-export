@@ -245,6 +245,8 @@ from .read_org_unit_uuid import ReadOrgUnitUuid
 from .read_org_unit_uuid import ReadOrgUnitUuidOrgUnits
 from .read_org_units import ReadOrgUnits
 from .read_org_units import ReadOrgUnitsOrgUnits
+from .read_orphaned_addresses import ReadOrphanedAddresses
+from .read_orphaned_addresses import ReadOrphanedAddressesAddresses
 from .read_person_uuid import ReadPersonUuid
 from .read_person_uuid import ReadPersonUuidEmployees
 from .read_rolebindings import ReadRolebindings
@@ -984,6 +986,68 @@ class GraphQLClient(AsyncBaseClient):
         response = await self.execute(query=query, variables=variables)
         data = self.get_data(response)
         return ReadItusers.parse_obj(data).itusers
+
+    async def read_orphaned_addresses(
+        self,
+        filter: AddressFilter,
+        cursor: Any | None | UnsetType = UNSET,
+        limit: Any | None | UnsetType = UNSET,
+    ) -> ReadOrphanedAddressesAddresses:
+        query = gql("""
+            query read_orphaned_addresses($filter: AddressFilter!, $cursor: Cursor = null, $limit: int = 100) {
+              addresses(limit: $limit, cursor: $cursor, filter: $filter) {
+                objects {
+                  current {
+                    address_type_response {
+                      current {
+                        uuid
+                        user_key
+                        name
+                      }
+                    }
+                    uuid
+                    user_key
+                    value
+                    visibility_response {
+                      current {
+                        uuid
+                        user_key
+                        description
+                        name
+                        facet_response {
+                          uuid
+                        }
+                      }
+                    }
+                    ituser_response {
+                      current {
+                        uuid
+                        user_key
+                        external_id
+                        engagements {
+                          current {
+                            uuid
+                            user_key
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                page_info {
+                  next_cursor
+                }
+              }
+            }
+            """)
+        variables: dict[str, object] = {
+            "filter": filter,
+            "cursor": cursor,
+            "limit": limit,
+        }
+        response = await self.execute(query=query, variables=variables)
+        data = self.get_data(response)
+        return ReadOrphanedAddresses.parse_obj(data).addresses
 
     async def itusers(self, filter: ITUserFilter) -> ItusersItusers:
         query = gql("""
