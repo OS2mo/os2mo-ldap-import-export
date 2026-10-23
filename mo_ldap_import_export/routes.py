@@ -23,6 +23,7 @@ from fastapi import APIRouter
 from fastapi import Body
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
+from fastapi.param_functions import Query
 from ldap3 import Connection
 from ldap3.protocol import oid
 from more_itertools import always_iterable
@@ -61,6 +62,7 @@ from .types import CPRNumber
 from .types import EmployeeUUID
 from .types import ITUserUUID
 from .utils import MO_TZ
+from .utils import AddressValidation
 from .utils import ensure_list
 from .utils import extract_ou_from_dn
 from .utils import mo_today
@@ -268,6 +270,35 @@ async def get_non_existing_unique_ldap_uuids(
         for it_user in all_it_users
         if UUID(it_user["user_key"]) not in unique_ldap_uuids
     }
+
+
+async def get_addresses_governed_by_ldap(
+    gql_client: GraphQLClient, address_type_user_keys: list[str]
+) -> list[AddressValidation]:
+    filter = AddressFilter(address_type_user_keys=address_type_user_keys)
+    find_addresses = partial(gql_client.read_orphaned_addresses, filter)
+
+    return [
+        AddressValidation.from_obj(entry) async for entry in paged_query(find_addresses)
+    ]
+
+
+async def find_orphaned_addresses(
+    address_type_user_keys_to_clean: list[str],
+    dataloader: DataLoader,
+) -> list[AddressValidation]:
+    # split for readability, and further development
+    mo_address_validations: list[
+        AddressValidation
+    ] = await get_addresses_governed_by_ldap(
+        dataloader.moapi.graphql_client, address_type_user_keys_to_clean
+    )
+
+    return [
+        address_validation
+        for address_validation in mo_address_validations
+        if address_validation.set_for_deletion
+    ]
 
 
 def resolve_itsystem_user_key(settings: Settings, itsystem_user_key: str | None) -> str:
@@ -698,6 +729,29 @@ def construct_router(settings: Settings) -> APIRouter:
             )
             deleted.add(cast(ITUserUUID, result.uuid))
         return deleted
+
+    @router.post("/fixup/cleanup_orphaned_addresses", status_code=200, tags=["LDAP"])
+    async def fixup_orphaned_addresses(
+        dataloader: depends.DataLoader,
+        dry_run: bool = True,
+        address_type_user_keys: Annotated[list[str] | None, Query()] = None,
+    ) -> list[str]:
+        if address_type_user_keys is None:
+            return []
+
+        addresses_to_delete = await find_orphaned_addresses(
+            dataloader=dataloader,
+            address_type_user_keys_to_clean=address_type_user_keys,
+        )
+
+        if not dry_run:
+            yesterday = mo_today() - timedelta(days=1)
+            for validation in addresses_to_delete:
+                await dataloader.moapi.graphql_client.address_terminate(
+                    AddressTerminateInput(uuid=validation.address_uuid, to=yesterday)
+                )
+
+        return [str(validation.address_uuid) for validation in addresses_to_delete]
 
     @router.post(
         "/fixup/delete_non_existing_account_names", status_code=200, tags=["LDAP"]
