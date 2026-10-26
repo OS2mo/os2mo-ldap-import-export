@@ -67,7 +67,13 @@ GRAPHQL_VERSION = 29
 
 logger = structlog.stdlib.get_logger()
 
+# Gated by ENABLE_DEFAULT_MO2LDAP_HANDLERS
 mo2ldap_router = APIRouter(
+    prefix="/mo2ldap", dependencies=[Depends(depends.canonical_logline)]
+)
+
+# Required by the LDAP listener, so always included
+reconcile_router = APIRouter(
     prefix="/mo2ldap", dependencies=[Depends(depends.canonical_logline)]
 )
 
@@ -261,7 +267,7 @@ async def http_process_person(
     return await sync_tool.listen_to_changes_in_employees(object_uuid)
 
 
-@mo2ldap_router.post("/reconcile")
+@reconcile_router.post("/reconcile")
 async def http_reconcile_person(
     event: Event[UUID],
     settings: depends.Settings,
@@ -528,46 +534,47 @@ def create_fastramqpi(**kwargs: Any) -> FastRAMQPI:
     # GraphQL event listeners
     listeners: list[Listener] = []
     if settings.listen_to_changes_in_mo:
-        # Static listeners
-        listeners.extend(
-            [
-                Listener(
-                    namespace="mo",
-                    user_key=f"{settings.event_namespace}_internal_process_address",
-                    routing_key="address",
-                    path="/mo2ldap/address",
-                    parallelism=3,
-                ),
-                Listener(
-                    namespace="mo",
-                    user_key=f"{settings.event_namespace}_internal_process_engagement",
-                    routing_key="engagement",
-                    path="/mo2ldap/engagement",
-                    parallelism=3,
-                ),
-                Listener(
-                    namespace="mo",
-                    user_key=f"{settings.event_namespace}_internal_process_ituser",
-                    routing_key="ituser",
-                    path="/mo2ldap/ituser",
-                    parallelism=3,
-                ),
-                Listener(
-                    namespace="mo",
-                    user_key=f"{settings.event_namespace}_internal_process_person",
-                    routing_key="person",
-                    path="/mo2ldap/person",
-                    parallelism=3,
-                ),
-                Listener(
-                    namespace="mo",
-                    user_key=f"{settings.event_namespace}_internal_process_org_unit",
-                    routing_key="org_unit",
-                    path="/mo2ldap/org_unit",
-                    parallelism=3,
-                ),
-            ]
-        )
+        # Static listeners for the built-in MO -> LDAP export
+        if settings.enable_default_mo2ldap_handlers:
+            listeners.extend(
+                [
+                    Listener(
+                        namespace="mo",
+                        user_key=f"{settings.event_namespace}_internal_process_address",
+                        routing_key="address",
+                        path="/mo2ldap/address",
+                        parallelism=3,
+                    ),
+                    Listener(
+                        namespace="mo",
+                        user_key=f"{settings.event_namespace}_internal_process_engagement",
+                        routing_key="engagement",
+                        path="/mo2ldap/engagement",
+                        parallelism=3,
+                    ),
+                    Listener(
+                        namespace="mo",
+                        user_key=f"{settings.event_namespace}_internal_process_ituser",
+                        routing_key="ituser",
+                        path="/mo2ldap/ituser",
+                        parallelism=3,
+                    ),
+                    Listener(
+                        namespace="mo",
+                        user_key=f"{settings.event_namespace}_internal_process_person",
+                        routing_key="person",
+                        path="/mo2ldap/person",
+                        parallelism=3,
+                    ),
+                    Listener(
+                        namespace="mo",
+                        user_key=f"{settings.event_namespace}_internal_process_org_unit",
+                        routing_key="org_unit",
+                        path="/mo2ldap/org_unit",
+                        parallelism=3,
+                    ),
+                ]
+            )
         # Dynamic listeners
         listeners.extend(
             Listener(
@@ -656,7 +663,9 @@ def create_app(fastramqpi: FastRAMQPI | None = None, **kwargs: Any) -> FastAPI:
     app = fastramqpi.get_app()
     settings = fastramqpi._context["user_context"]["settings"]
     app.include_router(construct_router(settings))
-    app.include_router(mo2ldap_router)
+    app.include_router(reconcile_router)
+    if settings.enable_default_mo2ldap_handlers:
+        app.include_router(mo2ldap_router)
     app.include_router(ldap2mo_router)
     app.include_router(ldap_event_router)
 
