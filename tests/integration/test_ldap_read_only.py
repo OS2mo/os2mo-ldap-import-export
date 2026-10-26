@@ -1,7 +1,9 @@
 # SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
 # SPDX-License-Identifier: MPL-2.0
 import pytest
+from structlog.testing import capture_logs
 
+from mo_ldap_import_export.exceptions import OUNotWritableException
 from mo_ldap_import_export.exceptions import ReadOnlyException
 from mo_ldap_import_export.ldapapi import LDAPAPI
 from mo_ldap_import_export.types import DN
@@ -35,3 +37,20 @@ async def test_add_ldap_object_no_add(ldap_api: LDAPAPI, ldap_person_dn: DN) -> 
             ldap_person_dn, {"title": ["whatever"]}, "inetOrgPerson"
         )
     assert "Adding LDAP objects is disabled" in str(exc_info.value)
+
+
+@pytest.mark.integration_test
+@pytest.mark.envvar({"LDAP_OUS_TO_WRITE_TO": '["ou=other"]'})
+async def test_modify_ldap_object_ou_not_writable(
+    ldap_api: LDAPAPI, ldap_person_dn: DN
+) -> None:
+    with capture_logs() as cap_logs, pytest.raises(OUNotWritableException) as exc_info:
+        await ldap_api.modify_ldap_object(ldap_person_dn, {"title": ["whatever"]})
+    assert "Not allowed to write to the specified OU" in str(exc_info.value)
+    events = [m["event"] for m in cap_logs]
+    assert events == [
+        "OU not in OUs to write",
+        "Not allowed to write to the specified OU",
+    ]
+    title = await ldap_api.get_attribute_by_dn(ldap_person_dn, "title")
+    assert title == ["Skole underviser"]
