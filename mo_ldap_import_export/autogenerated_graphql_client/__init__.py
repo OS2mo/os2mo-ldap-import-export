@@ -548,6 +548,23 @@ from .read_org_units import ReadOrgUnitsOrgUnitsObjectsValidities
 from .read_org_units import ReadOrgUnitsOrgUnitsObjectsValiditiesParent
 from .read_org_units import ReadOrgUnitsOrgUnitsObjectsValiditiesUnitType
 from .read_org_units import ReadOrgUnitsOrgUnitsObjectsValiditiesValidity
+from .read_orphaned_addresses import ReadOrphanedAddresses
+from .read_orphaned_addresses import ReadOrphanedAddressesAddresses
+from .read_orphaned_addresses import ReadOrphanedAddressesAddressesObjects
+from .read_orphaned_addresses import ReadOrphanedAddressesAddressesObjectsCurrent
+from .read_orphaned_addresses import (
+    ReadOrphanedAddressesAddressesObjectsCurrentItuserResponse,
+)
+from .read_orphaned_addresses import (
+    ReadOrphanedAddressesAddressesObjectsCurrentItuserResponseCurrent,
+)
+from .read_orphaned_addresses import (
+    ReadOrphanedAddressesAddressesObjectsCurrentItuserResponseCurrentItsystemResponse,
+)
+from .read_orphaned_addresses import (
+    ReadOrphanedAddressesAddressesObjectsCurrentItuserResponseCurrentItsystemResponseCurrent,
+)
+from .read_orphaned_addresses import ReadOrphanedAddressesAddressesPageInfo
 from .read_person_uuid import ReadPersonUuid
 from .read_person_uuid import ReadPersonUuidEmployees
 from .read_person_uuid import ReadPersonUuidEmployeesObjects
@@ -974,6 +991,15 @@ __all__ = [
     "ReadOrgUnitsOrgUnitsObjectsValiditiesParent",
     "ReadOrgUnitsOrgUnitsObjectsValiditiesUnitType",
     "ReadOrgUnitsOrgUnitsObjectsValiditiesValidity",
+    "ReadOrphanedAddresses",
+    "ReadOrphanedAddressesAddresses",
+    "ReadOrphanedAddressesAddressesObjects",
+    "ReadOrphanedAddressesAddressesObjectsCurrent",
+    "ReadOrphanedAddressesAddressesObjectsCurrentItuserResponse",
+    "ReadOrphanedAddressesAddressesObjectsCurrentItuserResponseCurrent",
+    "ReadOrphanedAddressesAddressesObjectsCurrentItuserResponseCurrentItsystemResponse",
+    "ReadOrphanedAddressesAddressesObjectsCurrentItuserResponseCurrentItsystemResponseCurrent",
+    "ReadOrphanedAddressesAddressesPageInfo",
     "ReadPersonUuid",
     "ReadPersonUuidEmployees",
     "ReadPersonUuidEmployeesObjects",
