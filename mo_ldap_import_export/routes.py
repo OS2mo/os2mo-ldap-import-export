@@ -404,11 +404,7 @@ async def get_non_existing_external_ids(
     it_system_uuid = await dataloader.moapi.get_it_system_uuid(itsystem_user_key)
 
     # Fetch all LDAP UUIDs in LDAP
-    ldap_uuids = await load_ldap_attribute_values(
-        settings, ldap_connection, settings.ldap_unique_id_field
-    )
-    ldap_uuids.discard(tuple())
-    unique_ldap_uuids = {UUID(one(ldap_uuid)) for ldap_uuid in ldap_uuids}
+    unique_ldap_uuids = await get_ldap_unique_uuids(settings, ldap_connection)
 
     # Fetch all MO IT-users and extract all external_ids
     all_mo_it_users = await load_all_current_it_users(
@@ -777,24 +773,24 @@ def construct_router(settings: Settings) -> APIRouter:
         dataloader: depends.DataLoader,
         settings: depends.Settings,
         ldap_connection: depends.Connection,
-        address_type_user_keys_raw: Annotated[
-            list[str] | None, Query(alias="address_type_user_keys")
-        ] = None,
+        address_type_user_keys: Annotated[
+            list[str], Query()
+        ],
         dry_run: bool = True,
     ) -> list[str]:
-        address_type_user_keys = (
-            list(filter(None, address_type_user_keys_raw))
-            if address_type_user_keys_raw
+        address_type_user_keys_filtered = (
+            list(filter(None, address_type_user_keys))
+            if address_type_user_keys
             else None
         )
-        if address_type_user_keys is None:
+        if address_type_user_keys_filtered is None:
             return []
 
         addresses_to_delete = await find_orphaned_addresses(
             dataloader=dataloader,
             settings=settings,
             ldap_connection=ldap_connection,
-            address_type_user_keys_to_clean=address_type_user_keys,
+            address_type_user_keys_to_clean=address_type_user_keys_filtered,
         )
 
         if not dry_run:

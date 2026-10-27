@@ -998,38 +998,14 @@ class GraphQLClient(AsyncBaseClient):
               addresses(limit: $limit, cursor: $cursor, filter: $filter) {
                 objects {
                   current {
-                    address_type_response {
-                      current {
-                        uuid
-                        user_key
-                        name
-                      }
-                    }
                     uuid
                     user_key
                     value
-                    visibility_response {
-                      current {
-                        uuid
-                        user_key
-                        description
-                        name
-                        facet_response {
-                          uuid
-                        }
-                      }
-                    }
                     ituser_response {
                       current {
                         uuid
                         user_key
                         external_id
-                        engagements {
-                          current {
-                            uuid
-                            user_key
-                          }
-                        }
                       }
                     }
                   }

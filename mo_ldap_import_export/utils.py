@@ -183,7 +183,6 @@ class AddressValidation(BaseModel):
     address_uuid: UUID
     has_it_user: bool
     it_user_uuid: UUID | None
-    has_engagement: bool
     ldap_uuid: UUID | None
     set_for_deletion: bool
 
@@ -198,24 +197,16 @@ class AddressValidation(BaseModel):
             has_it_user = False
             it_user_uuid = None
             ldap_uuid = None
-            has_engagement = False
         else:
             has_it_user = True
             it_user_uuid = current.ituser_response.current.uuid
             external_id = current.ituser_response.current.external_id
             ldap_uuid = UUID(external_id) if external_id else None
-            has_engagement = False
-
-            for eng in current.ituser_response.current.engagements:
-                if eng.current is not None:
-                    has_engagement = True
-                    break
 
         return AddressValidation(
             address_uuid=address_uuid,
             has_it_user=has_it_user,
             it_user_uuid=it_user_uuid,
-            has_engagement=has_engagement,
             ldap_uuid=ldap_uuid,
-            set_for_deletion= not (has_it_user and has_engagement),
+            set_for_deletion= not has_it_user
         )
