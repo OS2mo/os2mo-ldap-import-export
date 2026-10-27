@@ -357,6 +357,31 @@ class LDAPAPI:
         logger.info("Found LDAP(s) object", dns={obj.dn for obj in ldap_objects})
         return ldap_objects
 
+    async def find_dns(self, search_filter: str) -> set[DN]:
+        """Run an LDAP search and return the DNs of the matching objects.
+
+        Note: the caller is responsible for escaping values interpolated into
+        the ``search_filter``, e.g. with the ``escape_filter_chars`` template
+        filter.
+
+        Args:
+            search_filter: RFC 4515 search filter.
+
+        Returns:
+            A potentially empty set of DNs.
+        """
+        search_parameters = {
+            "search_base": self.settings.ldap_search_bases,
+            "search_filter": search_filter,
+            "attributes": [],
+        }
+        search_results: list[dict[str, Any]] = []
+        with suppress(LDAPNoSuchObjectResult):
+            search_results = await object_search(search_parameters, self.connection)
+        dns = {search_result["dn"] for search_result in search_results}
+        logger.info("Found DNs", dns=dns)
+        return dns
+
     async def modify_ldap_object(
         self,
         dn: DN,
