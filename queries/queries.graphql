@@ -194,6 +194,37 @@ query read_itusers($uuids: [UUID!]!, $from_date: DateTime, $to_date: DateTime) {
   }
 }
 
+query read_orphaned_addresses(
+  $filter: AddressFilter!
+  $cursor: Cursor = null
+  $limit: int = 100
+) {
+  addresses(limit: $limit, cursor: $cursor, filter: $filter) {
+    objects {
+      current {
+        uuid
+        user_key
+        value
+        ituser_response {
+          current {
+            uuid
+            user_key
+            external_id
+            itsystem_response {
+              current {
+                user_key
+              }
+            }
+          }
+        }
+      }
+    }
+    page_info {
+      next_cursor
+    }
+  }
+}
+
 query itusers($filter: ITUserFilter!) {
   itusers(filter: $filter) {
     objects {
