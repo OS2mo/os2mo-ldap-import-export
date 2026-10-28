@@ -3,9 +3,9 @@
 
 import pytest
 from fastramqpi.context import Context
+from structlog.testing import capture_logs
 
 from mo_ldap_import_export.config import Settings
-from mo_ldap_import_export.exceptions import DryRunException
 from mo_ldap_import_export.ldap import get_ldap_object
 from mo_ldap_import_export.ldapapi import LDAPAPI
 from mo_ldap_import_export.utils import combine_dn_strings
@@ -57,6 +57,7 @@ async def test_ensure_ldap_object(
 
 
 @pytest.mark.integration_test
+@pytest.mark.xfail(strict=True, reason="reordered values are detected as changes")
 async def test_ensure_ldap_object_reordered_values(
     ldap_api: LDAPAPI, ldap_org_unit: list[str]
 ) -> None:
@@ -68,18 +69,14 @@ async def test_ensure_ldap_object_reordered_values(
         group_dn, "groupOfNames", attributes={"member": members}
     )
 
-    # Reordering is detected as a change, even though values are unordered sets
-    with pytest.raises(DryRunException) as exc_info:
-        await ldap_api.ensure_ldap_object(
+    with capture_logs() as cap_logs:
+        current_dn = await ldap_api.ensure_ldap_object(
             group_dn,
             {"member": members[::-1]},
             "groupOfNames",
             create=False,
             dry_run=True,
         )
-    assert exc_info.value.detail == {
-        "message": "Would have changed attributes",
-        "dn": group_dn,
-        "attributes": {"member": members[::-1]},
-        "old_attributes": {"member": members},
-    }
+    assert current_dn == group_dn
+    events = [m["event"] for m in cap_logs]
+    assert "Not writing to LDAP as changeset is empty" in events
