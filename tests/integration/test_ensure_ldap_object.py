@@ -5,6 +5,7 @@ import pytest
 from fastramqpi.context import Context
 
 from mo_ldap_import_export.config import Settings
+from mo_ldap_import_export.exceptions import DryRunException
 from mo_ldap_import_export.ldap import get_ldap_object
 from mo_ldap_import_export.ldapapi import LDAPAPI
 from mo_ldap_import_export.utils import combine_dn_strings
@@ -52,4 +53,33 @@ async def test_ensure_ldap_object(
         "cn": ["Anita"],
         "uid": ["abk"],
         "dn": new_person_dn,
+    }
+
+
+@pytest.mark.integration_test
+async def test_ensure_ldap_object_reordered_values(
+    ldap_api: LDAPAPI, ldap_org_unit: list[str]
+) -> None:
+    group_dn = combine_dn_strings(["cn=group"] + ldap_org_unit)
+    members = [
+        combine_dn_strings([f"uid={uid}"] + ldap_org_unit) for uid in ["a", "b", "c"]
+    ]
+    await ldap_api.ldap_connection.ldap_add(
+        group_dn, "groupOfNames", attributes={"member": members}
+    )
+
+    # Reordering is detected as a change, even though values are unordered sets
+    with pytest.raises(DryRunException) as exc_info:
+        await ldap_api.ensure_ldap_object(
+            group_dn,
+            {"member": members[::-1]},
+            "groupOfNames",
+            create=False,
+            dry_run=True,
+        )
+    assert exc_info.value.detail == {
+        "message": "Would have changed attributes",
+        "dn": group_dn,
+        "attributes": {"member": members[::-1]},
+        "old_attributes": {"member": members},
     }
