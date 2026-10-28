@@ -25,6 +25,7 @@ from jinja2 import StrictUndefined
 from jinja2 import TemplateRuntimeError
 from jinja2 import UndefinedError
 from jinja2.utils import missing
+from ldap3.utils.conv import escape_filter_chars
 from ldap3.utils.dn import safe_dn
 from ldap3.utils.dn import to_dn
 from more_itertools import first
@@ -1260,6 +1261,7 @@ def construct_globals_dict(
         "mo_addresses": partial(mo_addresses, graphql_client),
         "dn_to_uuid": dataloader.ldapapi.get_ldap_unique_ldap_uuid,
         "uuid_to_dn": dataloader.ldapapi.get_ldap_dn,
+        "find_dns": dataloader.ldapapi.find_dns,
         "get_engagement_type_uuid": partial(get_engagement_type_uuid, graphql_client),
         "get_primary_type_uuid": partial(get_primary_type_uuid, graphql_client),
         "get_ldap_object": partial(get_ldap_object, dataloader.ldapapi.connection),
@@ -1313,6 +1315,7 @@ def construct_default_environment() -> Environment:
     environment = Environment(undefined=NeverUndefined, enable_async=True)
 
     environment.filters["bitwise_and"] = bitwise_and
+    environment.filters["escape_filter_chars"] = escape_filter_chars
     environment.filters["mo_datestring"] = filter_mo_datestring
     environment.filters["strftime"] = filter_strftime
     environment.filters["strptime"] = filter_strptime
