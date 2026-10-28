@@ -57,7 +57,6 @@ async def test_ensure_ldap_object(
 
 
 @pytest.mark.integration_test
-@pytest.mark.xfail(strict=True, reason="reordered values are detected as changes")
 async def test_ensure_ldap_object_reordered_values(
     ldap_api: LDAPAPI, ldap_org_unit: list[str]
 ) -> None:

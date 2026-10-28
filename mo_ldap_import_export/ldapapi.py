@@ -182,10 +182,12 @@ class LDAPAPI:
         desired_state = {key.casefold(): value for key, value in attributes.items()}
 
         # Calculate the actual changes that must be written
+        # NOTE: Attribute values are unordered (RFC 4511), thus we compare them as
+        #       sets, such that reordering the values is not considered a change.
         ldap_changes = {
             key: value
             for key, value in desired_state.items()
-            if key not in current_state or current_state[key] != value
+            if key not in current_state or set(current_state[key]) != set(value)
         }
         ldap_uuid = await self.get_ldap_unique_ldap_uuid(dn)
         await self.modify_ldap_object(dn, ldap_changes, old_state, dry_run)
