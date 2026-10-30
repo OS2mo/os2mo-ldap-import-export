@@ -39,6 +39,65 @@ from .utils import extract_ou_from_dn
 logger = structlog.stdlib.get_logger()
 
 
+def diff_attribute_values(new: list, old: list) -> dict[str, Any]:
+    """Calculate the difference between two lists of attribute values.
+
+    Attribute values are unordered (RFC 4511), thus they are compared as sets.
+
+    Args:
+        new: The new attribute values.
+        old: The old attribute values.
+
+    Returns:
+        Dictionary with the added and removed values and the number of unchanged.
+    """
+    new_set = set(new)
+    old_set = set(old)
+    return {
+        "added": [value for value in dict.fromkeys(new) if value not in old_set],
+        "removed": [value for value in dict.fromkeys(old) if value not in new_set],
+        "unchanged": len(new_set & old_set),
+    }
+
+
+def summarize_attribute_changes(
+    changes: dict[str, list], old_state: dict[str, Any] | None
+) -> dict[str, Any]:
+    """Summarize attribute changes for dry-run reporting.
+
+    Multi-valued attributes are additionally reported as a diff under
+    `multivalued_diff`, as long lists of values are hard to compare by eye.
+
+    Args:
+        changes: Casefolded attribute changes about to be written.
+        old_state: Optional current state of the object.
+
+    Returns:
+        Dictionary with `attributes`, `old_attributes` and `multivalued_diff`.
+    """
+    if not old_state:
+        return {"attributes": changes, "old_attributes": None}
+
+    casefolded_old_state = {key.casefold(): value for key, value in old_state.items()}
+    old_attributes = {key: casefolded_old_state.get(key) for key in changes}
+
+    multivalued_diff = {}
+    for key, values in changes.items():
+        old_values = (
+            [] if old_attributes[key] is None else ensure_list(old_attributes[key])
+        )
+        if len(values) > 1 or len(old_values) > 1:
+            multivalued_diff[key] = diff_attribute_values(values, old_values)
+
+    summary: dict[str, Any] = {
+        "attributes": changes,
+        "old_attributes": old_attributes,
+    }
+    if multivalued_diff:
+        summary["multivalued_diff"] = multivalued_diff
+    return summary
+
+
 class LDAPAPI:
     def __init__(self, settings: Settings, ldap_connection: Connection) -> None:
         self.settings = settings
@@ -460,21 +519,10 @@ class LDAPAPI:
                 logger.info("Uploading the changes", changes=requested_changes, dn=dn)
                 # If dry-running we do not want to makes changes in LDAP
                 if dry_run:
-                    old_attributes = None
-                    if old_state:
-                        old_attributes = {
-                            key.casefold(): value for key, value in old_state.items()
-                        }
-                        old_attributes = {
-                            key: old_attributes.get(key) for key in modify_changes
-                        }
                     raise DryRunException(
                         "Would have changed attributes",
                         dn,
-                        {
-                            "attributes": modify_changes,
-                            "old_attributes": old_attributes,
-                        },
+                        summarize_attribute_changes(modify_changes, old_state),
                     )
                 _, result = await self.ldap_connection.ldap_modify(
                     dn,
