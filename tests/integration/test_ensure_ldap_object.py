@@ -3,6 +3,7 @@
 
 import pytest
 from fastramqpi.context import Context
+from structlog.testing import capture_logs
 
 from mo_ldap_import_export.config import Settings
 from mo_ldap_import_export.ldap import get_ldap_object
@@ -53,3 +54,28 @@ async def test_ensure_ldap_object(
         "uid": ["abk"],
         "dn": new_person_dn,
     }
+
+
+@pytest.mark.integration_test
+async def test_ensure_ldap_object_reordered_values(
+    ldap_api: LDAPAPI, ldap_org_unit: list[str]
+) -> None:
+    group_dn = combine_dn_strings(["cn=group"] + ldap_org_unit)
+    members = [
+        combine_dn_strings([f"uid={uid}"] + ldap_org_unit) for uid in ["a", "b", "c"]
+    ]
+    await ldap_api.ldap_connection.ldap_add(
+        group_dn, "groupOfNames", attributes={"member": members}
+    )
+
+    with capture_logs() as cap_logs:
+        current_dn = await ldap_api.ensure_ldap_object(
+            group_dn,
+            {"member": members[::-1]},
+            "groupOfNames",
+            create=False,
+            dry_run=True,
+        )
+    assert current_dn == group_dn
+    events = [m["event"] for m in cap_logs]
+    assert "Not writing to LDAP as changeset is empty" in events
