@@ -26,6 +26,7 @@ from jinja2 import TemplateRuntimeError
 from jinja2 import UndefinedError
 from jinja2.utils import missing
 from ldap3.utils.conv import escape_filter_chars
+from ldap3.utils.dn import escape_rdn
 from ldap3.utils.dn import safe_dn
 from ldap3.utils.dn import to_dn
 from more_itertools import first
@@ -1316,6 +1317,7 @@ def construct_default_environment() -> Environment:
 
     environment.filters["bitwise_and"] = bitwise_and
     environment.filters["escape_filter_chars"] = escape_filter_chars
+    environment.filters["escape_rdn"] = escape_rdn
     environment.filters["mo_datestring"] = filter_mo_datestring
     environment.filters["strftime"] = filter_strftime
     environment.filters["strptime"] = filter_strptime
