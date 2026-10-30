@@ -24,6 +24,7 @@ from fastapi import APIRouter
 from fastapi import Body
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
+from fastapi.param_functions import Query
 from fastramqpi.events import Event
 from ldap3 import Connection
 from ldap3.protocol import oid
@@ -241,6 +242,17 @@ async def load_all_current_it_users(
     ]
 
 
+async def get_ldap_unique_uuids(
+    settings: Settings, ldap_connection: Connection
+) -> set[LDAPUUID]:
+    # Fetch all entity UUIDs in LDAP
+    ldap_uuid_attributes = await load_ldap_attribute_values(
+        settings, ldap_connection, settings.ldap_unique_id_field
+    )
+    ldap_uuid_attributes.discard(tuple())
+    return set(map(LDAPUUID, map(one, ldap_uuid_attributes)))
+
+
 async def get_non_existing_unique_ldap_uuids(
     settings: Settings,
     ldap_connection: Connection,
@@ -255,12 +267,7 @@ async def get_non_existing_unique_ldap_uuids(
         raise ObjectGUIDITSystemNotFound("Could not find it_system_uuid")
 
     # Fetch all entity UUIDs in LDAP
-    ldap_uuid_attributes = await load_ldap_attribute_values(
-        settings, ldap_connection, settings.ldap_unique_id_field
-    )
-    ldap_uuid_attributes.discard(tuple())
-
-    unique_ldap_uuids = set(map(LDAPUUID, map(one, ldap_uuid_attributes)))
+    unique_ldap_uuids = await get_ldap_unique_uuids(settings, ldap_connection)
 
     # Fetch all MO IT-users and find those with LDAP UUIDs not in LDAP
     all_it_users = await load_all_current_it_users(
@@ -271,6 +278,48 @@ async def get_non_existing_unique_ldap_uuids(
         for it_user in all_it_users
         if UUID(it_user["user_key"]) not in unique_ldap_uuids
     }
+
+
+async def find_orphaned_addresses(
+    address_type_user_keys: list[str],
+    dataloader: DataLoader,
+    settings: Settings,
+    ldap_connection: Connection,
+    itsystem_user_key: str | None = None,
+) -> list[UUID]:
+    """Find addresses with no IT user, or whose IT user is gone from LDAP.
+
+    If `itsystem_user_key` is given, addresses linked to an IT user in another
+    IT system are left alone.
+    """
+    ldap_uuids = await get_ldap_unique_uuids(settings, ldap_connection)
+
+    find_addresses = partial(
+        dataloader.moapi.graphql_client.read_orphaned_addresses,
+        AddressFilter(address_type_user_keys=address_type_user_keys),
+    )
+    orphaned = []
+    async for address in paged_query(find_addresses):
+        if address.current is None:  # pragma: no cover
+            continue
+        ituser = (
+            address.current.ituser_response.current
+            if address.current.ituser_response
+            else None
+        )
+        if ituser is None:
+            orphaned.append(address.current.uuid)
+            continue
+
+        itsystem = ituser.itsystem_response.current
+        if itsystem_user_key is not None and (
+            itsystem is None or itsystem.user_key != itsystem_user_key
+        ):
+            continue
+
+        if ituser.external_id is None or UUID(ituser.external_id) not in ldap_uuids:
+            orphaned.append(address.current.uuid)
+    return orphaned
 
 
 def resolve_itsystem_user_key(settings: Settings, itsystem_user_key: str | None) -> str:
@@ -334,11 +383,7 @@ async def get_non_existing_external_ids(
     it_system_uuid = await dataloader.moapi.get_it_system_uuid(itsystem_user_key)
 
     # Fetch all LDAP UUIDs in LDAP
-    ldap_uuids = await load_ldap_attribute_values(
-        settings, ldap_connection, settings.ldap_unique_id_field
-    )
-    ldap_uuids.discard(tuple())
-    unique_ldap_uuids = {UUID(one(ldap_uuid)) for ldap_uuid in ldap_uuids}
+    unique_ldap_uuids = await get_ldap_unique_uuids(settings, ldap_connection)
 
     # Fetch all MO IT-users and extract all external_ids
     all_mo_it_users = await load_all_current_it_users(
@@ -701,6 +746,32 @@ def construct_router(settings: Settings) -> APIRouter:
             )
             deleted.add(cast(ITUserUUID, result.uuid))
         return deleted
+
+    @router.post("/fixup/cleanup_orphaned_addresses", status_code=200, tags=["LDAP"])
+    async def fixup_orphaned_addresses(
+        dataloader: depends.DataLoader,
+        settings: depends.Settings,
+        ldap_connection: depends.Connection,
+        address_type_user_keys: Annotated[list[str], Query()],
+        dry_run: bool = True,
+        itsystem_user_key: str | None = None,
+    ) -> list[str]:
+        orphaned_addresses = await find_orphaned_addresses(
+            address_type_user_keys=address_type_user_keys,
+            dataloader=dataloader,
+            settings=settings,
+            ldap_connection=ldap_connection,
+            itsystem_user_key=itsystem_user_key,
+        )
+
+        if not dry_run:
+            yesterday = mo_today() - timedelta(days=1)
+            for address_uuid in orphaned_addresses:
+                await dataloader.moapi.graphql_client.address_terminate(
+                    AddressTerminateInput(uuid=address_uuid, to=yesterday)
+                )
+
+        return [str(address_uuid) for address_uuid in orphaned_addresses]
 
     @router.post(
         "/fixup/delete_non_existing_account_names", status_code=200, tags=["LDAP"]
