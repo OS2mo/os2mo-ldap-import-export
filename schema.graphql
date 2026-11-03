@@ -2632,6 +2632,9 @@ input EmployeeFilter {
 
   "Manager role filter limiting which entries are returned.\n\nReturns the employees holding the matching managerial roles, i.e.\nthe managers themselves, not the employees they manage.\n\nSet to `null` to only return employees without any managerial roles.\n"
   manager_role: ManagerFilter
+
+  "Engagement filter limiting which entries are returned.\n\nSet to `null` to only return employees without any engagements.\n"
+  engagement: EngagementFilter
 }
 
 """
@@ -11096,6 +11099,9 @@ input UuidsBoundEmployeeFilter {
 
   "Manager role filter limiting which entries are returned.\n\nReturns the employees holding the matching managerial roles, i.e.\nthe managers themselves, not the employees they manage.\n\nSet to `null` to only return employees without any managerial roles.\n"
   manager_role: ManagerFilter
+
+  "Engagement filter limiting which entries are returned.\n\nSet to `null` to only return employees without any engagements.\n"
+  engagement: EngagementFilter
 }
 
 input UuidsBoundEngagementFilter {

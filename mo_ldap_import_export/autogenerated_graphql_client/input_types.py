@@ -368,6 +368,7 @@ class EmployeeFilter(BaseModel):
     owner: Optional["OwnerFilter"] = None
     ituser: Optional["ITUserFilter"] | UnsetType = UNSET
     manager_role: Optional["ManagerFilter"] | UnsetType = UNSET
+    engagement: Optional["EngagementFilter"] | UnsetType = UNSET
 
 
 class EmployeeRegistrationFilter(BaseModel):
@@ -1432,6 +1433,7 @@ class UuidsBoundEmployeeFilter(BaseModel):
     owner: Optional["OwnerFilter"] = None
     ituser: Optional["ITUserFilter"] | UnsetType = UNSET
     manager_role: Optional["ManagerFilter"] | UnsetType = UNSET
+    engagement: Optional["EngagementFilter"] | UnsetType = UNSET
 
 
 class UuidsBoundEngagementFilter(BaseModel):
