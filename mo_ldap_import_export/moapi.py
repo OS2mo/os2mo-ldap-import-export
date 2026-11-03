@@ -286,6 +286,9 @@ def read_engagement_to_engagement(
             end=validity.validity.to,
         ),
         fraction=validity.fraction,
+        explicit_manager=(
+            validity.explicit_manager.uuid if validity.explicit_manager else None
+        ),
     )
 
 
@@ -671,31 +674,32 @@ class MOAPI:
                 return None
             return extension
 
-        engagement = await self.graphql_client.engagement_create(
-            input=EngagementCreateInput(
-                uuid=obj.uuid,
-                user_key=obj.user_key,
-                org_unit=obj.org_unit,
-                person=obj.person,
-                job_function=obj.job_function,
-                engagement_type=obj.engagement_type,
-                primary=obj.primary,
-                extension_1=sanitize_extension(obj.extension_1),
-                extension_2=sanitize_extension(obj.extension_2),
-                extension_3=sanitize_extension(obj.extension_3),
-                extension_4=sanitize_extension(obj.extension_4),
-                extension_5=sanitize_extension(obj.extension_5),
-                extension_6=sanitize_extension(obj.extension_6),
-                extension_7=sanitize_extension(obj.extension_7),
-                extension_8=sanitize_extension(obj.extension_8),
-                extension_9=sanitize_extension(obj.extension_9),
-                extension_10=sanitize_extension(obj.extension_10),
-                validity=RAValidityInput(
-                    from_=obj.validity.start,
-                    to=obj.validity.end,
-                ),
-            )
+        input = EngagementCreateInput(
+            uuid=obj.uuid,
+            user_key=obj.user_key,
+            org_unit=obj.org_unit,
+            person=obj.person,
+            job_function=obj.job_function,
+            engagement_type=obj.engagement_type,
+            primary=obj.primary,
+            extension_1=sanitize_extension(obj.extension_1),
+            extension_2=sanitize_extension(obj.extension_2),
+            extension_3=sanitize_extension(obj.extension_3),
+            extension_4=sanitize_extension(obj.extension_4),
+            extension_5=sanitize_extension(obj.extension_5),
+            extension_6=sanitize_extension(obj.extension_6),
+            extension_7=sanitize_extension(obj.extension_7),
+            extension_8=sanitize_extension(obj.extension_8),
+            extension_9=sanitize_extension(obj.extension_9),
+            extension_10=sanitize_extension(obj.extension_10),
+            validity=RAValidityInput(
+                from_=obj.validity.start,
+                to=obj.validity.end,
+            ),
         )
+        if obj.explicit_manager != models.UNSET:
+            input.explicit_manager = obj.explicit_manager
+        engagement = await self.graphql_client.engagement_create(input)
         return engagement.uuid
 
     async def create_ituser(self, obj: ITUser) -> UUID:
@@ -834,31 +838,32 @@ class MOAPI:
                 return ""
             return extension
 
-        engagement = await self.graphql_client.engagement_update(
-            input=EngagementUpdateInput(
-                uuid=obj.uuid,
-                user_key=obj.user_key,
-                org_unit=obj.org_unit,
-                person=obj.person,
-                job_function=obj.job_function,
-                engagement_type=obj.engagement_type,
-                primary=obj.primary,
-                extension_1=to_mo_extension_patch_semantics(obj.extension_1),
-                extension_2=to_mo_extension_patch_semantics(obj.extension_2),
-                extension_3=to_mo_extension_patch_semantics(obj.extension_3),
-                extension_4=to_mo_extension_patch_semantics(obj.extension_4),
-                extension_5=to_mo_extension_patch_semantics(obj.extension_5),
-                extension_6=to_mo_extension_patch_semantics(obj.extension_6),
-                extension_7=to_mo_extension_patch_semantics(obj.extension_7),
-                extension_8=to_mo_extension_patch_semantics(obj.extension_8),
-                extension_9=to_mo_extension_patch_semantics(obj.extension_9),
-                extension_10=to_mo_extension_patch_semantics(obj.extension_10),
-                validity=RAValidityInput(
-                    from_=obj.validity.start,
-                    to=obj.validity.end,
-                ),
-            )
+        input = EngagementUpdateInput(
+            uuid=obj.uuid,
+            user_key=obj.user_key,
+            org_unit=obj.org_unit,
+            person=obj.person,
+            job_function=obj.job_function,
+            engagement_type=obj.engagement_type,
+            primary=obj.primary,
+            extension_1=to_mo_extension_patch_semantics(obj.extension_1),
+            extension_2=to_mo_extension_patch_semantics(obj.extension_2),
+            extension_3=to_mo_extension_patch_semantics(obj.extension_3),
+            extension_4=to_mo_extension_patch_semantics(obj.extension_4),
+            extension_5=to_mo_extension_patch_semantics(obj.extension_5),
+            extension_6=to_mo_extension_patch_semantics(obj.extension_6),
+            extension_7=to_mo_extension_patch_semantics(obj.extension_7),
+            extension_8=to_mo_extension_patch_semantics(obj.extension_8),
+            extension_9=to_mo_extension_patch_semantics(obj.extension_9),
+            extension_10=to_mo_extension_patch_semantics(obj.extension_10),
+            validity=RAValidityInput(
+                from_=obj.validity.start,
+                to=obj.validity.end,
+            ),
         )
+        if obj.explicit_manager != models.UNSET:
+            input.explicit_manager = obj.explicit_manager
+        engagement = await self.graphql_client.engagement_update(input)
         return engagement.uuid
 
     async def edit_ituser(self, obj: ITUser) -> UUID:

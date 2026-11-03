@@ -114,14 +114,14 @@ class DataLoader:
         self, ldap_object: LdapObject
     ) -> EmployeeUUID | None:
         if self.settings.ldap_cpr_attribute:
-            assert hasattr(
-                ldap_object, self.settings.ldap_cpr_attribute
-            ), f"ldap_object missing cpr attribute: {self.settings.ldap_cpr_attribute}"
+            assert hasattr(ldap_object, self.settings.ldap_cpr_attribute), (
+                f"ldap_object missing cpr attribute: {self.settings.ldap_cpr_attribute}"
+            )
         cpr_number = self.ldapapi.ldap_object2cpr(ldap_object)
 
-        assert hasattr(
-            ldap_object, self.settings.ldap_unique_id_field
-        ), f"ldap_object missing unique id attribute: {self.settings.ldap_unique_id_field}"
+        assert hasattr(ldap_object, self.settings.ldap_unique_id_field), (
+            f"ldap_object missing unique id attribute: {self.settings.ldap_unique_id_field}"
+        )
         unique_uuid = getattr(ldap_object, self.settings.ldap_unique_id_field)
 
         if not unique_uuid:  # pragma: no cover

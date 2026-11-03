@@ -406,9 +406,9 @@ def calculate_discriminator_mapping(
         for dn, missing_fields in objs_missing_fields.items()
         if missing_fields
     }
-    assert (
-        not objs_missing_fields
-    ), "LDAP object(s) missing required discriminator fields"
+    assert not objs_missing_fields, (
+        "LDAP object(s) missing required discriminator fields"
+    )
 
     return {
         obj.dn: {
