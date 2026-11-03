@@ -759,6 +759,9 @@ class GraphQLClient(AsyncBaseClient):
                     extension_9
                     extension_10
                     fraction
+                    explicit_manager {
+                      uuid
+                    }
                     leave_uuid
                     primary_uuid
                     job_function_uuid
