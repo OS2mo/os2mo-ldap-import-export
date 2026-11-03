@@ -627,9 +627,9 @@ class SyncTool:
         # This includes fields defined on the model and extra fields.
         available_attributes = set(ldap_object.dict().keys())
         missing_attributes = required_attributes - available_attributes
-        assert (
-            not missing_attributes
-        ), f"ldap_object missing required attributes: {missing_attributes}"
+        assert not missing_attributes, (
+            f"ldap_object missing required attributes: {missing_attributes}"
+        )
 
         logger.info(
             "Loaded object",
