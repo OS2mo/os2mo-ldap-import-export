@@ -751,9 +751,23 @@ def construct_router(settings: Settings) -> APIRouter:
         dataloader: depends.DataLoader,
         settings: depends.Settings,
         ldap_connection: depends.Connection,
-        address_type_user_keys: Annotated[list[str], Query()],
-        dry_run: bool = True,
-        itsystem_user_key: str | None = None,
+        address_type_user_keys: Annotated[
+            list[str],
+            Query(description="User keys of the address types to clean up."),
+        ],
+        dry_run: Annotated[
+            bool,
+            Query(description="Only report orphaned addresses; do not terminate them."),
+        ] = True,
+        itsystem_user_key: Annotated[
+            str | None,
+            Query(
+                description=(
+                    "Only consider addresses linked to IT users in this IT system "
+                    "(addresses without an IT user are always considered)."
+                )
+            ),
+        ] = None,
     ) -> list[str]:
         orphaned_addresses = await find_orphaned_addresses(
             address_type_user_keys=address_type_user_keys,
