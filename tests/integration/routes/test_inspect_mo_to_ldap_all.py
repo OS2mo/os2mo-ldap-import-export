@@ -167,6 +167,67 @@ async def test_inspect_mo_to_ldap_all(
         "CONVERSION_MAPPING": json.dumps(
             {
                 "mo_to_ldap": {
+                    "person": {
+                        "routing_key": "person",
+                        "object_class": "inetOrgPerson",
+                        "template": """
+                            {% set mo_employee = load_mo_employee(uuid) %}
+                            {% if mo_employee.given_name == "Broken" %}
+                                {{ 1 / 0 }}
+                            {% endif %}
+                            {{
+                                {
+                                    "dn": "cn=" ~ uuid ~ ",dc=magenta,dc=dk",
+                                    "create": True,
+                                    "attributes": {}
+                                }|tojson
+                            }}
+                        """,
+                    }
+                }
+            }
+        ),
+    }
+)
+async def test_inspect_mo_to_ldap_all_misbehaving_object(
+    test_client: AsyncClient,
+    graphql_client: GraphQLClient,
+) -> None:
+    """An object whose dry-run does not return JSON must not abort the entire run."""
+    broken = await graphql_client.person_create(
+        input=EmployeeCreateInput(given_name="Broken", surname="Person")
+    )
+    working = await graphql_client.person_create(
+        input=EmployeeCreateInput(given_name="Working", surname="Person")
+    )
+
+    response = await test_client.get("/Inspect/mo_to_ldap/person/all")
+    assert response.status_code == 200
+    with open("/tmp/mo_to_ldap_person.jsonl") as fin:
+        rows = {json.loads(line)["uuid"]: json.loads(line) for line in fin}
+
+    broken_row = rows[str(broken.uuid)]
+    assert broken_row["message"] == "Unable to parse response as JSON"
+    assert broken_row["status_code"] == 500
+    assert "ZeroDivisionError" in broken_row["response"]
+    assert rows[str(working.uuid)] == {
+        "uuid": str(working.uuid),
+        "detail": {
+            "message": "Would have created",
+            "dn": f"cn={working.uuid},dc=magenta,dc=dk",
+            "object_class": "inetOrgPerson",
+            "attributes": {},
+        },
+    }
+
+
+@pytest.mark.integration_test
+@pytest.mark.envvar(
+    {
+        "LISTEN_TO_CHANGES_IN_MO": "False",
+        "CONVERSION_MAPPING": json.dumps(
+            {
+                "mo_to_ldap": {
                     "address": {
                         "routing_key": "address",
                         "object_class": "inetOrgPerson",
