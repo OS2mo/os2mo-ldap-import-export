@@ -702,6 +702,13 @@ class SyncTool:
                     },
                 )
             await self.dataloader.moapi.create(converted_object)
+            logger.info(
+                "Uploaded changes to MO",
+                verb=Verb.CREATE,
+                obj=converted_object,
+                old_attributes=None,
+                dn=dn,
+            )
             return
 
         assert mo_object is not None
@@ -743,6 +750,13 @@ class SyncTool:
                     },
                 )
             await self.dataloader.moapi.terminate(termination)
+            logger.info(
+                "Uploaded changes to MO",
+                verb=Verb.TERMINATE,
+                obj=termination,
+                old_attributes=mo_object.dict(),
+                dn=dn,
+            )
 
         # Bound the edit to the current validity's own end (None = infinity) so
         # other validities are untouched. Employee has no validity, and the clobber
@@ -814,11 +828,12 @@ class SyncTool:
                 )
                 return
 
+        old_attributes = {key: mo_object_dict_to_upload[key] for key in update_values}
         logger.info(
             "Setting values on upload dict",
             uuid=mo_object_dict_to_upload["uuid"],
             values=update_values,
-            old_values={key: mo_object_dict_to_upload[key] for key in update_values},
+            old_values=old_attributes,
         )
 
         mo_object_dict_to_upload.update(update_values)
@@ -836,6 +851,13 @@ class SyncTool:
             )
 
         await self.dataloader.moapi.edit(obj)
+        logger.info(
+            "Uploaded changes to MO",
+            verb=Verb.EDIT,
+            obj=obj,
+            old_attributes=old_attributes,
+            dn=dn,
+        )
 
     async def _create_converted_object(
         self,
