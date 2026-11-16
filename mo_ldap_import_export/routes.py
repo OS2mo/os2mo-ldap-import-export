@@ -1191,17 +1191,53 @@ def construct_router(settings: Settings) -> APIRouter:
         if start_at is not None:
             uuids = [uuid for uuid in uuids if uuid > start_at]
 
+        async def process_uuid(client: httpx.AsyncClient, uuid: UUID) -> dict[str, Any]:
+            """Dry-run a single object, converting any misbehavior to a result row.
+
+            A single misbehaving object must never abort the entire run, so every
+            failure mode of the underlying endpoint is caught and reported inline.
+            """
+            try:
+                response = await client.post(
+                    f"/mo_to_ldap/{identifier}",
+                    params={"dry_run": True},
+                    json=jsonable_encoder(Event(subject=uuid, priority=0)),
+                )
+            except httpx.HTTPError:  # pragma: no cover
+                logger.exception("Exception during Inspect/mo_to_ldap/all")
+                return {"message": "Exception during processing"}
+
+            try:
+                payload = response.json()
+            except ValueError:
+                logger.exception(
+                    "Unable to parse response as JSON",
+                    status_code=response.status_code,
+                )
+                return {
+                    "message": "Unable to parse response as JSON",
+                    "status_code": response.status_code,
+                    "response": response.text,
+                }
+
+            if not isinstance(payload, dict):  # pragma: no cover
+                logger.error(
+                    "Unexpected response payload", status_code=response.status_code
+                )
+                return {
+                    "message": "Unexpected response payload",
+                    "status_code": response.status_code,
+                    "response": response.text,
+                }
+
+            return payload
+
         async with httpx.AsyncClient(
             base_url="http://127.0.0.1:8000", timeout=300
         ) as client:
             with open(f"/tmp/mo_to_ldap_{identifier}.jsonl", "w") as fout:
                 for uuid in uuids:
-                    response = await client.post(
-                        f"/mo_to_ldap/{identifier}",
-                        params={"dry_run": True},
-                        json=jsonable_encoder(Event(subject=uuid, priority=0)),
-                    )
-                    row = {"uuid": str(uuid), **response.json()}
+                    row = {"uuid": str(uuid), **await process_uuid(client, uuid)}
                     fout.write(json.dumps(row) + "\n")
                     fout.flush()
         return "OK"
