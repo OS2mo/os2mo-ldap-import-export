@@ -53,11 +53,19 @@ from .utils import ensure_list
 logger = structlog.stdlib.get_logger()
 
 
-def construct_server(server_config: ServerConfig) -> Server:
+def raw_value_formatter(raw_value: Any) -> Any:
+    """Skip ldap3 schema decoding; raw values are returned as strings."""
+    if isinstance(raw_value, bytes):
+        return raw_value.decode("utf-8")
+    return raw_value
+
+
+def construct_server(server_config: ServerConfig, raw_ldap_fields: set[str]) -> Server:
     """Construct an LDAP3 server from settings.
 
     Args:
         server_config: The settings to construct the server instance from.
+        raw_ldap_fields: Attributes to return raw instead of schema-decoded.
 
     Returns:
         The constructed server instance used for LDAP connections.
@@ -67,14 +75,18 @@ def construct_server(server_config: ServerConfig) -> Server:
         ca_certs_data=server_config.ca_certs_data,
     )
 
+    # Custom formatters take precedence over schema-derived ones.
+    formatter = {field: raw_value_formatter for field in raw_ldap_fields}
+
     host = server_config.host
-    logger.info("Setting up server", host=host)
+    logger.info("Setting up server", host=host, raw_ldap_fields=raw_ldap_fields)
     return Server(
         host=server_config.host,
         port=server_config.port,
         use_ssl=server_config.use_ssl,
         tls=tls_configuration,
         connect_timeout=server_config.timeout,
+        formatter=formatter,
     )
 
 
@@ -106,7 +118,9 @@ def get_client_strategy():
 
 
 def construct_server_pool(settings: Settings) -> ServerPool:
-    servers = [construct_server(c) for c in settings.ldap_controllers]
+    servers = [
+        construct_server(c, settings.raw_ldap_fields) for c in settings.ldap_controllers
+    ]
     # Pick the next server to use at random, retry connections 10 times,
     # discard non-active servers.
     server_pool = ServerPool(

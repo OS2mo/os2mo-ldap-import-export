@@ -5,6 +5,8 @@
 from collections.abc import Callable
 from collections.abc import Iterator
 from contextlib import suppress
+from datetime import UTC
+from datetime import datetime
 
 import ldap3
 import pytest
@@ -341,3 +343,82 @@ async def test_uuid_lookup_respects_search_base(
 
     # ... and is therefore reported as missing
     assert await ldap_api.get_object_by_uuid(person_uuid, {"sn"}) is None
+
+
+async def _set_account_expires(write_ldap_api: LDAPAPI, dn: DN, value: str) -> None:
+    await write_ldap_api.ldap_connection.ldap_modify(
+        dn, {"accountExpires": [(ldap3.MODIFY_REPLACE, [value])]}
+    )
+
+
+@pytest.mark.integration_test
+@pytest.mark.parametrize(
+    "expected_account_expires",
+    [
+        pytest.param(
+            "134509248000000000",  # 2027-03-31T00:00:00Z as an AD filetime
+            marks=pytest.mark.envvar({"RAW_LDAP_FIELDS": '["accountExpires"]'}),
+        ),
+        datetime(2027, 3, 31, tzinfo=UTC),
+    ],
+)
+@pytest.mark.usefixtures("test_client")
+async def test_samba_account_expires_read(
+    write_ldap_api: LDAPAPI,
+    ldap_api: LDAPAPI,
+    ldap_person_dn: DN,
+    expected_account_expires: str | datetime,
+) -> None:
+    """accountExpires reads raw with RAW_LDAP_FIELDS and datetime without."""
+    await _set_account_expires(write_ldap_api, ldap_person_dn, "134509248000000000")
+
+    result = await ldap_api.get_object_by_dn(ldap_person_dn, {"accountExpires"})
+    assert result.accountExpires == expected_account_expires  # type: ignore[attr-defined]
+
+
+@pytest.mark.integration_test
+@pytest.mark.parametrize(
+    ("desired_account_expires", "expected_account_expires"),
+    [
+        pytest.param(
+            "134509248000000001",
+            "134509248000000001",
+            marks=pytest.mark.envvar({"RAW_LDAP_FIELDS": '["accountExpires"]'}),
+        ),
+        pytest.param(
+            datetime(2027, 4, 1, tzinfo=UTC),
+            "134510112000000000",
+            marks=pytest.mark.envvar({"RAW_LDAP_FIELDS": '["accountExpires"]'}),
+        ),
+        # AD filetimes count 100ns ticks, which is finer than the microsecond
+        # resolution of datetime, thus the trailing tick written here is lost
+        # when ldap3 decodes the value on read-back.
+        pytest.param("134509248000000001", datetime(2027, 3, 31, tzinfo=UTC)),
+        pytest.param(
+            datetime(2027, 4, 1, tzinfo=UTC), datetime(2027, 4, 1, tzinfo=UTC)
+        ),
+    ],
+)
+@pytest.mark.usefixtures("test_client")
+async def test_samba_account_expires_write(
+    write_ldap_api: LDAPAPI,
+    ldap_api: LDAPAPI,
+    ldap_person_dn: DN,
+    desired_account_expires: str | datetime,
+    expected_account_expires: str | datetime,
+) -> None:
+    """Writes go through whether the desired value is raw or a datetime.
+
+    Only the read-back representation depends on RAW_LDAP_FIELDS.
+    """
+    await _set_account_expires(write_ldap_api, ldap_person_dn, "134509248000000000")
+
+    await ldap_api.ensure_ldap_object(
+        ldap_person_dn,
+        {"accountExpires": [desired_account_expires]},
+        "user",
+        create=False,
+    )
+
+    result = await ldap_api.get_object_by_dn(ldap_person_dn, {"accountExpires"})
+    assert result.accountExpires == expected_account_expires  # type: ignore[attr-defined]

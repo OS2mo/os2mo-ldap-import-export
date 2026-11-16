@@ -21,6 +21,7 @@ from ldap3.core.exceptions import LDAPInvalidDnError
 from ldap3.utils.dn import parse_dn
 from ldap3.utils.dn import safe_dn
 from more_itertools import collapse
+from more_itertools import one
 from structlog.testing import capture_logs
 
 from mo_ldap_import_export.config import ServerConfig
@@ -34,6 +35,7 @@ from mo_ldap_import_export.ldap import get_client_strategy
 from mo_ldap_import_export.ldap import is_uuid
 from mo_ldap_import_export.ldap import ldap_healthcheck
 from mo_ldap_import_export.ldap import paged_search
+from mo_ldap_import_export.ldap import raw_value_formatter
 from mo_ldap_import_export.ldap import single_object_search
 from mo_ldap_import_export.ldap_classes import LdapObject
 from mo_ldap_import_export.ldap_event_generator import LDAPEventGenerator
@@ -163,8 +165,31 @@ def load_settings_overrides(
 def test_construct_server(load_settings_overrides: dict[str, str]) -> None:
     settings = Settings()
 
-    server = construct_server(settings.ldap_controllers[0])
+    server = construct_server(one(settings.ldap_controllers), settings.raw_ldap_fields)
     assert isinstance(server, Server)
+
+
+@pytest.mark.envvar({"RAW_LDAP_FIELDS": '["accountExpires"]'})
+def test_construct_server_raw_ldap_fields(
+    load_settings_overrides: dict[str, str],
+) -> None:
+    settings = Settings()
+
+    server = construct_server(one(settings.ldap_controllers), settings.raw_ldap_fields)
+    assert server.custom_formatter["accountExpires"] is raw_value_formatter
+
+
+@pytest.mark.parametrize(
+    ("raw_value", "expected"),
+    [
+        (b"134509248000000000", "134509248000000000"),
+        (b"0013213123", "0013213123"),
+        ("already-a-string", "already-a-string"),
+        (123, 123),
+    ],
+)
+def test_raw_value_formatter(raw_value: Any, expected: Any) -> None:
+    assert raw_value_formatter(raw_value) == expected
 
 
 def test_configure_ldap_connection(load_settings_overrides: dict[str, str]) -> None:

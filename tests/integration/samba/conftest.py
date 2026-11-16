@@ -21,6 +21,7 @@ from mo_ldap_import_export.ldap import connection_healthcheck
 from mo_ldap_import_export.ldap import paged_search
 from mo_ldap_import_export.ldapapi import LDAPAPI
 from mo_ldap_import_export.types import DN
+from mo_ldap_import_export.utils import combine_dn_strings
 
 # Baseline DNs in a fresh Samba AD DC provisioned for MAGENTA.DK.
 # Any DN found that is NOT in this set was created by a test.
@@ -182,3 +183,21 @@ def ldap_suffix() -> list[str]:
 def ldap_org_unit(ldap_suffix: list[str]) -> list[str]:
     """Override: CN=Users already exists in Samba AD, skip ldap_org creation."""
     return ["CN=Users"] + ldap_suffix
+
+
+@pytest.fixture
+async def ldap_person(write_ldap_api: LDAPAPI, ldap_org_unit: list[str]) -> list[str]:
+    """Override: AD requires a CN RDN and the user object class."""
+    person_dn = ["CN=abk"] + ldap_org_unit
+    await write_ldap_api.ldap_connection.ldap_add(
+        combine_dn_strings(person_dn),
+        object_class=["user"],
+        attributes={
+            "objectClass": ["top", "person", "organizationalPerson", "user"],
+            "givenName": ["Aage"],
+            "sn": ["Bach Klarskov"],
+            "sAMAccountName": ["abk"],
+            "userPrincipalName": ["abk@magenta.dk"],
+        },
+    )
+    return person_dn
