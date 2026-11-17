@@ -484,6 +484,13 @@ class Settings(BaseSettings):
         None,
         description="The user-key (if any) of the ADGUID IT-system in MO",
     )
+    raw_ldap_fields: set[str] = Field(
+        default_factory=set,
+        description=(
+            "LDAP attributes returned raw instead of ldap3 schema-decoded "
+            "types (e.g. accountExpires as string instead of datetime)"
+        ),
+    )
 
     @root_validator
     def check_ldap_correlation_key(cls, values: dict[str, Any]) -> dict[str, Any]:
