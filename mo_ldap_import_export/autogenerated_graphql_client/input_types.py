@@ -450,6 +450,7 @@ class EngagementCreateInput(BaseModel):
     extension_9: str | None = None
     extension_10: str | None = None
     explicit_manager: UUID | None = None
+    title: UUID | None = None
     employee: UUID | None = None
     person: UUID | None = None
     org_unit: UUID
@@ -509,6 +510,7 @@ class EngagementUpdateInput(BaseModel):
     engagement_type: UUID | None = None
     job_function: UUID | None = None
     explicit_manager: UUID | None | UnsetType = UNSET
+    title: UUID | None | UnsetType = UNSET
 
 
 class EventAcknowledgeInput(BaseModel):
