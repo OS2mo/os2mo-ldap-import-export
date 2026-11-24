@@ -245,6 +245,11 @@ async def role_facet(graphql_client: GraphQLClient) -> UUID:
     return await _create_facet(graphql_client, "role")
 
 
+@pytest.fixture
+async def title_facet(graphql_client: GraphQLClient) -> UUID:
+    return await _create_facet(graphql_client, "title")
+
+
 # --- Class fixtures ---
 
 
@@ -365,6 +370,20 @@ async def jurist(
 ) -> UUID:
     return await _create_class(
         graphql_client, engagement_job_function_facet, "Jurist", "Jurist", "TEXT"
+    )
+
+
+@pytest.fixture
+async def softwareudvikler(graphql_client: GraphQLClient, title_facet: UUID) -> UUID:
+    return await _create_class(
+        graphql_client, title_facet, "Softwareudvikler", "Softwareudvikler", "TEXT"
+    )
+
+
+@pytest.fixture
+async def skoleunderviser(graphql_client: GraphQLClient, title_facet: UUID) -> UUID:
+    return await _create_class(
+        graphql_client, title_facet, "Skoleunderviser", "Skoleunderviser", "TEXT"
     )
 
 

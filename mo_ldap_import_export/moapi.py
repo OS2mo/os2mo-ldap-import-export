@@ -289,6 +289,7 @@ def read_engagement_to_engagement(
         explicit_manager=(
             validity.explicit_manager.uuid if validity.explicit_manager else None
         ),
+        title=validity.title.uuid if validity.title else None,
     )
 
 
@@ -699,6 +700,8 @@ class MOAPI:
         )
         if obj.explicit_manager != models.UNSET:
             input.explicit_manager = obj.explicit_manager
+        if obj.title != models.UNSET:
+            input.title = obj.title
         engagement = await self.graphql_client.engagement_create(input)
         return engagement.uuid
 
@@ -863,6 +866,8 @@ class MOAPI:
         )
         if obj.explicit_manager != models.UNSET:
             input.explicit_manager = obj.explicit_manager
+        if obj.title != models.UNSET:
+            input.title = obj.title
         engagement = await self.graphql_client.engagement_update(input)
         return engagement.uuid
 

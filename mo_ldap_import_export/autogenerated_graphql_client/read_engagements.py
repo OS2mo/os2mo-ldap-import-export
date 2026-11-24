@@ -36,6 +36,7 @@ class ReadEngagementsEngagementsObjectsValidities(BaseModel):
     explicit_manager: Optional[
         "ReadEngagementsEngagementsObjectsValiditiesExplicitManager"
     ]
+    title: Optional["ReadEngagementsEngagementsObjectsValiditiesTitle"]
     leave_uuid: UUID | None
     primary_uuid: UUID | None
     job_function_uuid: UUID
@@ -49,6 +50,10 @@ class ReadEngagementsEngagementsObjectsValiditiesExplicitManager(BaseModel):
     uuid: UUID
 
 
+class ReadEngagementsEngagementsObjectsValiditiesTitle(BaseModel):
+    uuid: UUID
+
+
 class ReadEngagementsEngagementsObjectsValiditiesValidity(BaseModel):
     from_: datetime = Field(alias="from")
     to: datetime | None
@@ -59,4 +64,5 @@ ReadEngagementsEngagements.update_forward_refs()
 ReadEngagementsEngagementsObjects.update_forward_refs()
 ReadEngagementsEngagementsObjectsValidities.update_forward_refs()
 ReadEngagementsEngagementsObjectsValiditiesExplicitManager.update_forward_refs()
+ReadEngagementsEngagementsObjectsValiditiesTitle.update_forward_refs()
 ReadEngagementsEngagementsObjectsValiditiesValidity.update_forward_refs()

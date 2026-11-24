@@ -376,6 +376,8 @@ get_or_create_job_function_uuid = partial(
     _get_or_create_facet_class, facet_user_key="engagement_job_function"
 )
 
+get_or_create_title_uuid = partial(_get_or_create_facet_class, facet_user_key="title")
+
 
 async def load_primary_engagement(
     moapi: MOAPI,
@@ -1228,6 +1230,7 @@ def construct_globals_dict(
         "get_or_create_job_function_uuid": partial(
             get_or_create_job_function_uuid, moapi
         ),
+        "get_or_create_title_uuid": partial(get_or_create_title_uuid, moapi),
         # These names are intentionally bad, but consistent with the old code names
         # TODO: Rename these functions once the old template system is gone
         "load_mo_employee": moapi.load_mo_employee,

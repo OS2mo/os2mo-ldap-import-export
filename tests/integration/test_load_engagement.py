@@ -79,6 +79,7 @@ async def test_load_engagement(
         extension_9="nine",
         extension_10="ten",
         explicit_manager=None,
+        title=None,
         validity=Validity(
             start=datetime(2020, 1, 1, tzinfo=MO_TZ),
             end=datetime(2030, 1, 1, tzinfo=MO_TZ),
