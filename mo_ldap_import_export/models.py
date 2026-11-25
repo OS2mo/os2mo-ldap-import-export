@@ -97,6 +97,7 @@ class Engagement(StrictBaseModel):
     extension_10: str | None | UnsetType = UNSET
     fraction: int | None
     explicit_manager: UUID | None | UnsetType = UNSET
+    title: UUID | None | UnsetType = UNSET
     validity: Validity
 
 

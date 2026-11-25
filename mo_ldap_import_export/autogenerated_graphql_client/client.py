@@ -762,6 +762,9 @@ class GraphQLClient(AsyncBaseClient):
                     explicit_manager {
                       uuid
                     }
+                    title {
+                      uuid
+                    }
                     leave_uuid
                     primary_uuid
                     job_function_uuid

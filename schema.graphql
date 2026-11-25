@@ -2863,6 +2863,9 @@ type Engagement {
       reason: "Use 'job_function_response' instead. Will be removed in a future version of OS2mo."
     )
 
+  "\nThe title of the engagement.\n\nThis field holds the informal title, while the `job_function` field holds the formal, employment-technical job position.\n\nThe class is expected to be from the `title` facet.\n\nExamples:\n* `\"Software developer\"`\n* `\"Employed as Software Developer\"`\n* `\"Software architect\"`\n"
+  title: ClassResponse
+
   "\nMarks which engagement is primary.\n\nWhen exporting data from OS2mo to external systems, that only support a single engagement or associations, this field can be used to export the primary one.\nWhat primarity means is vaguely defined, but usually derived from workload or time-allocation.\n\nExamples  of user-keys:\n* `\"primary\"`\n* `\"non-primary\"`\n* `\"explicitly-primary\"`\n\nIt is a convention that at most one engagement for each employee is set as either `primary` or `explicitly-primary`.\nThis convention is in place as if more engagements are primary, the entire purpose of the field breaks down.\nIn the future this convention may become an invariant.\n\nNote:\nThe calculate-primary integration can be used to automatically calculate and update primarity fields.\n"
   primary_response: ClassResponse
 
@@ -3298,6 +3301,11 @@ input EngagementCreateInput {
   explicit_manager: UUID = null
 
   """
+  UUID of the title of the engagement.
+  """
+  title: UUID = null
+
+  """
   UUID of the related employee.
   """
   employee: UUID = null
@@ -3563,6 +3571,7 @@ input EngagementUpdateInput {
   engagement_type: UUID = null
   job_function: UUID = null
   explicit_manager: UUID
+  title: UUID
 }
 
 "Event.\n\nYou need to use the `token` to acknowledge that the event has been handled properly by calling `event_acknowledge`.\n\nYour integration is supposed to handle *all* events that the listener subscribes to. If your integration does not need to do anything for a particular event, it still needs to be acknowledged.\n\nYou might see events in the `events` collection that you do not appear to receive when calling `event_fetch`. This is because OS2mo will not spam you with the same event over and over if it fails.\n"
