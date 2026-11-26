@@ -12,6 +12,7 @@ from datetime import time
 from datetime import timedelta
 from functools import partial
 from typing import Any
+from typing import NoReturn
 from typing import ParamSpec
 from typing import Protocol
 from typing import TypeVar
@@ -950,9 +951,13 @@ async def get_ldap_attribute_values_by_cpr(
     }
 
 
+def skip(message: str = "Skipping: Explicitly skipped") -> NoReturn:
+    raise SkipObject(message)
+
+
 def skip_if_none(obj: T | None) -> T:
     if obj is None:
-        raise SkipObject("Skipping: Object is None")
+        skip("Skipping: Object is None")
     return obj
 
 
@@ -1345,6 +1350,7 @@ def construct_default_environment() -> Environment:
     environment.globals["now"] = lambda: datetime.now(tz=UTC)
     environment.globals["mo_today"] = mo_today
     environment.globals["timedelta"] = timedelta
+    environment.globals["skip"] = skip
     environment.globals["skip_if_none"] = skip_if_none
     environment.globals["skip_if_exception"] = skip_if_exception
     environment.globals["requeue_if_none"] = requeue_if_none
