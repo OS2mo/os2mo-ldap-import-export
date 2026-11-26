@@ -778,13 +778,18 @@ async def get_engagement_uuid(
     return only(await get_engagement_uuids(graphql_client, filter))
 
 
+async def get_org_unit_uuids(
+    graphql_client: GraphQLClient, filter: dict[str, Any]
+) -> set[UUID]:
+    org_unit_filter = parse_obj_as(OrganisationUnitFilter, filter)
+    result = await graphql_client.read_org_unit_uuid(org_unit_filter)
+    return {obj.uuid for obj in result.objects}
+
+
 async def get_org_unit_uuid(
     graphql_client: GraphQLClient, filter: dict[str, Any]
 ) -> UUID | None:
-    org_unit_filter = parse_obj_as(OrganisationUnitFilter, filter)
-    result = await graphql_client.read_org_unit_uuid(org_unit_filter)
-    obj = only(result.objects)
-    return obj.uuid if obj else None
+    return only(await get_org_unit_uuids(graphql_client, filter))
 
 
 async def get_legacy_manager_person_uuids(
@@ -1261,6 +1266,7 @@ def construct_globals_dict(
         "get_engagement_uuid": partial(get_engagement_uuid, graphql_client),
         "get_engagement_uuids": partial(get_engagement_uuids, graphql_client),
         "get_org_unit_uuid": partial(get_org_unit_uuid, graphql_client),
+        "get_org_unit_uuids": partial(get_org_unit_uuids, graphql_client),
         "get_employment_interval": partial(get_employment_interval, graphql_client),
         "get_manager_person_uuid": partial(get_manager_person_uuid, graphql_client),
         "get_person_dn": partial(get_person_dn, dataloader),
