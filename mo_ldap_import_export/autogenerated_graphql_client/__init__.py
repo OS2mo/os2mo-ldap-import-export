@@ -119,7 +119,6 @@ from .enums import AccessLogModel
 from .enums import Collection
 from .enums import FileStore
 from .enums import GraphQLVersion
-from .enums import HardcodedActor
 from .enums import Mutator
 from .enums import OwnerInferencePriority
 from .enums import PolicySelectorKind
@@ -722,7 +721,6 @@ __all__ = [
     "GraphQLClientHttpError",
     "GraphQLVersion",
     "GraphQlClientInvalidResponseError",
-    "HardcodedActor",
     "HealthFilter",
     "ITAssociationCreateInput",
     "ITAssociationTerminateInput",
