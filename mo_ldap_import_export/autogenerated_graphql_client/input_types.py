@@ -64,6 +64,7 @@ class AddressFilter(BaseModel):
     engagements: list[UUID] | None = None
     ituser: Optional["ITUserFilter"] = None
     visibility: Optional["ClassFilter"] = None
+    not_: Optional["AddressFilter"] = Field(alias="not", default=None)
 
 
 class AddressRegistrationFilter(BaseModel):
@@ -120,6 +121,7 @@ class AssociationFilter(BaseModel):
     association_types: list[UUID] | None = None
     association_type_user_keys: list[str] | None = None
     it_association: bool | None = None
+    not_: Optional["AssociationFilter"] = Field(alias="not", default=None)
 
 
 class AssociationRegistrationFilter(BaseModel):
@@ -183,6 +185,7 @@ class ClassFilter(BaseModel):
     it_system: Optional["ITSystemFilter"] = None
     owner: Optional["ClassOwnerFilter"] = None
     scope: list[str] | None = None
+    not_: Optional["ClassFilter"] = Field(alias="not", default=None)
 
 
 class ClassOwnerFilter(BaseModel):
@@ -204,6 +207,7 @@ class ClassOwnerFilter(BaseModel):
     ancestor: Optional["OrganisationUnitFilter"] | UnsetType = UNSET
     engagement: Optional["EngagementFilter"] = None
     owner: Optional["OwnerFilter"] = None
+    not_: Optional["OrganisationUnitFilter"] = Field(alias="not", default=None)
     include_none: bool = False
 
 
@@ -249,6 +253,7 @@ class DescendantParentBoundOrganisationUnitFilter(BaseModel):
     ancestor: Optional["OrganisationUnitFilter"] | UnsetType = UNSET
     engagement: Optional["EngagementFilter"] = None
     owner: Optional["OwnerFilter"] = None
+    not_: Optional["OrganisationUnitFilter"] = Field(alias="not", default=None)
 
 
 class EmployeeBoundAddressFilter(BaseModel):
@@ -267,6 +272,7 @@ class EmployeeBoundAddressFilter(BaseModel):
     engagements: list[UUID] | None = None
     ituser: Optional["ITUserFilter"] = None
     visibility: Optional["ClassFilter"] = None
+    not_: Optional["AddressFilter"] = Field(alias="not", default=None)
 
 
 class EmployeeBoundAssociationFilter(BaseModel):
@@ -282,6 +288,7 @@ class EmployeeBoundAssociationFilter(BaseModel):
     association_types: list[UUID] | None = None
     association_type_user_keys: list[str] | None = None
     it_association: bool | None = None
+    not_: Optional["AssociationFilter"] = Field(alias="not", default=None)
 
 
 class EmployeeBoundEngagementFilter(BaseModel):
@@ -298,6 +305,7 @@ class EmployeeBoundEngagementFilter(BaseModel):
     explicit_manager: Optional["ManagerFilter"] | UnsetType = UNSET
     ituser: Optional["ITUserFilter"] = None
     primary: Optional["ClassFilter"] | UnsetType = UNSET
+    not_: Optional["EngagementFilter"] = Field(alias="not", default=None)
 
 
 class EmployeeBoundITUserFilter(BaseModel):
@@ -316,6 +324,7 @@ class EmployeeBoundITUserFilter(BaseModel):
     external_ids: list[str] | None | UnsetType = UNSET
     binding_types: list[str] | None = None
     primary: Optional["ClassFilter"] | UnsetType = UNSET
+    not_: Optional["ITUserFilter"] = Field(alias="not", default=None)
 
 
 class EmployeeBoundLeaveFilter(BaseModel):
@@ -327,6 +336,7 @@ class EmployeeBoundLeaveFilter(BaseModel):
     org_unit: Optional["OrganisationUnitFilter"] = None
     org_units: list[UUID] | None = None
     registration: Optional["LeaveRegistrationFilter"] = None
+    not_: Optional["LeaveFilter"] = Field(alias="not", default=None)
 
 
 class EmployeeBoundManagerFilter(BaseModel):
@@ -343,6 +353,7 @@ class EmployeeBoundManagerFilter(BaseModel):
     manager_type: Optional["ClassFilter"] = None
     exclude: Optional["EmployeeFilter"] = None
     primary: Optional["ClassFilter"] | UnsetType = UNSET
+    not_: Optional["ManagerFilter"] = Field(alias="not", default=None)
 
 
 class EmployeeCreateInput(BaseModel):
@@ -369,6 +380,7 @@ class EmployeeFilter(BaseModel):
     ituser: Optional["ITUserFilter"] | UnsetType = UNSET
     manager_role: Optional["ManagerFilter"] | UnsetType = UNSET
     engagement: Optional["EngagementFilter"] | UnsetType = UNSET
+    not_: Optional["EmployeeFilter"] = Field(alias="not", default=None)
 
 
 class EmployeeRegistrationFilter(BaseModel):
@@ -412,6 +424,7 @@ class EngagementBoundAddressFilter(BaseModel):
     address_type_user_keys: list[str] | None = None
     ituser: Optional["ITUserFilter"] = None
     visibility: Optional["ClassFilter"] = None
+    not_: Optional["AddressFilter"] = Field(alias="not", default=None)
 
 
 class EngagementBoundITUserFilter(BaseModel):
@@ -431,6 +444,7 @@ class EngagementBoundITUserFilter(BaseModel):
     external_ids: list[str] | None | UnsetType = UNSET
     binding_types: list[str] | None = None
     primary: Optional["ClassFilter"] | UnsetType = UNSET
+    not_: Optional["ITUserFilter"] = Field(alias="not", default=None)
 
 
 class EngagementCreateInput(BaseModel):
@@ -474,6 +488,7 @@ class EngagementFilter(BaseModel):
     explicit_manager: Optional["ManagerFilter"] | UnsetType = UNSET
     ituser: Optional["ITUserFilter"] = None
     primary: Optional["ClassFilter"] | UnsetType = UNSET
+    not_: Optional["EngagementFilter"] = Field(alias="not", default=None)
 
 
 class EngagementRegistrationFilter(BaseModel):
@@ -565,6 +580,7 @@ class FacetBoundClassFilter(BaseModel):
     it_system: Optional["ITSystemFilter"] = None
     owner: Optional["ClassOwnerFilter"] = None
     scope: list[str] | None = None
+    not_: Optional["ClassFilter"] = Field(alias="not", default=None)
 
 
 class FacetCreateInput(BaseModel):
@@ -584,6 +600,7 @@ class FacetFilter(BaseModel):
     parent: Optional["FacetFilter"] = None
     parents: list[UUID] | None = None
     parent_user_keys: list[str] | None = None
+    not_: Optional["FacetFilter"] = Field(alias="not", default=None)
 
 
 class FacetRegistrationFilter(BaseModel):
@@ -664,6 +681,7 @@ class ITSystemFilter(BaseModel):
     to_date: datetime | None | UnsetType = UNSET
     registration_time: datetime | None = None
     registration: Optional["ITSystemRegistrationFilter"] = None
+    not_: Optional["ITSystemFilter"] = Field(alias="not", default=None)
 
 
 class ITSystemRegistrationFilter(BaseModel):
@@ -718,6 +736,7 @@ class ITUserFilter(BaseModel):
     external_ids: list[str] | None | UnsetType = UNSET
     binding_types: list[str] | None = None
     primary: Optional["ClassFilter"] | UnsetType = UNSET
+    not_: Optional["ITUserFilter"] = Field(alias="not", default=None)
 
 
 class ITUserRegistrationFilter(BaseModel):
@@ -763,6 +782,7 @@ class ItSystemboundclassfilter(BaseModel):
     parent_user_keys: list[str] | None = None
     owner: Optional["ClassOwnerFilter"] = None
     scope: list[str] | None = None
+    not_: Optional["ClassFilter"] = Field(alias="not", default=None)
 
 
 class ItuserBoundAddressFilter(BaseModel):
@@ -782,6 +802,7 @@ class ItuserBoundAddressFilter(BaseModel):
     engagement: Optional["EngagementFilter"] = None
     engagements: list[UUID] | None = None
     visibility: Optional["ClassFilter"] = None
+    not_: Optional["AddressFilter"] = Field(alias="not", default=None)
 
 
 class ItuserBoundRoleBindingFilter(BaseModel):
@@ -794,6 +815,7 @@ class ItuserBoundRoleBindingFilter(BaseModel):
     org_units: list[UUID] | None = None
     registration: Optional["RoleRegistrationFilter"] = None
     role: Optional["ClassFilter"] = None
+    not_: Optional["RoleBindingFilter"] = Field(alias="not", default=None)
 
 
 class KLECreateInput(BaseModel):
@@ -814,6 +836,7 @@ class KLEFilter(BaseModel):
     org_unit: Optional["OrganisationUnitFilter"] = None
     org_units: list[UUID] | None = None
     registration: Optional["KLERegistrationFilter"] = None
+    not_: Optional["KLEFilter"] = Field(alias="not", default=None)
 
 
 class KLERegistrationFilter(BaseModel):
@@ -857,6 +880,7 @@ class LeaveFilter(BaseModel):
     org_unit: Optional["OrganisationUnitFilter"] = None
     org_units: list[UUID] | None = None
     registration: Optional["LeaveRegistrationFilter"] = None
+    not_: Optional["LeaveFilter"] = Field(alias="not", default=None)
 
 
 class LeaveRegistrationFilter(BaseModel):
@@ -935,6 +959,7 @@ class ManagerFilter(BaseModel):
     manager_type: Optional["ClassFilter"] = None
     exclude: Optional["EmployeeFilter"] = None
     primary: Optional["ClassFilter"] | UnsetType = UNSET
+    not_: Optional["ManagerFilter"] = Field(alias="not", default=None)
 
 
 class ManagerRegistrationFilter(BaseModel):
@@ -1006,6 +1031,7 @@ class OrgUnitboundaddressfilter(BaseModel):
     engagements: list[UUID] | None = None
     ituser: Optional["ITUserFilter"] = None
     visibility: Optional["ClassFilter"] = None
+    not_: Optional["AddressFilter"] = Field(alias="not", default=None)
 
 
 class OrgUnitboundassociationfilter(BaseModel):
@@ -1021,6 +1047,7 @@ class OrgUnitboundassociationfilter(BaseModel):
     association_types: list[UUID] | None = None
     association_type_user_keys: list[str] | None = None
     it_association: bool | None = None
+    not_: Optional["AssociationFilter"] = Field(alias="not", default=None)
 
 
 class OrgUnitboundengagementfilter(BaseModel):
@@ -1037,6 +1064,7 @@ class OrgUnitboundengagementfilter(BaseModel):
     explicit_manager: Optional["ManagerFilter"] | UnsetType = UNSET
     ituser: Optional["ITUserFilter"] = None
     primary: Optional["ClassFilter"] | UnsetType = UNSET
+    not_: Optional["EngagementFilter"] = Field(alias="not", default=None)
 
 
 class OrgUnitboundituserfilter(BaseModel):
@@ -1055,6 +1083,7 @@ class OrgUnitboundituserfilter(BaseModel):
     external_ids: list[str] | None | UnsetType = UNSET
     binding_types: list[str] | None = None
     primary: Optional["ClassFilter"] | UnsetType = UNSET
+    not_: Optional["ITUserFilter"] = Field(alias="not", default=None)
 
 
 class OrgUnitboundklefilter(BaseModel):
@@ -1064,6 +1093,7 @@ class OrgUnitboundklefilter(BaseModel):
     to_date: datetime | None | UnsetType = UNSET
     registration_time: datetime | None = None
     registration: Optional["KLERegistrationFilter"] = None
+    not_: Optional["KLEFilter"] = Field(alias="not", default=None)
 
 
 class OrgUnitboundleavefilter(BaseModel):
@@ -1075,6 +1105,7 @@ class OrgUnitboundleavefilter(BaseModel):
     employee: Optional["EmployeeFilter"] | UnsetType = UNSET
     employees: list[UUID] | None = None
     registration: Optional["LeaveRegistrationFilter"] = None
+    not_: Optional["LeaveFilter"] = Field(alias="not", default=None)
 
 
 class OrgUnitboundmanagerfilter(BaseModel):
@@ -1091,6 +1122,7 @@ class OrgUnitboundmanagerfilter(BaseModel):
     manager_type: Optional["ClassFilter"] = None
     exclude: Optional["EmployeeFilter"] = None
     primary: Optional["ClassFilter"] | UnsetType = UNSET
+    not_: Optional["ManagerFilter"] = Field(alias="not", default=None)
 
 
 class OrgUnitboundownerfilter(BaseModel):
@@ -1102,6 +1134,7 @@ class OrgUnitboundownerfilter(BaseModel):
     employee: Optional["EmployeeFilter"] | UnsetType = UNSET
     employees: list[UUID] | None = None
     owner: Optional["EmployeeFilter"] = None
+    not_: Optional["OwnerFilter"] = Field(alias="not", default=None)
 
 
 class OrgUnitboundrelatedunitfilter(BaseModel):
@@ -1110,6 +1143,7 @@ class OrgUnitboundrelatedunitfilter(BaseModel):
     from_date: datetime | None | UnsetType = UNSET
     to_date: datetime | None | UnsetType = UNSET
     registration_time: datetime | None = None
+    not_: Optional["RelatedUnitFilter"] = Field(alias="not", default=None)
 
 
 class OrganisationCreate(BaseModel):
@@ -1147,6 +1181,7 @@ class OrganisationUnitFilter(BaseModel):
     ancestor: Optional["OrganisationUnitFilter"] | UnsetType = UNSET
     engagement: Optional["EngagementFilter"] = None
     owner: Optional["OwnerFilter"] = None
+    not_: Optional["OrganisationUnitFilter"] = Field(alias="not", default=None)
 
 
 class OrganisationUnitRegistrationFilter(BaseModel):
@@ -1194,6 +1229,7 @@ class OwnerFilter(BaseModel):
     org_unit: Optional["OrganisationUnitFilter"] = None
     org_units: list[UUID] | None = None
     owner: Optional["EmployeeFilter"] = None
+    not_: Optional["OwnerFilter"] = Field(alias="not", default=None)
 
 
 class OwnerTerminateInput(BaseModel):
@@ -1238,6 +1274,7 @@ class ParentBoundClassFilter(BaseModel):
     it_system: Optional["ITSystemFilter"] = None
     owner: Optional["ClassOwnerFilter"] = None
     scope: list[str] | None = None
+    not_: Optional["ClassFilter"] = Field(alias="not", default=None)
 
 
 class ParentBoundFacetFilter(BaseModel):
@@ -1247,6 +1284,7 @@ class ParentBoundFacetFilter(BaseModel):
     to_date: datetime | None | UnsetType = UNSET
     registration_time: datetime | None = None
     registration: Optional["FacetRegistrationFilter"] = None
+    not_: Optional["FacetFilter"] = Field(alias="not", default=None)
 
 
 class ParentBoundOrganisationUnitFilter(BaseModel):
@@ -1266,6 +1304,7 @@ class ParentBoundOrganisationUnitFilter(BaseModel):
     ancestor: Optional["OrganisationUnitFilter"] | UnsetType = UNSET
     engagement: Optional["EngagementFilter"] = None
     owner: Optional["OwnerFilter"] = None
+    not_: Optional["OrganisationUnitFilter"] = Field(alias="not", default=None)
 
 
 class PolicyFilter(BaseModel):
@@ -1328,6 +1367,7 @@ class RelatedUnitFilter(BaseModel):
     registration_time: datetime | None = None
     org_unit: Optional["OrganisationUnitFilter"] = None
     org_units: list[UUID] | None = None
+    not_: Optional["RelatedUnitFilter"] = Field(alias="not", default=None)
 
 
 class RelatedUnitsUpdateInput(BaseModel):
@@ -1357,6 +1397,7 @@ class RoleBindingFilter(BaseModel):
     registration: Optional["RoleRegistrationFilter"] = None
     ituser: Optional["ITUserFilter"] = None
     role: Optional["ClassFilter"] = None
+    not_: Optional["RoleBindingFilter"] = Field(alias="not", default=None)
 
 
 class RoleBindingTerminateInput(BaseModel):
@@ -1422,6 +1463,7 @@ class UuidsBoundClassFilter(BaseModel):
     it_system: Optional["ITSystemFilter"] = None
     owner: Optional["ClassOwnerFilter"] = None
     scope: list[str] | None = None
+    not_: Optional["ClassFilter"] = Field(alias="not", default=None)
 
 
 class UuidsBoundEmployeeFilter(BaseModel):
@@ -1436,6 +1478,7 @@ class UuidsBoundEmployeeFilter(BaseModel):
     ituser: Optional["ITUserFilter"] | UnsetType = UNSET
     manager_role: Optional["ManagerFilter"] | UnsetType = UNSET
     engagement: Optional["EngagementFilter"] | UnsetType = UNSET
+    not_: Optional["EmployeeFilter"] = Field(alias="not", default=None)
 
 
 class UuidsBoundEngagementFilter(BaseModel):
@@ -1453,6 +1496,7 @@ class UuidsBoundEngagementFilter(BaseModel):
     explicit_manager: Optional["ManagerFilter"] | UnsetType = UNSET
     ituser: Optional["ITUserFilter"] = None
     primary: Optional["ClassFilter"] | UnsetType = UNSET
+    not_: Optional["EngagementFilter"] = Field(alias="not", default=None)
 
 
 class UuidsBoundFacetFilter(BaseModel):
@@ -1464,6 +1508,7 @@ class UuidsBoundFacetFilter(BaseModel):
     parent: Optional["FacetFilter"] = None
     parents: list[UUID] | None = None
     parent_user_keys: list[str] | None = None
+    not_: Optional["FacetFilter"] = Field(alias="not", default=None)
 
 
 class UuidsBoundITSystemFilter(BaseModel):
@@ -1472,6 +1517,7 @@ class UuidsBoundITSystemFilter(BaseModel):
     to_date: datetime | None | UnsetType = UNSET
     registration_time: datetime | None = None
     registration: Optional["ITSystemRegistrationFilter"] = None
+    not_: Optional["ITSystemFilter"] = Field(alias="not", default=None)
 
 
 class UuidsBoundITUserFilter(BaseModel):
@@ -1491,6 +1537,7 @@ class UuidsBoundITUserFilter(BaseModel):
     external_ids: list[str] | None | UnsetType = UNSET
     binding_types: list[str] | None = None
     primary: Optional["ClassFilter"] | UnsetType = UNSET
+    not_: Optional["ITUserFilter"] = Field(alias="not", default=None)
 
 
 class UuidsBoundLeaveFilter(BaseModel):
@@ -1503,6 +1550,7 @@ class UuidsBoundLeaveFilter(BaseModel):
     org_unit: Optional["OrganisationUnitFilter"] = None
     org_units: list[UUID] | None = None
     registration: Optional["LeaveRegistrationFilter"] = None
+    not_: Optional["LeaveFilter"] = Field(alias="not", default=None)
 
 
 class UuidsBoundOrganisationUnitFilter(BaseModel):
@@ -1523,6 +1571,7 @@ class UuidsBoundOrganisationUnitFilter(BaseModel):
     ancestor: Optional["OrganisationUnitFilter"] | UnsetType = UNSET
     engagement: Optional["EngagementFilter"] = None
     owner: Optional["OwnerFilter"] = None
+    not_: Optional["OrganisationUnitFilter"] = Field(alias="not", default=None)
 
 
 class ValidityInput(BaseModel):

@@ -57,16 +57,6 @@ class GraphQLVersion(str, Enum):
     VERSION_30 = "VERSION_30"
 
 
-class HardcodedActor(str, Enum):
-    NO_AUTH = "NO_AUTH"
-    LEGACY_AUTH = "LEGACY_AUTH"
-    BEFORE_ACTOR = "BEFORE_ACTOR"
-    LORA_USER = "LORA_USER"
-    UNABLE_TO_PARSE_TOKEN = "UNABLE_TO_PARSE_TOKEN"
-    MISSING_UUID_ON_TOKEN = "MISSING_UUID_ON_TOKEN"
-    NO_AUTH_MIDDLEWARE = "NO_AUTH_MIDDLEWARE"
-
-
 class Mutator(str, Enum):
     address_create = "address_create"
     addresses_create = "addresses_create"
@@ -164,6 +154,7 @@ class Mutator(str, Enum):
     event_rerun = "event_rerun"
     policy_declare = "policy_declare"
     upload_file = "upload_file"
+    delete_file = "delete_file"
 
 
 class OwnerInferencePriority(str, Enum):

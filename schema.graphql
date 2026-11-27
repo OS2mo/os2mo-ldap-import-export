@@ -78,8 +78,10 @@ type AccessLogPaged {
   page_info: PageInfo!
 }
 
-"Interface type for all actors, implementing all shared behavior.\n"
-interface Actor {
+"""
+A user or integration that reads and changes data in OS2mo.
+"""
+type Actor {
   """
   UUID of the actor
   """
@@ -112,7 +114,7 @@ interface Actor {
   ): [Listener!]!
 
   """
-  Appropriate display text for any actor (regardless of type)
+  Appropriate display text for the actor
   """
   display_name: String
 }
@@ -464,6 +466,11 @@ input AddressFilter {
   Visibility filter limiting which entries are returned.
   """
   visibility: ClassFilter = null
+
+  """
+  Addresses matching the nested filter are excluded from the result.
+  """
+  not: AddressFilter = null
 }
 
 type AddressRegistration implements IRegistration & RegistrationBase {
@@ -1062,6 +1069,11 @@ input AssociationFilter {
 
   "Query for either IT-Associations or \"normal\" Associations. `None` returns all.\n\nThis field is needed to replicate the functionality in the service API:\n`?it=1`\n"
   it_association: Boolean = null
+
+  """
+  Associations matching the nested filter are excluded from the result.
+  """
+  not: AssociationFilter = null
 }
 
 type AssociationRegistration implements IRegistration & RegistrationBase {
@@ -1597,6 +1609,11 @@ input ClassFilter {
 
   "Scope filter limiting which entries are returned.\n\n| `scope`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   scope: [String!] = null
+
+  """
+  Classes matching the nested filter are excluded from the result.
+  """
+  not: ClassFilter = null
 }
 
 """
@@ -1663,6 +1680,11 @@ input ClassOwnerFilter {
   Owner filter limiting which entries are returned.
   """
   owner: OwnerFilter = null
+
+  """
+  Organisation units matching the nested filter are excluded from the result.
+  """
+  not: OrganisationUnitFilter = null
 
   "Include classes with `owner=None`.\n"
   include_none: Boolean! = false
@@ -2006,6 +2028,11 @@ input DescendantParentBoundOrganisationUnitFilter {
   Owner filter limiting which entries are returned.
   """
   owner: OwnerFilter = null
+
+  """
+  Organisation units matching the nested filter are excluded from the result.
+  """
+  not: OrganisationUnitFilter = null
 }
 
 """
@@ -2311,6 +2338,11 @@ input EmployeeBoundAddressFilter {
   Visibility filter limiting which entries are returned.
   """
   visibility: ClassFilter = null
+
+  """
+  Addresses matching the nested filter are excluded from the result.
+  """
+  not: AddressFilter = null
 }
 
 input EmployeeBoundAssociationFilter {
@@ -2358,6 +2390,11 @@ input EmployeeBoundAssociationFilter {
 
   "Query for either IT-Associations or \"normal\" Associations. `None` returns all.\n\nThis field is needed to replicate the functionality in the service API:\n`?it=1`\n"
   it_association: Boolean = null
+
+  """
+  Associations matching the nested filter are excluded from the result.
+  """
+  not: AssociationFilter = null
 }
 
 input EmployeeBoundEngagementFilter {
@@ -2408,6 +2445,11 @@ input EmployeeBoundEngagementFilter {
 
   "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return engagements without a primary class.\n"
   primary: ClassFilter
+
+  """
+  Engagements matching the nested filter are excluded from the result.
+  """
+  not: EngagementFilter = null
 }
 
 input EmployeeBoundITUserFilter {
@@ -2463,6 +2505,11 @@ input EmployeeBoundITUserFilter {
 
   "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return IT users without a primary class.\n"
   primary: ClassFilter
+
+  """
+  IT users matching the nested filter are excluded from the result.
+  """
+  not: ITUserFilter = null
 }
 
 input EmployeeBoundLeaveFilter {
@@ -2496,6 +2543,11 @@ input EmployeeBoundLeaveFilter {
 
   "Registration filter limiting which entries are returned.\n"
   registration: LeaveRegistrationFilter = null
+
+  """
+  Leaves matching the nested filter are excluded from the result.
+  """
+  not: LeaveFilter = null
 }
 
 input EmployeeBoundManagerFilter {
@@ -2544,6 +2596,11 @@ input EmployeeBoundManagerFilter {
 
   "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return managers without a primary class.\n"
   primary: ClassFilter
+
+  """
+  Managers matching the nested filter are excluded from the result.
+  """
+  not: ManagerFilter = null
 }
 
 input EmployeeCreateInput {
@@ -2635,6 +2692,11 @@ input EmployeeFilter {
 
   "Engagement filter limiting which entries are returned.\n\nSet to `null` to only return employees without any engagements.\n"
   engagement: EngagementFilter
+
+  """
+  Employees matching the nested filter are excluded from the result.
+  """
+  not: EmployeeFilter = null
 }
 
 """
@@ -3178,6 +3240,11 @@ input EngagementBoundAddressFilter {
   Visibility filter limiting which entries are returned.
   """
   visibility: ClassFilter = null
+
+  """
+  Addresses matching the nested filter are excluded from the result.
+  """
+  not: AddressFilter = null
 }
 
 input EngagementBoundITUserFilter {
@@ -3237,6 +3304,11 @@ input EngagementBoundITUserFilter {
 
   "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return IT users without a primary class.\n"
   primary: ClassFilter
+
+  """
+  IT users matching the nested filter are excluded from the result.
+  """
+  not: ITUserFilter = null
 }
 
 input EngagementCreateInput {
@@ -3384,6 +3456,11 @@ input EngagementFilter {
 
   "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return engagements without a primary class.\n"
   primary: ClassFilter
+
+  """
+  Engagements matching the nested filter are excluded from the result.
+  """
+  not: EngagementFilter = null
 }
 
 type EngagementRegistration implements IRegistration & RegistrationBase {
@@ -3847,6 +3924,11 @@ input FacetBoundClassFilter {
 
   "Scope filter limiting which entries are returned.\n\n| `scope`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   scope: [String!] = null
+
+  """
+  Classes matching the nested filter are excluded from the result.
+  """
+  not: ClassFilter = null
 }
 
 input FacetCreateInput {
@@ -3908,6 +3990,11 @@ input FacetFilter {
   "Parent user-key filter limiting which entries are returned.\n\n| `parent_user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   parent_user_keys: [String!] = null
     @deprecated(reason: "Replaced by the 'parent' filter")
+
+  """
+  Facets matching the nested filter are excluded from the result.
+  """
+  not: FacetFilter = null
 }
 
 type FacetRegistration implements IRegistration & RegistrationBase {
@@ -4229,44 +4316,6 @@ enum GraphQLVersion {
   VERSION_30
 }
 
-enum HardcodedActor {
-  """
-  The change was made when auth was disabled
-  """
-  NO_AUTH
-
-  """
-  The change was made through the legacy auth system
-  """
-  LEGACY_AUTH
-
-  """
-  The change was made before actors were registered
-  """
-  BEFORE_ACTOR
-
-  "The change was made by an unknown actor.\n\nThis could either by due to:\n\n* an invalid or unparsable token\n* a token missing an UUID\n* by-passing the authentication middleware\n\nor similar.\n"
-  LORA_USER
-    @deprecated(
-      reason: "Deprecated as of version 43.4.0 in favor of:\n\n* UNABLE_TO_PARSE_TOKEN: for invalid or unparsable tokens\n* MISSING_UUID_ON_TOKEN: for tokens missing an UUID\n* NO_AUTH_MIDDLEWARE_UUID: for by-passing the authentication middleware\n"
-    )
-
-  """
-  The change was made by an invalid or unparsable token
-  """
-  UNABLE_TO_PARSE_TOKEN
-
-  """
-  The change was made by a token missing an UUID
-  """
-  MISSING_UUID_ON_TOKEN
-
-  """
-  The change was made by-passing the authentication middleware
-  """
-  NO_AUTH_MIDDLEWARE
-}
-
 """
 Status on whether a specific subsystem is working
 """
@@ -4534,6 +4583,11 @@ input ITSystemFilter {
 
   "Registration filter limiting which entries are returned.\n"
   registration: ITSystemRegistrationFilter = null
+
+  """
+  IT systems matching the nested filter are excluded from the result.
+  """
+  not: ITSystemFilter = null
 }
 
 type ITSystemRegistration implements IRegistration & RegistrationBase {
@@ -5090,6 +5144,11 @@ input ITUserFilter {
 
   "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return IT users without a primary class.\n"
   primary: ClassFilter
+
+  """
+  IT users matching the nested filter are excluded from the result.
+  """
+  not: ITUserFilter = null
 }
 
 type ITUserRegistration implements IRegistration & RegistrationBase {
@@ -5367,6 +5426,11 @@ input ItSystemboundclassfilter {
 
   "Scope filter limiting which entries are returned.\n\n| `scope`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   scope: [String!] = null
+
+  """
+  Classes matching the nested filter are excluded from the result.
+  """
+  not: ClassFilter = null
 }
 
 input ItuserBoundAddressFilter {
@@ -5430,6 +5494,11 @@ input ItuserBoundAddressFilter {
   Visibility filter limiting which entries are returned.
   """
   visibility: ClassFilter = null
+
+  """
+  Addresses matching the nested filter are excluded from the result.
+  """
+  not: AddressFilter = null
 }
 
 input ItuserBoundRoleBindingFilter {
@@ -5466,6 +5535,11 @@ input ItuserBoundRoleBindingFilter {
 
   "Role filter limiting which entries are returned.\n"
   role: ClassFilter = null
+
+  """
+  Rolebindings matching the nested filter are excluded from the result.
+  """
+  not: RoleBindingFilter = null
 }
 
 "\nKLE responsibility mapping.\n\nKLE stands for \"Kommunernes Landsforenings Emnesystematik\" which is a municipality taxonomy for mapping out municipality tasks.\n\nIn OS2mo KLE responsibilities can be mapped to organisation units to signify that a given organisational unit operates within certain municipality tasks.\nAdding KLE responsibilities to organisational units can help out with regards to GDPR by identifying which organisational units operate with sensitive tasks.\n\nThe KLE numbers themselves are dot seperated structured numbers alike this:\n* \"00.75.00\": General data exchanges\n* \"21.02.05\": Library study cafes\n* \"32.15.08\": Alimony\n\nThe first number specifies the main-group, such as:\n* \"00\": Municipality operations (Kommunens styrelse)\n* \"21\": Libraries\n* \"31\": Monetary benefits\n\nThe second number specifies the group, such as (for libraries):\n* \"02\": On-site usage\n* \"05\": AV Materials\n* \"20\": Online services\n\nThe third and final number specifies the topic, such as (for library on-site usage):\n* \"00\": General usage\n* \"05\": Study cafes\n* \"10\": Study centers\n\nSome KLE ranges are pre-reserved by The National Association of Municipalities (Kommunernes Landsforenings), however outside of these pre-reserved ranges municipalies are allowed to add their own local numbers.\nSpecifically no main-groups can be added, only groups and topics, both above 79.\n\nFor more details see: https://www.kle-online.dk\n"
@@ -5639,6 +5713,11 @@ input KLEFilter {
 
   "Registration filter limiting which entries are returned.\n"
   registration: KLERegistrationFilter = null
+
+  """
+  KLEs matching the nested filter are excluded from the result.
+  """
+  not: KLEFilter = null
 }
 
 type KLERegistration implements IRegistration & RegistrationBase {
@@ -6019,6 +6098,11 @@ input LeaveFilter {
 
   "Registration filter limiting which entries are returned.\n"
   registration: LeaveRegistrationFilter = null
+
+  """
+  Leaves matching the nested filter are excluded from the result.
+  """
+  not: LeaveFilter = null
 }
 
 type LeaveRegistration implements IRegistration & RegistrationBase {
@@ -6624,6 +6708,11 @@ input ManagerFilter {
 
   "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return managers without a primary class.\n"
   primary: ClassFilter
+
+  """
+  Managers matching the nested filter are excluded from the result.
+  """
+  not: ManagerFilter = null
 }
 
 type ManagerRegistration implements IRegistration & RegistrationBase {
@@ -7633,6 +7722,19 @@ type Mutation {
     """
     force: Boolean! = false
   ): String!
+
+  "Delete a file.\n\nFiles are not bitemporal, so the file and its contents are gone for good.\n"
+  delete_file(
+    """
+    The filestore to delete the file from.
+    """
+    file_store: FileStore!
+
+    """
+    Name of the file to delete.
+    """
+    file_name: String!
+  ): String!
 }
 
 """
@@ -7735,6 +7837,7 @@ enum Mutator {
   event_rerun
   policy_declare
   upload_file
+  delete_file
 }
 
 """
@@ -7929,6 +8032,11 @@ input OrgUnitboundaddressfilter {
   Visibility filter limiting which entries are returned.
   """
   visibility: ClassFilter = null
+
+  """
+  Addresses matching the nested filter are excluded from the result.
+  """
+  not: AddressFilter = null
 }
 
 input OrgUnitboundassociationfilter {
@@ -7976,6 +8084,11 @@ input OrgUnitboundassociationfilter {
 
   "Query for either IT-Associations or \"normal\" Associations. `None` returns all.\n\nThis field is needed to replicate the functionality in the service API:\n`?it=1`\n"
   it_association: Boolean = null
+
+  """
+  Associations matching the nested filter are excluded from the result.
+  """
+  not: AssociationFilter = null
 }
 
 input OrgUnitboundengagementfilter {
@@ -8026,6 +8139,11 @@ input OrgUnitboundengagementfilter {
 
   "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return engagements without a primary class.\n"
   primary: ClassFilter
+
+  """
+  Engagements matching the nested filter are excluded from the result.
+  """
+  not: EngagementFilter = null
 }
 
 input OrgUnitboundituserfilter {
@@ -8081,6 +8199,11 @@ input OrgUnitboundituserfilter {
 
   "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return IT users without a primary class.\n"
   primary: ClassFilter
+
+  """
+  IT users matching the nested filter are excluded from the result.
+  """
+  not: ITUserFilter = null
 }
 
 input OrgUnitboundklefilter {
@@ -8107,6 +8230,11 @@ input OrgUnitboundklefilter {
 
   "Registration filter limiting which entries are returned.\n"
   registration: KLERegistrationFilter = null
+
+  """
+  KLEs matching the nested filter are excluded from the result.
+  """
+  not: KLEFilter = null
 }
 
 input OrgUnitboundleavefilter {
@@ -8140,6 +8268,11 @@ input OrgUnitboundleavefilter {
 
   "Registration filter limiting which entries are returned.\n"
   registration: LeaveRegistrationFilter = null
+
+  """
+  Leaves matching the nested filter are excluded from the result.
+  """
+  not: LeaveFilter = null
 }
 
 input OrgUnitboundmanagerfilter {
@@ -8188,6 +8321,11 @@ input OrgUnitboundmanagerfilter {
 
   "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return managers without a primary class.\n"
   primary: ClassFilter
+
+  """
+  Managers matching the nested filter are excluded from the result.
+  """
+  not: ManagerFilter = null
 }
 
 input OrgUnitboundownerfilter {
@@ -8221,6 +8359,11 @@ input OrgUnitboundownerfilter {
 
   "Owner filter limiting which entries are returned.\n"
   owner: EmployeeFilter = null
+
+  """
+  Owners matching the nested filter are excluded from the result.
+  """
+  not: OwnerFilter = null
 }
 
 input OrgUnitboundrelatedunitfilter {
@@ -8244,6 +8387,11 @@ input OrgUnitboundrelatedunitfilter {
   Show elements as they were at the provided registration time
   """
   registration_time: DateTime = null
+
+  """
+  Related units matching the nested filter are excluded from the result.
+  """
+  not: RelatedUnitFilter = null
 }
 
 """
@@ -8771,6 +8919,11 @@ input OrganisationUnitFilter {
   Owner filter limiting which entries are returned.
   """
   owner: OwnerFilter = null
+
+  """
+  Organisation units matching the nested filter are excluded from the result.
+  """
+  not: OrganisationUnitFilter = null
 }
 
 type OrganisationUnitRegistration implements IRegistration & RegistrationBase {
@@ -9127,6 +9280,11 @@ input OwnerFilter {
 
   "Owner filter limiting which entries are returned.\n"
   owner: EmployeeFilter = null
+
+  """
+  Owners matching the nested filter are excluded from the result.
+  """
+  not: OwnerFilter = null
 }
 
 "Enum for the supported inference priorities.\n"
@@ -9391,6 +9549,11 @@ input ParentBoundClassFilter {
 
   "Scope filter limiting which entries are returned.\n\n| `scope`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   scope: [String!] = null
+
+  """
+  Classes matching the nested filter are excluded from the result.
+  """
+  not: ClassFilter = null
 }
 
 input ParentBoundFacetFilter {
@@ -9417,6 +9580,11 @@ input ParentBoundFacetFilter {
 
   "Registration filter limiting which entries are returned.\n"
   registration: FacetRegistrationFilter = null
+
+  """
+  Facets matching the nested filter are excluded from the result.
+  """
+  not: FacetFilter = null
 }
 
 input ParentBoundOrganisationUnitFilter {
@@ -9474,6 +9642,11 @@ input ParentBoundOrganisationUnitFilter {
   Owner filter limiting which entries are returned.
   """
   owner: OwnerFilter = null
+
+  """
+  Organisation units matching the nested filter are excluded from the result.
+  """
+  not: OrganisationUnitFilter = null
 }
 
 type PersonRegistration implements IRegistration & RegistrationBase {
@@ -10272,6 +10445,11 @@ input RelatedUnitFilter {
   "Organisational Unit UUID filter limiting which entries are returned.\n\n| `org_units`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   org_units: [UUID!] = null
     @deprecated(reason: "Replaced by the 'org_unit' filter")
+
+  """
+  Related units matching the nested filter are excluded from the result.
+  """
+  not: RelatedUnitFilter = null
 }
 
 type RelatedUnitRegistration implements IRegistration & RegistrationBase {
@@ -10568,6 +10746,11 @@ input RoleBindingFilter {
 
   "Role filter limiting which entries are returned.\n"
   role: ClassFilter = null
+
+  """
+  Rolebindings matching the nested filter are excluded from the result.
+  """
+  not: RoleBindingFilter = null
 }
 
 type RoleBindingRegistration implements IRegistration & RegistrationBase {
@@ -10909,50 +11092,6 @@ input RolebindingRuleUpdateInput {
   active: Boolean
 }
 
-"The SpecialActor type is used for special magic-number UUIDs.\n\nIt is returned, if a change was made;\n* While auth was disabled.\n* Using the legacy auth system.\n* Before registrations got actors registered.\nor similar\n"
-type SpecialActor implements Actor {
-  """
-  UUID of the actor
-  """
-  uuid: UUID!
-
-  """
-  Get event namespaces owned by this actor.
-  """
-  event_namespaces(
-    filter: OwnersBoundNamespaceFilter
-
-    "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
-    limit: int = null
-
-    "Cursor defining the next elements to fetch.\n\n| `cursor`       | Next element is    |\n|----------------|--------------------|\n| not provided   | First              |\n| `null`         | First              |\n| `\"MA==\"` (`*`) | First after Cursor |\n\n`*`: Placeholder for the cursor returned by the previous iteration.\n"
-    cursor: Cursor = null
-  ): [Namespace!]!
-
-  """
-  Get event listeners owned by this actor.
-  """
-  event_listeners(
-    filter: OwnersBoundListenerFilter
-
-    "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
-    limit: int = null
-
-    "Cursor defining the next elements to fetch.\n\n| `cursor`       | Next element is    |\n|----------------|--------------------|\n| not provided   | First              |\n| `null`         | First              |\n| `\"MA==\"` (`*`) | First after Cursor |\n\n`*`: Placeholder for the cursor returned by the previous iteration.\n"
-    cursor: Cursor = null
-  ): [Listener!]!
-
-  """
-  Appropriate display text for any actor (regardless of type)
-  """
-  display_name: String
-
-  """
-  Enum key for the specific case of the special actor
-  """
-  key: HardcodedActor!
-}
-
 scalar UUID
 
 """
@@ -10964,50 +11103,6 @@ type UUIDPaged {
 
   "Container for page information.\n\nContains the cursors necessary to fetch other pages.\nContains information on when to stop iteration.\n"
   page_info: PageInfo!
-}
-
-"The UnknownActor type is a fallback actor type for when lookup fails.\n\nIt is returned when all attempts at actor translations have failed.\n"
-type UnknownActor implements Actor {
-  """
-  UUID of the actor
-  """
-  uuid: UUID!
-
-  """
-  Get event namespaces owned by this actor.
-  """
-  event_namespaces(
-    filter: OwnersBoundNamespaceFilter
-
-    "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
-    limit: int = null
-
-    "Cursor defining the next elements to fetch.\n\n| `cursor`       | Next element is    |\n|----------------|--------------------|\n| not provided   | First              |\n| `null`         | First              |\n| `\"MA==\"` (`*`) | First after Cursor |\n\n`*`: Placeholder for the cursor returned by the previous iteration.\n"
-    cursor: Cursor = null
-  ): [Namespace!]!
-
-  """
-  Get event listeners owned by this actor.
-  """
-  event_listeners(
-    filter: OwnersBoundListenerFilter
-
-    "\nLimit the maximum number of elements to fetch.\n\n| `limit`      | \\# elements fetched |\n|--------------|---------------------|\n| not provided | All                 |\n| `null`       | All                 |\n| `0`          | `0` (`*`)           |\n| `x`          | Between `0` and `x` |\n\n`*`: This behavior is equivalent to SQL's `LIMIT 0` behavior.\n\nNote:\n\nSometimes the caller may receieve a shorter list (or even an empty list) of results compared to the expected per the limit argument.\n\nThis may seem confusing, but it is the expected behavior given the way that limiting is implemented in the bitemporal database layer, combined with how filtering and object change consolidation is handled.\n\nNot to worry; all the expected elements will eventually be returned, as long as the iteration is continued until the `next_cursor` is `null`.\n"
-    limit: int = null
-
-    "Cursor defining the next elements to fetch.\n\n| `cursor`       | Next element is    |\n|----------------|--------------------|\n| not provided   | First              |\n| `null`         | First              |\n| `\"MA==\"` (`*`) | First after Cursor |\n\n`*`: Placeholder for the cursor returned by the previous iteration.\n"
-    cursor: Cursor = null
-  ): [Listener!]!
-
-  """
-  Appropriate display text for any actor (regardless of type)
-  """
-  display_name: String
-
-  """
-  Descriptive error message
-  """
-  error: String!
 }
 
 """
@@ -11068,6 +11163,11 @@ input UuidsBoundClassFilter {
 
   "Scope filter limiting which entries are returned.\n\n| `scope`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   scope: [String!] = null
+
+  """
+  Classes matching the nested filter are excluded from the result.
+  """
+  not: ClassFilter = null
 }
 
 input UuidsBoundEmployeeFilter {
@@ -11111,6 +11211,11 @@ input UuidsBoundEmployeeFilter {
 
   "Engagement filter limiting which entries are returned.\n\nSet to `null` to only return employees without any engagements.\n"
   engagement: EngagementFilter
+
+  """
+  Employees matching the nested filter are excluded from the result.
+  """
+  not: EmployeeFilter = null
 }
 
 input UuidsBoundEngagementFilter {
@@ -11165,6 +11270,11 @@ input UuidsBoundEngagementFilter {
 
   "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return engagements without a primary class.\n"
   primary: ClassFilter
+
+  """
+  Engagements matching the nested filter are excluded from the result.
+  """
+  not: EngagementFilter = null
 }
 
 input UuidsBoundFacetFilter {
@@ -11198,6 +11308,11 @@ input UuidsBoundFacetFilter {
   "Parent user-key filter limiting which entries are returned.\n\n| `parent_user_keys`      | Elements returned                            |\n|--------------|----------------------------------------------|\n| not provided | All                                          |\n| `null`       | All                                          |\n| `[]`         | None                                         |\n| `\"x\"`        | `[\"x\"]` or `[]` (`*`)                        |\n| `[\"x\", \"y\"]` | `[\"x\", \"y\"]`, `[\"x\"]`, `[\"y\"]` or `[]` (`*`) |\n\n`*`: Elements returned depends on which elements were found.\n"
   parent_user_keys: [String!] = null
     @deprecated(reason: "Replaced by the 'parent' filter")
+
+  """
+  Facets matching the nested filter are excluded from the result.
+  """
+  not: FacetFilter = null
 }
 
 input UuidsBoundITSystemFilter {
@@ -11221,6 +11336,11 @@ input UuidsBoundITSystemFilter {
 
   "Registration filter limiting which entries are returned.\n"
   registration: ITSystemRegistrationFilter = null
+
+  """
+  IT systems matching the nested filter are excluded from the result.
+  """
+  not: ITSystemFilter = null
 }
 
 input UuidsBoundITUserFilter {
@@ -11280,6 +11400,11 @@ input UuidsBoundITUserFilter {
 
   "Primary class filter limiting which entries are returned.\n\nSet to `null` to only return IT users without a primary class.\n"
   primary: ClassFilter
+
+  """
+  IT users matching the nested filter are excluded from the result.
+  """
+  not: ITUserFilter = null
 }
 
 input UuidsBoundLeaveFilter {
@@ -11317,6 +11442,11 @@ input UuidsBoundLeaveFilter {
 
   "Registration filter limiting which entries are returned.\n"
   registration: LeaveRegistrationFilter = null
+
+  """
+  Leaves matching the nested filter are excluded from the result.
+  """
+  not: LeaveFilter = null
 }
 
 input UuidsBoundOrganisationUnitFilter {
@@ -11377,6 +11507,11 @@ input UuidsBoundOrganisationUnitFilter {
   Owner filter limiting which entries are returned.
   """
   owner: OwnerFilter = null
+
+  """
+  Organisation units matching the nested filter are excluded from the result.
+  """
+  not: OrganisationUnitFilter = null
 }
 
 """
